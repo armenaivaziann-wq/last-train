@@ -187,7 +187,6 @@ func _fit_big() -> void:
 	var inner: Vector2 = area - Vector2(6, 6)
 	var svc: SubViewportContainer = _big["view"]["container"]
 	svc.custom_minimum_size = inner
-	(_big["view"]["viewport"] as SubViewport).size = Vector2i(inner)
 	_aim(_big["view"]["camera"], _big["rect"], inner)
 
 
