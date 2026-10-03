@@ -78,12 +78,12 @@ func build(_args: Dictionary) -> void:
 
 
 func _layout() -> void:
+	# Узлы дел раскладываем в свободной части экрана левее панели (карта — фон).
 	var vs: Vector2 = size
-	var k: float = maxf(vs.x / 640.0, vs.y / 360.0)
-	var off: Vector2 = (vs - Vector2(640, 360) * k) / 2.0
+	var area := Rect2(Vector2(120, 150), Vector2(maxf(300.0, vs.x - 470.0 - 140.0), maxf(200.0, vs.y - 150.0 - 70.0)))
 	for n: Dictionary in _nodes:
-		var pos := Vector2(float(n["level"]["pos"][0]), float(n["level"]["pos"][1])) * k + off
-		pos.x = minf(pos.x, vs.x - 500.0)
+		var norm := Vector2((float(n["level"]["pos"][0]) - 60.0) / 520.0, (float(n["level"]["pos"][1]) - 70.0) / 240.0)
+		var pos: Vector2 = area.position + norm * area.size
 		n["button"].position = pos - Vector2(35, 35)
 		n["label"].position = pos + Vector2(-n["label"].size.x / 2.0, 38)
 		n["screen_pos"] = pos
@@ -116,8 +116,13 @@ func _select(l: Dictionary) -> void:
 	var vrow := Ui.hbox(10)
 	vrow.add_child(Ui.tex(Db.villain_portrait(str(l["villain"])) if caught else Db.icon("question"), 64))
 	var vv := Ui.vbox(2)
-	vv.add_child(Ui.label(str(villain.get("name", "")) if caught else "Неизвестный злодей", "", 19, true))
-	vv.add_child(Ui.label(str(villain.get("short", "")), "SmallLabel", 16, true))
+	vv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var vn := Ui.label(str(villain.get("name", "")) if caught else "Неизвестный злодей", "", 19, true)
+	vn.custom_minimum_size.x = 260
+	vv.add_child(vn)
+	var vs2 := Ui.label(str(villain.get("short", "")), "SmallLabel", 16, true)
+	vs2.custom_minimum_size.x = 260
+	vv.add_child(vs2)
 	vrow.add_child(vv)
 	_info.add_child(vrow)
 	_info.add_child(Ui.label("Дедлайн: %d игровых минут. ★★★ — за 12 мин, 3+ ключевых улики, без ошибок." % int(Db.deadline_minutes()), "SmallLabel", 16, true))

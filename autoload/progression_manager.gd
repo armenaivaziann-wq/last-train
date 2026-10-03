@@ -336,6 +336,7 @@ func claim_achievement(id: String) -> bool:
 	if a.is_empty() or achievement_claimed(id) or stat(str(a["stat"])) < int(a["goal"]):
 		return false
 	_p()["quests"]["claimed_achievements"].append(id)
+	give_cosmetic(str(a.get("cosmetic", "")))
 	EconomyManager.grant({"crystals": int(a.get("crystals", 0))})
 	Events.profile_changed.emit()
 	return true

@@ -56,25 +56,39 @@ func _switch(tab: String) -> void:
 				g.add_child(card)
 			_content.add_child(g)
 		"monsters":
+			# Бестиарий злодеев кампании: истинная форма, способность, контрмера, маскировки.
 			for mid: String in Db.monsters:
 				var m: Dictionary = Db.monster(mid)
+				if m.get("legacy", false):
+					continue
 				var caught: int = ProgressionManager.monster_caught(mid)
 				var card := Ui.panel("CardPanel")
 				var h := Ui.hbox(16)
-				var t := Ui.tex(Db.monster_portrait(mid), 120)
+				var t := Ui.tex(Db.villain_portrait(mid), 120)
 				if caught == 0:
 					t.modulate = Color(0, 0, 0, 0.85)
 				h.add_child(t)
 				var v := Ui.vbox(4)
 				v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				v.add_child(Ui.label(str(m["name"]) if caught > 0 else "??? — " + str(m["short"]), "SubHeaderLabel", 24))
+				v.add_child(Ui.label(str(m["name"]) if caught > 0 else "??? — " + str(m.get("short", "")), "SubHeaderLabel", 24, true))
 				if caught > 0:
-					v.add_child(Ui.label(str(m["description"]), "", 18, true))
-					v.add_child(Ui.label("Признаки: " + "; ".join(PackedStringArray(m["signs"])), "", 17, true))
-					v.add_child(Ui.label("Проверки: " + "; ".join(PackedStringArray(m["counter_checks"])), "DimLabel", 17, true))
-					v.add_child(Ui.label(str(m["bestiary"]) + "  Поймано: %d" % caught, "GoldLabel", 17, true))
+					v.add_child(Ui.label(str(m.get("description", m.get("short", ""))), "", 18, true))
+					v.add_child(Ui.label("Способность: " + str(m.get("ability", "")), "", 17, true))
+					v.add_child(Ui.label("Контрмера: " + str(m.get("counter", "")), "GoldLabel", 17, true))
+					v.add_child(Ui.label("Признаки: " + "; ".join(PackedStringArray(m.get("signs", []))), "DimLabel", 16, true))
+					v.add_child(Ui.label(str(m.get("bestiary", "")) + "  Поймано: %d" % caught, "SmallLabel", 16, true))
+					var dg: Array = ProgressionManager.disguises(mid)
+					if not dg.is_empty():
+						var row := Ui.hbox(6)
+						row.add_child(Ui.label("Маскировки:", "SmallLabel", 16))
+						for c in dg:
+							var ct := Ui.tex(Db.portrait(str(c)), 40)
+							ct.tooltip_text = Db.char_name(str(c))
+							ct.mouse_filter = Control.MOUSE_FILTER_PASS
+							row.add_child(ct)
+						v.add_child(row)
 				else:
-					v.add_child(Ui.label("Поймайте этого монстра, чтобы открыть запись.", "DimLabel", 18))
+					v.add_child(Ui.label("Поймайте этого злодея, чтобы открыть запись.", "DimLabel", 18))
 				h.add_child(v)
 				card.add_child(h)
 				_content.add_child(card)
@@ -85,7 +99,10 @@ func _switch(tab: String) -> void:
 				h.add_child(Ui.icon("medal", 40))
 				var v := Ui.vbox(2)
 				v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				v.add_child(Ui.label("%s — %s" % [a["name"], a["text"]], "", 19, true))
+				var reward_text: String = ""
+				if a.has("cosmetic"):
+					reward_text = "  · награда: " + str(Db.prog_item("cosmetics", str(a["cosmetic"])).get("name", ""))
+				v.add_child(Ui.label("%s — %s%s" % [a["name"], a["text"], reward_text], "", 19, true))
 				v.add_child(Ui.progress(prog, int(a["goal"]), "PurpleBar", 12))
 				h.add_child(v)
 				if ProgressionManager.achievement_claimed(a["id"]):

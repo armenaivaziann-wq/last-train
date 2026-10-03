@@ -138,3 +138,12 @@ func test_black_cloak_reveal() -> void:
 	check(not npc.sprite.visible, "обычный спрайт исчез")
 	await wait_seconds(3.0)
 	check(_inv().ended, "после сцены — итог")
+
+
+func test_deadline_warnings_once() -> void:
+	await _start_level("level_01")
+	for i in 40:
+		_inv().advance(0.5)
+		if _inv().ended:
+			break
+	check_eq(_inv()._warned, [10, 5, 1], "пороги 10, 5 и 1 минута сработали по порядку")

@@ -39,7 +39,7 @@ func _ready() -> void:
 		inv.give(id)
 	inv.advance(9.0)
 	game.accuse(culprit, game.case_data["key_clues"].slice(0, 3), "")
-	await _wait(2.0)
+	await _wait(2.3)
 	await _shot(level + "_reveal")
 	await _wait(3.2)
 	await _shot(level + "_result")

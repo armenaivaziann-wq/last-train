@@ -438,6 +438,8 @@ func _build_verdict() -> void:
 	opt.set_item_metadata(0, "")
 	var i: int = 1
 	for mid: String in Db.monsters:
+		if Db.monster(mid).get("legacy", false):
+			continue
 		opt.add_item(str(Db.monster(mid)["name"]))
 		opt.set_item_metadata(i, mid)
 		if mid == _monster_guess:
@@ -447,7 +449,17 @@ func _build_verdict() -> void:
 	opt.focus_mode = Control.FOCUS_NONE
 	opt.item_selected.connect(func(idx: int) -> void: _monster_guess = str(opt.get_item_metadata(idx)))
 	right.add_child(opt)
-	right.add_child(Ui.label("Верно названный тип монстра даёт кристаллы.", "SmallLabel", 16, true))
+	right.add_child(Ui.label("Верно названный тип злодея даёт кристаллы.", "SmallLabel", 16, true))
+	# Справка о злодее: что о нём говорят и как его распознать (без имени виновника).
+	var vill: Dictionary = Db.monster(str(game.case_data["monster"]))
+	var known: bool = ProgressionManager.monster_caught(str(game.case_data["monster"])) > 0
+	var info := Ui.panel("CardPanel")
+	var iv := Ui.vbox(4)
+	iv.add_child(Ui.label("Слухи о злодее", "GoldLabel", 18))
+	iv.add_child(Ui.label(str(vill.get("short", "")), "", 16, true))
+	iv.add_child(Ui.label("Как распознать: " + str(vill.get("counter", "")) if known else "Подробности появятся в бестиарии, когда вы его поймаете.", "SmallLabel", 15, true))
+	info.add_child(iv)
+	right.add_child(info)
 	right.add_child(Ui.spacer(false, true))
 	var arrest := Ui.button("Задержать", "siren", "DangerButton", _confirm_arrest, 66)
 	arrest.disabled = _verdict_suspect == "" or _verdict_clues.is_empty()
