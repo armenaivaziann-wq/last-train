@@ -39,11 +39,12 @@ func build(args: Dictionary) -> void:
 	var p := Ui.panel()
 	var row := Ui.hbox(22)
 	var left := Ui.vbox(6)
-	left.add_child(Ui.portrait(Db.portrait(_id), 170, Color(str(Db.character(_id).get("color", "#4fd0ff"))).lightened(0.3)))
+	var look: String = game.appearance(_id)
+	left.add_child(Ui.portrait(Db.portrait(look), 170, Color(str(Db.character(look).get("color", "#4fd0ff"))).lightened(0.3)))
 	row.add_child(left)
 	var mid := Ui.vbox(10)
 	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_name = Ui.label(Db.char_name(_id), "SubHeaderLabel", 28)
+	_name = Ui.label(Db.char_name(look), "SubHeaderLabel", 28)
 	mid.add_child(_name)
 	_text = Ui.label("", "", 24, true)
 	_text.size_flags_vertical = Control.SIZE_EXPAND_FILL

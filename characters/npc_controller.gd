@@ -22,6 +22,10 @@ var facing: String = "down"
 var talking_to: Node2D = null
 var detained: bool = false
 var dead: bool = false
+## Чей облик сейчас у персонажа (перевёртыш носит чужие лица).
+var look_id: String = ""
+## Тень теневика: падает к лампе и дёргается при мигании.
+var shadow_wrong: bool = false
 var _react_left: float = 0.0
 var _react_pos: Vector2
 ## Сбой копирования (признак двойника): [мин, макс] секунд между вспышками, пусто — нет.
@@ -58,6 +62,7 @@ func setup(id: String) -> void:
 	add_child(_shadow)
 	sprite = CharacterSprite.new()
 	sprite.setup(str(Db.character(id).get("sprite", id)))
+	look_id = id
 	add_child(sprite)
 	interactable = Interactable.new()
 	interactable.interact_id = id
@@ -108,6 +113,13 @@ func apply(s: Dictionary) -> void:
 
 
 ## Погиб: персонаж исчезает из мира (его заменяет тело на месте преступления).
+func set_look(char_id: String) -> void:
+	if char_id == look_id:
+		return
+	look_id = char_id
+	sprite.setup(str(Db.character(char_id).get("sprite", char_id)))
+
+
 func set_dead(on: bool) -> void:
 	dead = on
 	visible = not on
@@ -143,6 +155,10 @@ func _process(delta: float) -> void:
 		_bubble_icon.texture = Db.texture("acts/%s.png" % ("exclaim" if reacting else ACT_ICON[act]))
 		_bubble.position.y = -46 + (3 if state == "sitting" else 0) + round(sin(_time * 3.0))
 	_update_glitch(delta)
+	if shadow_wrong:
+		var j: float = sin(_time * 23.0) * 1.5 if fmod(_time, 3.0) < 0.6 else 0.0
+		_shadow.position = Vector2(7.0 + j, -5.0)
+		_shadow.scale = Vector2(1.3, 0.8)
 
 
 func _update_glitch(delta: float) -> void:

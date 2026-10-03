@@ -28,6 +28,7 @@ var arrest: ArrestSequence
 var highlight: TargetHighlight
 ## Места преступлений: индекс убийства → CrimeScene.
 var crime_scenes: Dictionary = {}
+var villain_world: VillainWorld
 const DISCOVER_DISTANCE: float = 72.0
 var _autosave_timer: float = AUTOSAVE_INTERVAL
 var _bark_timer: float = 2.0
@@ -61,6 +62,10 @@ func _ready() -> void:
 	_spawn_player()
 	camera_system.setup(layout, investigation, npcs, player)
 	camera_system.crime_scenes = crime_scenes
+	villain_world = VillainWorld.new()
+	entities.add_child(villain_world)
+	villain_world.setup(self)
+	camera_system.villain_world = villain_world
 	camera.target = player
 	camera.left_limit = -40.0
 	camera.right_limit = layout.width + 40.0
@@ -163,6 +168,7 @@ func _apply_npcs(t: float) -> void:
 func _process(delta: float) -> void:
 	if not camera_system.playback:
 		_apply_npcs(investigation.clock)
+		villain_world.apply(investigation.clock)
 		player.clock_minute = investigation.clock
 	_update_barks(delta)
 	_marker_timer -= delta
@@ -316,7 +322,7 @@ func _on_target_changed(t: Interactable) -> void:
 	if t:
 		text = t.label
 		if t.kind == Interactable.Kind.NPC:
-			text = Db.char_name(t.owner_id)
+			text = Db.char_name(appearance(t.owner_id))
 	hud.set_target(t, text)
 	highlight.set_target(t)
 
@@ -386,8 +392,18 @@ func _on_clue(clue_id: String) -> void:
 	autosave()
 
 
+## Как пассажир выглядит сейчас (перевёртыш — чужим лицом): для карточки и подписей.
+func appearance(npc_id: String) -> String:
+	return investigation.hooks.appearance(npc_id, investigation.clock)
+
+
 func _on_case_event(ev: Dictionary) -> void:
 	match str(ev["type"]):
+		"false_call":
+			# Ложный вызов: крик о помощи чужим голосом из пустого купе.
+			var call: Dictionary = investigation.hooks.calls[int(ev["call"])]
+			AudioManager.play_sfx("female_scream", -6.0, 0.9)
+			hud.show_direction(call["pos"], "Зов!", 6.0)
 		"announce":
 			AudioManager.play_sfx("announce")
 		"tunnel_start":

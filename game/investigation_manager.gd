@@ -25,6 +25,7 @@ var evidence: EvidenceSystem
 var suspects: SuspectManager
 var dialogue: DialogueSystem
 var murders: MurderDirector
+var hooks: VillainHooks
 
 var clock: float = 0.0
 var start_time: float = 0.0
@@ -74,6 +75,8 @@ func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_dat
 	replay = ProgressionManager.case_solved_before(id)
 	murders = MurderDirector.new()
 	murders.plan(data, layout, timeline, start_time, arrival_time, case_seed)
+	hooks = VillainHooks.new()
+	hooks.plan(self, case_seed)
 
 
 # --- часы ---------------------------------------------------------------------------------
@@ -141,6 +144,7 @@ func _check_events() -> void:
 			continue
 		if clock >= Db.parse_time(ev["at"]):
 			events_done.append(i)
+			give_all(ev.get("gives", []))
 			case_event.emit(ev)
 
 

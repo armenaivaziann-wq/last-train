@@ -13,6 +13,7 @@ var playback: bool = false
 var playback_time: float = 0.0
 ## Места преступлений (индекс → CrimeScene): до момента убийства на записях их нет.
 var crime_scenes: Dictionary = {}
+var villain_world: VillainWorld
 var _markers_cache: Dictionary = {}
 
 
@@ -58,6 +59,8 @@ func set_time(t: float) -> void:
 		npc.dead = was_dead
 	for scene: CrimeScene in crime_scenes.values():
 		scene.show_at(playback_time)
+	if villain_world:
+		villain_world.apply(playback_time)
 	var tr: Array = player.track_at(playback_time)
 	if tr.is_empty() or playback_time < investigation.start_time:
 		player.visible = false

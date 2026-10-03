@@ -18,18 +18,20 @@ func build(args: Dictionary) -> void:
 	if npc:
 		npc.talking_to = game.player
 	ProgressionManager.meet(_id)
-	var ch: Dictionary = Db.character(_id)
+	# Внешность — то, что видит детектив (перевёртыш носит чужое лицо); документы — настоящие.
+	var look: String = game.appearance(_id)
+	var ch: Dictionary = Db.character(look)
 	var accent: Color = Color(str(ch.get("color", "#4fd0ff"))).lightened(0.35)
 
 	var p := Ui.panel()
 	p.custom_minimum_size = Vector2(760, 0)
 	var col := Ui.vbox(14)
 	var row := Ui.hbox(22)
-	row.add_child(Ui.portrait(Db.portrait(_id), 168, accent))
+	row.add_child(Ui.portrait(Db.portrait(look), 168, accent))
 	var info := Ui.vbox(6)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var top := Ui.hbox(8)
-	var name_l := Ui.label(Db.char_name(_id), "HeaderLabel", 32)
+	var name_l := Ui.label(Db.char_name(look), "HeaderLabel", 32)
 	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name_l)
 	top.add_child(Ui.icon_button("close", 52, "GhostButton", close, "Закрыть"))

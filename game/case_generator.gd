@@ -163,11 +163,11 @@ func camera_clue(id: String, cam: String, npc: String, t: float, title: String, 
 ## Где был человек в момент t — для правдивых показаний.
 func place(npc: String, t: float) -> String:
 	var s: Dictionary = timeline.state_at(npc, t)
-	var p: String = _spot_place(str(s["spot"]))
+	var p: String = spot_place(str(s["spot"]))
 	return ("шёл " + p) if s["moving"] else p
 
 
-func _spot_place(spot: String) -> String:
+static func spot_place(spot: String) -> String:
 	if spot.begins_with("svc_"):
 		return "в служебном купе"
 	if spot.begins_with("bay"):
@@ -312,7 +312,7 @@ func _generic_clues() -> void:
 	clue("x_g_trace", "contradiction", "След совпадает с приметами", "%s на месте происшествия совпадает с приметами пассажира: %s." % [trace.capitalize(), c_name], [culprit], -1.0, true)
 	deduction("x_g_trace", ["g_trace"], ["d_look_" + culprit])
 	# Алиби: виновник лжёт, остальные говорят правду (по хронологии)
-	var lie_place: String = _spot_place(home_spot(culprit))
+	var lie_place: String = spot_place(home_spot(culprit))
 	for s: String in d["suspects"]:
 		var where: String = lie_place if s == culprit else place(s, crime_t).replace("шёл ", "шёл " if _g(s, "m", "f") == "m" else "шла ")
 		var line: String = "Около %s я был%s %s." % [tt, _g(s, "", "а"), where]
