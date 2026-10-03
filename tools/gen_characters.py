@@ -66,6 +66,25 @@ CHARACTERS = {
     ),
 }
 
+# Второстепенные пассажиры — возможные жертвы событий-убийств (не подозреваемые).
+CHARACTERS.update({
+    "vera": dict(
+        skin="#f6d2bc", hair="#7a1f3a", hair_style="long", eyes="#5a2a6a",
+        top="#c0394b", top_style="dress", trim="#ffd27a", shirt="#c0394b", tie="#ffd27a",
+        pants="#c0394b", shoes="#2a1420", accessories=[], skirt=True,
+    ),
+    "orlov": dict(
+        skin="#efc8a8", hair="#e4e4f0", hair_style="slick", eyes="#3a3a5a",
+        top="#5a2a6a", top_style="suit", trim="#d9a441", shirt="#f4f0ff", tie="#d9a441",
+        pants="#2a1e36", shoes="#14111c", glasses="small", mustache="small",
+    ),
+    "mark": dict(
+        skin="#e2a878", hair="#3a2a24", hair_style="messy", eyes="#3a2a24",
+        top="#f0ece4", top_style="uniform", trim="#c0394b", shirt="#ffffff", tie="#c0394b",
+        pants="#3a3a52", shoes="#1f1c28", hat="cap", hat_color="#f4f4fa",
+    ),
+})
+
 # Наряды детектива (косметика): меняется верх, лупа и рубашка остаются.
 OUTFITS = {
     "detective_coat": dict(top="#3d3a5c", trim="#e8e4f4", top_style="jacket", tie="#5f9ad6"),
@@ -1036,6 +1055,40 @@ def build_sheet(cid, p, hero=False):
     return sheet
 
 
+def build_body(cid, p):
+    """Лежащий персонаж (кадр «вниз» с закрытыми глазами, повёрнут на 90°) и меловой контур:
+    тонкая неровная белая линия по форме тела, как в детективах."""
+    import random
+    f = frame_down(p, 0, expr="closed", mouth="flat", pose={"no_hand_items": True})
+    rot = Canvas(f.h, f.w)
+    for y in range(f.h):
+        for x in range(f.w):
+            rot.px[x][f.h - 1 - y] = f.px[y][x]
+    rot.save(f"bodies/{cid}.png")
+    pad = 6
+    W, H = rot.w + pad * 2, rot.h + pad * 2
+    mask = [[rot.opaque(x - pad, y - pad) for x in range(W)] for y in range(H)]
+    rng = random.Random(hash(cid) & 0xFFFF)
+
+    def dilated(r):
+        out = [[False] * W for _ in range(H)]
+        for y in range(H):
+            for x in range(W):
+                if mask[y][x]:
+                    for dy in range(-r, r + 1):
+                        for dx in range(-r, r + 1):
+                            if dx * dx + dy * dy <= r * r + 1 and 0 <= x + dx < W and 0 <= y + dy < H:
+                                out[y + dy][x + dx] = True
+        return out
+    big, small = dilated(3), dilated(2)
+    line = Canvas(W, H)
+    for y in range(H):
+        for x in range(W):
+            if big[y][x] and not small[y][x] and rng.random() > 0.12:
+                line.set(x, y, (244, 244, 255, 230 if rng.random() > 0.25 else 150))
+    line.save(f"bodies/{cid}_outline.png")
+
+
 def main():
     os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)
     for cid, d in CHARACTERS.items():
@@ -1048,6 +1101,8 @@ def main():
             exprs = ["normal", "wide"]
         for e in exprs:
             portrait(p, e).save(f"portraits/{cid}_{e}.png")
+    for vid in ("vera", "orlov", "mark"):
+        build_body(vid, P(CHARACTERS[vid]))
     for oid, over in OUTFITS.items():
         d = dict(CHARACTERS["detective"])
         d.update(over)

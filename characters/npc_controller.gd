@@ -21,6 +21,9 @@ var act: String = "idle"
 var facing: String = "down"
 var talking_to: Node2D = null
 var detained: bool = false
+var dead: bool = false
+var _react_left: float = 0.0
+var _react_pos: Vector2
 ## Сбой копирования (признак двойника): [мин, макс] секунд между вспышками, пусто — нет.
 var glitch_every: Array = []
 
@@ -80,7 +83,7 @@ func setup(id: String) -> void:
 
 ## Применить состояние хронологии {pos, facing, moving, pose, act}.
 func apply(s: Dictionary) -> void:
-	if s.is_empty() or detained:
+	if s.is_empty() or detained or dead:
 		return
 	global_position = s["pos"]
 	act = str(s["act"])
@@ -91,6 +94,8 @@ func apply(s: Dictionary) -> void:
 		sprite.play_state("idle" if s["pose"] != "sit" else "sit", facing)
 		return
 	facing = str(s["facing"])
+	if _react_left > 0.0 and not moving:
+		facing = CaseTimeline.facing_for(_react_pos - global_position)
 	if moving:
 		state = "walking"
 		sprite.play_state("walk", facing)
@@ -100,6 +105,20 @@ func apply(s: Dictionary) -> void:
 	else:
 		state = ACT_STATE.get(act, "idle")
 		sprite.play_state("talk" if act == "talk" and facing == "down" else "idle", facing)
+
+
+## Погиб: персонаж исчезает из мира (его заменяет тело на месте преступления).
+func set_dead(on: bool) -> void:
+	dead = on
+	visible = not on
+	interactable.enabled = not on
+	_shadow.visible = not on
+
+
+## Испуганная реакция на крик: смотрит в сторону звука, над головой «!».
+func react(pos: Vector2, duration: float = 4.0) -> void:
+	_react_pos = pos
+	_react_left = duration
 
 
 func set_detained(on: bool) -> void:
@@ -115,11 +134,13 @@ func set_detained(on: bool) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	# Облачко занятия появляется периодически (не у идущих и не во время разговора)
-	var show_bubble: bool = state != "walking" and talking_to == null and not detained \
-		and fmod(_time + _bubble_phase, 7.0) < 2.6 and ACT_ICON.has(act)
+	_react_left = maxf(0.0, _react_left - delta)
+	var reacting: bool = _react_left > 0.0 and not detained
+	var show_bubble: bool = reacting or (state != "walking" and talking_to == null and not detained \
+		and fmod(_time + _bubble_phase, 7.0) < 2.6 and ACT_ICON.has(act))
 	_bubble.visible = show_bubble
 	if show_bubble:
-		_bubble_icon.texture = Db.texture("acts/%s.png" % ACT_ICON[act])
+		_bubble_icon.texture = Db.texture("acts/%s.png" % ("exclaim" if reacting else ACT_ICON[act]))
 		_bubble.position.y = -46 + (3 if state == "sitting" else 0) + round(sin(_time * 3.0))
 	_update_glitch(delta)
 

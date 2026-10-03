@@ -33,6 +33,12 @@ var _bottom_right: Control
 var _new_clues: int = 0
 var _warn: bool = false
 var _target_kind: int = -1
+var _banner: PanelContainer
+var _dir_panel: PanelContainer
+var _dir_label: Label
+var _dir_icon: TextureRect
+var _dir_target: Vector2
+var _dir_left: float = 0.0
 
 
 func setup(game_node: Node) -> void:
@@ -127,6 +133,24 @@ func setup(game_node: Node) -> void:
 	_toasts = Ui.vbox(6)
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_toasts)
+
+	# --- крупный баннер события и указатель направления звука
+	_banner = PanelContainer.new()
+	_banner.add_theme_stylebox_override("panel", UiTheme.sb(Color(0.18, 0.03, 0.08, 0.92), UiTheme.DANGER, 3, 16, Color(UiTheme.DANGER, 0.45), 14, Vector4(28, 12, 28, 14)))
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	add_child(_banner)
+	_dir_panel = Ui.panel("PillPanel")
+	var dh := Ui.hbox(8)
+	_dir_icon = Ui.icon("arrow_right", 34)
+	_dir_icon.pivot_offset = Vector2(17, 17)
+	_dir_label = Ui.label("", "", 20)
+	dh.add_child(_dir_icon)
+	dh.add_child(_dir_label)
+	_dir_panel.add_child(dh)
+	_dir_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dir_panel.visible = false
+	add_child(_dir_panel)
 
 	Events.toast.connect(show_toast)
 	Events.profile_changed.connect(update_resources)
@@ -310,6 +334,64 @@ func show_toast(text: String, icon_name: String = "") -> void:
 	tw.tween_interval(2.4)
 	tw.tween_property(p, "modulate:a", 0.0, 0.35)
 	tw.tween_callback(p.queue_free)
+
+
+## Крупный баннер на несколько секунд (например, «ПРОИЗОШЛО УБИЙСТВО»).
+func show_banner(title: String, subtitle: String, duration: float = 4.0) -> void:
+	Ui.clear(_banner)
+	var v := Ui.vbox(2)
+	var t := Ui.label(title, "TitleLabel", 38)
+	t.add_theme_color_override("font_color", Color("#ff6a7a"))
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	var s := Ui.label(subtitle, "", 21)
+	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(s)
+	_banner.add_child(v)
+	_banner.visible = true
+	_banner.reset_size()
+	var vs: Vector2 = get_viewport_rect().size
+	_banner.position = Vector2(round((vs.x - _banner.get_combined_minimum_size().x) / 2.0), vs.y * 0.22)
+	_banner.modulate.a = 0.0
+	var tw := _banner.create_tween()
+	tw.tween_property(_banner, "modulate:a", 1.0, 0.2)
+	tw.tween_interval(duration)
+	tw.tween_property(_banner, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(func() -> void: _banner.visible = false)
+
+
+## Указать направление на точку мира на несколько секунд (у края экрана, со стрелкой).
+func show_direction(world_pos: Vector2, text: String, duration: float = 6.0) -> void:
+	_dir_target = world_pos
+	_dir_label.text = text
+	_dir_left = duration
+	_dir_panel.visible = true
+
+
+func _process(delta: float) -> void:
+	if _dir_left <= 0.0:
+		return
+	_dir_left -= delta
+	if _dir_left <= 0.0:
+		_dir_panel.visible = false
+		return
+	var vs: Vector2 = get_viewport_rect().size
+	var sp: Vector2 = get_viewport().get_canvas_transform() * _dir_target
+	var on_screen: bool = sp.x > 60 and sp.x < vs.x - 60
+	_dir_panel.reset_size()
+	var sz: Vector2 = _dir_panel.get_combined_minimum_size()
+	var x: float
+	if on_screen:
+		x = clampf(sp.x - sz.x / 2.0, 20.0, vs.x - sz.x - 20.0)
+		_dir_icon.rotation = PI / 2.0
+	elif sp.x <= 60:
+		x = 24.0
+		_dir_icon.rotation = PI
+	else:
+		x = vs.x - sz.x - 24.0
+		_dir_icon.rotation = 0.0
+	_dir_panel.position = Vector2(round(x), round(vs.y * 0.36))
+	_dir_panel.modulate.a = 0.6 + 0.4 * sin(_dir_left * 8.0)
 
 
 func set_controls_visible(on: bool) -> void:

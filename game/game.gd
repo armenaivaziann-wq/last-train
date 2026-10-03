@@ -26,6 +26,9 @@ var player: PlayerController
 var npcs: Dictionary = {}  # id → NPCController
 var arrest: ArrestSequence
 var highlight: TargetHighlight
+## Места преступлений: индекс убийства → CrimeScene.
+var crime_scenes: Dictionary = {}
+const DISCOVER_DISTANCE: float = 72.0
 var _autosave_timer: float = AUTOSAVE_INTERVAL
 var _bark_timer: float = 2.0
 var _marker_timer: float = 0.0
@@ -39,10 +42,17 @@ func _ready() -> void:
 	train.modulate_node = canvas_modulate
 	train.build(layout, str(case_data.get("ground", "forest")), entities, glow_layer)
 	_spawn_luggage()
-	investigation.setup(case_id, layout)
+	var resume: bool = SaveManager.pending_resume and SaveManager.has_case_progress()
+	var seed_value: int = -1
+	if resume:
+		seed_value = int(SaveManager.profile["case_progress"].get("murders", {}).get("seed", -1))
+	investigation.setup(case_id, layout, seed_value)
+	# Дальше — копия данных дела с подставленными сценариями убийств.
+	case_data = investigation.data
 	_spawn_npcs()
 	_spawn_player()
 	camera_system.setup(layout, investigation, npcs, player)
+	camera_system.crime_scenes = crime_scenes
 	camera.target = player
 	camera.left_limit = -40.0
 	camera.right_limit = layout.width + 40.0
@@ -54,7 +64,7 @@ func _ready() -> void:
 	glow_layer.add_child(highlight)
 	_connect_signals()
 	_apply_npcs(investigation.clock)
-	if SaveManager.pending_resume and SaveManager.has_case_progress():
+	if resume:
 		_restore(SaveManager.profile["case_progress"])
 		Events.notify("Расследование продолжено", "journal")
 	else:
@@ -72,6 +82,7 @@ func _connect_signals() -> void:
 	investigation.case_event.connect(_on_case_event)
 	investigation.escalated.connect(_on_escalated)
 	investigation.finished.connect(_on_finished)
+	investigation.murder_stage.connect(_on_murder_stage)
 	player.target_changed.connect(_on_target_changed)
 	hud.joystick.vector_changed.connect(func(v: Vector2) -> void: player.touch_vector = v)
 	ui.stack_changed.connect(_on_ui_stack)
@@ -118,6 +129,8 @@ func _spawn_luggage() -> void:
 
 func _apply_npcs(t: float) -> void:
 	for id: String in npcs:
+		if npcs[id].dead:
+			continue
 		npcs[id].apply(investigation.timeline.state_at(id, t))
 
 
@@ -131,6 +144,7 @@ func _process(delta: float) -> void:
 		_marker_timer = 0.5
 		_update_markers()
 		update_goal()
+	_check_discovery()
 	_autosave_timer -= delta
 	if _autosave_timer <= 0.0:
 		_autosave_timer = AUTOSAVE_INTERVAL
@@ -310,7 +324,9 @@ func update_goal() -> void:
 		if investigation.suspects.flag(id, "met"):
 			met = true
 	var goal: String
-	if not met:
+	if not investigation.murders.undiscovered().is_empty():
+		goal = "Цель: осмотрите место преступления"
+	elif not met:
 		goal = "Цель: поговорите с проводницей"
 	elif facts < 8:
 		goal = "Цель: найдите улики (%d/8)" % facts
@@ -394,6 +410,61 @@ func _update_markers() -> void:
 		hud.overlay.set_marker(npcs[id], show)
 
 
+# --- события-убийства в туннеле -----------------------------------------------------------
+func _on_murder_stage(m: Dictionary, stage: String) -> void:
+	match stage:
+		"tunnel_in":
+			train.set_tunnel(true)
+			AudioManager.set_tunnel_ambience(true)
+			AudioManager.play_sfx("tunnel")
+			Events.notify("Поезд въезжает в туннель.", "train")
+		"flicker":
+			train.flicker(1.6)
+			AudioManager.play_sfx("lights_flicker")
+		"kill":
+			train.blackout(0.7)
+			_kill(m, false)
+		"tunnel_out":
+			train.set_tunnel(false)
+			AudioManager.set_tunnel_ambience(false)
+		"discovered":
+			AudioManager.play_sfx("discovery_stinger")
+			hud.show_banner("ПРОИЗОШЛО УБИЙСТВО", "Осмотрите место преступления: тело, улики, свидетели", 4.0)
+			AudioManager.vibrate(80)
+			update_goal()
+
+
+## Жертва погибает, на её месте остаётся тело. silent — восстановление из сохранения.
+func _kill(m: Dictionary, silent: bool) -> void:
+	var victim: NPCController = npcs.get(m["victim"])
+	if victim:
+		victim.set_dead(true)
+	if not crime_scenes.has(int(m["index"])):
+		var scene := CrimeScene.new()
+		glow_layer.add_child(scene)
+		scene.build(m, layout)
+		crime_scenes[int(m["index"])] = scene
+	if silent:
+		return
+	AudioManager.play_sfx("female_scream", 2.0)
+	get_tree().create_timer(0.7).timeout.connect(func() -> void: AudioManager.play_sfx("passenger_panic", -2.0))
+	var pos: Vector2 = m["scene_pos"]
+	var same: bool = layout.carriage_at(pos.x) == layout.carriage_at(player.global_position.x)
+	Events.notify("Крик в этом вагоне!" if same else "Крик из соседнего вагона!", "siren")
+	hud.show_direction(pos, "Крик!", 7.0)
+	for id: String in npcs:
+		var n: NPCController = npcs[id]
+		if not n.dead and n.global_position.distance_to(pos) < 520.0:
+			n.react(pos, 4.0 + randf())
+	update_goal()
+
+
+func _check_discovery() -> void:
+	for m: Dictionary in investigation.murders.undiscovered():
+		if player.global_position.distance_to(m["scene_pos"]) < DISCOVER_DISTANCE and not camera_system.playback:
+			investigation.discover_murder(m)
+
+
 # --- обвинение и итог ---------------------------------------------------------------------
 ## Вызывается из журнала («Итог дела» → «Задержать»).
 func accuse(suspect: String, clue_ids: Array, monster_guess: String) -> void:
@@ -433,6 +504,13 @@ func autosave_clear() -> void:
 
 func _restore(s: Dictionary) -> void:
 	investigation.restore(s)
+	for m: Dictionary in investigation.murders.killed():
+		_kill(m, true)
+	for m: Dictionary in investigation.murders.murders:
+		var md: MurderDirector = investigation.murders
+		if md.stage_done(m, "tunnel_in") and not md.stage_done(m, "tunnel_out"):
+			train.set_tunnel(true)
+			AudioManager.set_tunnel_ambience(true)
 	var p: Array = s.get("player", [])
 	if p.size() == 2:
 		player.global_position = Vector2(float(p[0]), float(p[1]))

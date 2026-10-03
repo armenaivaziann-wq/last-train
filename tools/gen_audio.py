@@ -337,7 +337,67 @@ def musics():
         beats_per_bar=3, lead="bell", pad_vol=0.05)
 
 
+def murder_sfx():
+    """Звуки события в туннеле: гул туннеля (петля), мерцание ламп, крик, суматоха, тревожный аккорд."""
+    # гул туннеля: низкий рокот + усиленный перестук (петля 4 с)
+    sec = 4.0
+    b = buf(sec)
+    y = 0.0
+    for i in range(len(b)):
+        y += (rnd.uniform(-1, 1) - y) * 0.05
+        b[i] = y * 1.6 + 0.35 * math.sin(TAU * 38 * i / RATE)
+    for t in (0.0, 0.14, 1.0, 1.14, 2.0, 2.14, 3.0, 3.14):
+        add_noise(b, t, 0.14, 1.3, 0.4, 22, wrap=True)
+    save("tunnel_ambience", lowpass(b, 0.25), 0.7)
+
+    # мерцание ламп: электрический треск и щелчки
+    b = buf(1.5)
+    for k in range(9):
+        t = k * 0.16 + rnd.uniform(0, 0.05)
+        add_noise(b, t, 0.05, 0.8, 0.9, 80)
+        add_tone(b, t, 0.08, 120, 0.3, "square", a=0.002, d=0.03, s=0.4, r=0.03)
+    save("lights_flicker", b, 0.45)
+
+    # испуганный женский крик: высокий тон с подъёмом, вибрато, формантами и дыханием
+    dur = 1.25
+    n = int(dur * RATE)
+    b = [0.0] * n
+    ph = 0.0
+    for i in range(n):
+        t = i / RATE
+        k = t / dur
+        f0 = 760 + 520 * math.sin(min(1.0, k * 2.2) * math.pi / 2) - 260 * max(0.0, k - 0.55)
+        f0 *= 1 + 0.035 * math.sin(TAU * 7.5 * t) + 0.01 * rnd.uniform(-1, 1)
+        ph += TAU * f0 / RATE
+        v = math.sin(ph) + 0.55 * math.sin(2 * ph) + 0.35 * math.sin(3 * ph) + 0.18 * math.sin(4 * ph + 0.3)
+        v *= 1 + 0.12 * math.sin(TAU * 31 * t)
+        env = min(1.0, t / 0.05) * (1.0 - k) ** 0.6
+        b[i] = v * env * 0.5 + rnd.uniform(-1, 1) * 0.08 * env
+    b = lowpass(b, 0.55)
+    save("female_scream", reverb(b, mix_=0.25), 0.75)
+
+    # суматоха пассажиров: несколько «голосов»-бормотаний и шаги
+    b = buf(2.4)
+    for v in range(6):
+        start = rnd.uniform(0, 1.4)
+        base = rnd.uniform(140, 320)
+        for s in range(rnd.randint(3, 6)):
+            add_tone(b, start + s * 0.13, 0.12, base * rnd.uniform(0.9, 1.25), 0.18, "tri", a=0.01, d=0.04, s=0.6, r=0.04, vib=0.05)
+    for s in range(8):
+        add_noise(b, rnd.uniform(0, 2.2), 0.07, 0.4, 0.15, 40)
+    save("passenger_panic", lowpass(reverb(b, mix_=0.3), 0.4), 0.5)
+
+    # тревожный аккорд при обнаружении места преступления
+    b = buf(2.2)
+    for n_ in (38, 45, 50, 53, 56):
+        add_tone(b, 0, 2.0, note_freq(n_), 0.16, "tri", a=0.01, d=0.4, s=0.5, r=0.9, vib=0.003)
+    add_tone(b, 0, 1.4, note_freq(86), 0.12, "bell", a=0.002, d=0.3, s=0.2, r=0.6)
+    add_noise(b, 0, 0.3, 0.6, 0.1, 10)
+    save("discovery_stinger", reverb(b, mix_=0.4), 0.65)
+
+
 def main():
+    murder_sfx()
     sfx()
     train_loop()
     rain_loop()

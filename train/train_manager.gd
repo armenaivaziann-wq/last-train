@@ -33,6 +33,8 @@ var _rng := RandomNumberGenerator.new()
 var _ground_kind: String = "forest"
 var _flicker_t: float = 0.0
 var modulate_node: CanvasModulate
+var _flicker_left: float = 0.0
+var _blackout_left: float = 0.0
 
 
 func build(train_layout: TrainLayout, ground: String, entities_node: Node2D, glow_node: Node2D) -> void:
@@ -143,6 +145,16 @@ func set_station(on: bool) -> void:
 	_station_target = 1.0 if on else 0.0
 
 
+## Свет мигает (1–2 секунды), поезд продолжает ехать.
+func flicker(duration: float = 1.5) -> void:
+	_flicker_left = duration
+
+
+## Короткая темнота (свет погас).
+func blackout(duration: float = 0.7) -> void:
+	_blackout_left = duration
+
+
 func in_tunnel() -> bool:
 	return _tunnel > 0.5
 
@@ -186,4 +198,12 @@ func _update_lights(delta: float) -> void:
 			var trees: float = 0.85 + 0.15 * sin(_scroll * 0.05 + i * 2.3)
 			w.modulate.a = 0.45 * trees * (1.0 - _tunnel) * (1.0 - 0.4 * _rain) + 0.25 * _station
 	if modulate_node:
-		modulate_node.color = Color(1.0, 0.97, 1.0).lerp(Color(0.4, 0.36, 0.58), _tunnel)
+		var col: Color = Color(1.0, 0.97, 1.0).lerp(Color(0.4, 0.36, 0.58), _tunnel)
+		if _flicker_left > 0.0:
+			_flicker_left -= delta
+			if fmod(_flicker_t * 9.0, 1.0) < 0.35:
+				col = col.darkened(0.55)
+		if _blackout_left > 0.0:
+			_blackout_left -= delta
+			col = Color(0.16, 0.14, 0.26)
+		modulate_node.color = col

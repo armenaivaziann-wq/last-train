@@ -57,6 +57,9 @@ func build(args: Dictionary) -> void:
 	check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main.add_child(check)
 	col.add_child(main)
+	# Второстепенный пассажир (не подозреваемый): только разговор.
+	var is_suspect: bool = _id in game.investigation.suspects.suspects
+	check.visible = is_suspect
 
 	_check_box = Ui.hbox(12)
 	_check_box.visible = false
@@ -73,6 +76,7 @@ func build(args: Dictionary) -> void:
 
 	var more := Ui.button("Ещё…", "", "GhostButton", func() -> void: _more_box.visible = not _more_box.visible, 44)
 	more.add_theme_font_size_override("font_size", 18)
+	more.visible = is_suspect
 	col.add_child(more)
 	_more_box = Ui.vbox(10)
 	_more_box.visible = false

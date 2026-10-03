@@ -69,6 +69,13 @@ func _all_clue_refs(c: Dictionary) -> Array:
 		refs.append_array(d["a"])
 		refs.append_array(d["b"])
 	refs.append_array(c["key_clues"])
+	for sid: String in c.get("murders", {}).get("scenarios", {}):
+		var sc: Dictionary = c["murders"]["scenarios"][sid]
+		refs.append(sc["scene_clue"])
+		refs.append(sc["camera_clue"])
+		refs.append(sc["body_object"]["on_open"])
+		for it: Dictionary in sc.get("items", []):
+			refs.append(it["on_open"])
 	return refs
 
 
@@ -115,6 +122,15 @@ func test_every_clue_is_obtainable() -> void:
 			sources.append(cc["id"])
 		for d: Dictionary in c["deductions"]:
 			sources.append(d["result"])
+		for sid: String in c.get("murders", {}).get("scenarios", {}):
+			var sc: Dictionary = c["murders"]["scenarios"][sid]
+			sources.append(sc["scene_clue"])
+			sources.append(sc.get("camera_clue", ""))
+			sources.append(sc["body_object"].get("on_open", ""))
+			for h: Dictionary in sc["body_object"].get("hotspots", []):
+				sources.append(h["clue"])
+			for it: Dictionary in sc.get("items", []):
+				sources.append(it["on_open"])
 		for cid: String in c["clues"]:
 			check(cid in sources, "%s: у улики %s есть источник" % [id, cid])
 

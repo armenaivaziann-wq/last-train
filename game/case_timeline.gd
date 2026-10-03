@@ -51,6 +51,36 @@ func override_from(npc: String, t: float, spot: String, act: String) -> void:
 	_rebuild(npc)
 
 
+## Вылазка: в момент depart NPC идёт в spot, а в момент back возвращается туда, где был бы
+## по исходному расписанию. Записи расписания внутри вылазки заменяются.
+func add_excursion(npc: String, depart: float, spot: String, act: String, back: float) -> void:
+	if not _entries.has(npc) or not layout.spots.has(spot) or back <= depart:
+		return
+	var ret: Dictionary = state_at(npc, back)
+	var kept: Array = []
+	for e: Array in _entries[npc]:
+		if e[0] < depart or e[0] > back:
+			kept.append(e)
+	kept.append([depart, spot, act])
+	kept.append([back, str(ret["spot"]), str(ret["act"]) if ret["act"] != "walk" else "idle"])
+	kept.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	_entries[npc] = kept
+	_rebuild(npc)
+
+
+## Сколько игровых минут NPC идёт из точки, где он находится в момент t, до точки spot.
+func travel_minutes(npc: String, t: float, spot: String) -> float:
+	var s: Dictionary = state_at(npc, t)
+	if s.is_empty() or not layout.spots.has(spot):
+		return 0.0
+	var from_spot: Dictionary = {} if s["moving"] else layout.spots[s["spot"]]
+	var path: PackedVector2Array = _route(s["pos"], from_spot, layout.spots[spot])
+	var length: float = 0.0
+	for i in range(1, path.size()):
+		length += path[i - 1].distance_to(path[i])
+	return length / px_per_min
+
+
 func _rebuild(npc: String) -> void:
 	var segs: Array = []
 	for e: Array in _entries[npc]:

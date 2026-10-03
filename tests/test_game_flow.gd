@@ -10,7 +10,7 @@ func _inv() -> InvestigationManager:
 func test_case_starts() -> void:
 	await start_case()
 	check(game.player != null, "детектив создан")
-	check_eq(game.npcs.size(), 8, "8 пассажиров")
+	check_eq(game.npcs.size(), 11, "8 подозреваемых и 3 второстепенных пассажира")
 	check(game.train.carriages.size() == 3, "три вагона (пассажирский, тамбур, ресторан)")
 	check(not game.ui.has_modal(), "брифинг закрыт")
 	var t0: float = _inv().clock

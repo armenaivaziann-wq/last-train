@@ -11,6 +11,8 @@ var npcs: Dictionary = {}          # id → NPCController
 var player: PlayerController
 var playback: bool = false
 var playback_time: float = 0.0
+## Места преступлений (индекс → CrimeScene): до момента убийства на записях их нет.
+var crime_scenes: Dictionary = {}
 var _markers_cache: Dictionary = {}
 
 
@@ -35,6 +37,11 @@ func end_playback() -> void:
 	playback = false
 	investigation.release("cameras")
 	player.visible = true
+	for scene: CrimeScene in crime_scenes.values():
+		scene.show_at(INF)
+	for id: String in npcs:
+		var npc: NPCController = npcs[id]
+		npc.visible = not npc.dead
 
 
 func set_time(t: float) -> void:
@@ -42,9 +49,15 @@ func set_time(t: float) -> void:
 	for id: String in npcs:
 		var npc: NPCController = npcs[id]
 		var was_detained: bool = npc.detained
+		var was_dead: bool = npc.dead
 		npc.detained = false
+		npc.dead = false
+		npc.visible = not investigation.murders.dead_at(id, playback_time)
 		npc.apply(investigation.timeline.state_at(id, playback_time))
 		npc.detained = was_detained
+		npc.dead = was_dead
+	for scene: CrimeScene in crime_scenes.values():
+		scene.show_at(playback_time)
 	var tr: Array = player.track_at(playback_time)
 	if tr.is_empty() or playback_time < investigation.start_time:
 		player.visible = false

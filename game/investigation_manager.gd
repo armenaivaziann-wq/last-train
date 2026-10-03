@@ -10,6 +10,8 @@ signal case_event(event: Dictionary)
 signal escalated(npc: String)
 signal accused(result: Dictionary)
 signal finished(result: Dictionary)
+## Стадия события-убийства (tunnel_in, flicker, kill, tunnel_out, discovered).
+signal murder_stage(murder: Dictionary, stage: String)
 
 const WRONG_TIME_PENALTY: float = 2.0
 const VERIFY_TIME_COST: float = 1.5
@@ -22,6 +24,7 @@ var timeline: CaseTimeline
 var evidence: EvidenceSystem
 var suspects: SuspectManager
 var dialogue: DialogueSystem
+var murders: MurderDirector
 
 var clock: float = 0.0
 var start_time: float = 0.0
@@ -39,9 +42,10 @@ var ended: bool = false
 var replay: bool = false
 
 
-func setup(id: String, train_layout: TrainLayout) -> void:
+func setup(id: String, train_layout: TrainLayout, murder_seed: int = -1) -> void:
 	case_id = id
-	data = Db.case_data(id)
+	# Копия: сценарии убийств дописывают в данные улики и объекты с конкретным временем.
+	data = Db.case_data(id).duplicate(true)
 	layout = train_layout
 	timeline = CaseTimeline.new(data, layout)
 	evidence = EvidenceSystem.new(data)
@@ -57,6 +61,8 @@ func setup(id: String, train_layout: TrainLayout) -> void:
 	if ProgressionManager.has_carriage("surveillance"):
 		verifications_left += 1
 	replay = ProgressionManager.case_solved_before(id)
+	murders = MurderDirector.new()
+	murders.plan(data, layout, timeline, start_time, arrival_time, murder_seed)
 
 
 # --- часы ---------------------------------------------------------------------------------
@@ -88,6 +94,8 @@ func advance(minutes: float) -> void:
 		return
 	clock = minf(clock + minutes, arrival_time)
 	_check_events()
+	for pair: Array in murders.due(clock):
+		murder_stage.emit(pair[0], pair[1])
 	clock_changed.emit(clock)
 	if clock >= arrival_time:
 		finish("timeout")
@@ -134,7 +142,18 @@ func _check_escalation() -> void:
 	if evidence.key_found_count() >= int(esc["key_clues"]):
 		escalated_at = clock
 		timeline.override_from(esc["npc"], clock, esc["spot"], esc["act"])
+		murders.reapply_after(esc["npc"], clock, timeline)
 		escalated.emit(esc["npc"])
+
+
+## Игрок дошёл до места преступления: место и время записываются в журнал.
+func discover_murder(m: Dictionary) -> void:
+	var i: int = int(m["index"])
+	if i in murders.discovered:
+		return
+	murders.discovered.append(i)
+	give(str(m["scenario"]["scene_clue"]))
+	murder_stage.emit(m, "discovered")
 
 
 func deduce(a: String, b: String) -> String:
@@ -281,7 +300,8 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 func snapshot() -> Dictionary:
 	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
 		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
-		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks}
+		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
+		"murders": murders.serialize()}
 
 
 func restore(s: Dictionary) -> void:
@@ -296,6 +316,8 @@ func restore(s: Dictionary) -> void:
 	for e in s.get("events_done", []):
 		events_done.append(int(e))
 	escalated_at = float(s.get("escalated_at", -1.0))
+	murders.restore(s.get("murders", {}))
 	if escalated_at >= 0.0:
 		var esc: Dictionary = data["escalation"]
 		timeline.override_from(esc["npc"], escalated_at, esc["spot"], esc["act"])
+		murders.reapply_after(esc["npc"], escalated_at, timeline)

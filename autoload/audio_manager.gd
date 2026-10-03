@@ -13,6 +13,7 @@ var _music_b: AudioStreamPlayer
 var _music_name: String = ""
 var _train: AudioStreamPlayer
 var _rain: AudioStreamPlayer
+var _tunnel: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -32,6 +33,7 @@ func _ready() -> void:
 	_music_b = _make_player(&"Music")
 	_train = _make_player(&"Ambient")
 	_rain = _make_player(&"Ambient")
+	_tunnel = _make_player(&"Ambient")
 	apply_volumes()
 
 
@@ -43,7 +45,8 @@ func _make_player(bus: StringName) -> AudioStreamPlayer:
 
 
 func _stream(name: String, loop: bool = false) -> AudioStream:
-	if not _streams.has(name):
+	var key: String = name + ("@loop" if loop else "")
+	if not _streams.has(key):
 		var path: String = AUDIO_DIR + name + ".wav"
 		var s: AudioStream = load(path) if ResourceLoader.exists(path) else null
 		if s is AudioStreamWAV and loop:
@@ -52,8 +55,8 @@ func _stream(name: String, loop: bool = false) -> AudioStream:
 			wav.loop_begin = 0
 			wav.loop_end = int(wav.get_length() * wav.mix_rate)
 			s = wav
-		_streams[name] = s
-	return _streams[name]
+		_streams[key] = s
+	return _streams[key]
 
 
 func apply_volumes() -> void:
@@ -117,6 +120,27 @@ func _loop(p: AudioStreamPlayer, name: String, on: bool, db: float) -> void:
 		p.play()
 	elif not on and p.playing:
 		p.stop()
+
+
+## Нарастающий грохот туннеля поверх стука колёс (плавное появление и затухание).
+func set_tunnel_ambience(on: bool) -> void:
+	if on:
+		if not _tunnel.playing:
+			var s: AudioStream = _stream("tunnel_ambience", true)
+			if s == null:
+				return
+			_tunnel.stream = s
+			_tunnel.volume_db = -30.0
+			_tunnel.play()
+		create_tween().tween_property(_tunnel, "volume_db", 0.0, 1.5)
+	elif _tunnel.playing:
+		var tw := create_tween()
+		tw.tween_property(_tunnel, "volume_db", -40.0, 1.5)
+		tw.tween_callback(_tunnel.stop)
+
+
+func has_sound(name: String) -> bool:
+	return _stream(name) != null
 
 
 func vibrate(ms: int = 40) -> void:
