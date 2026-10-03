@@ -70,7 +70,7 @@ func _show_page() -> void:
 		_tween.tween_property(_text, "visible_ratio", 1.0, 0.02 * _text.text.length())
 		AudioManager.play_sfx("talk", -8.0)
 	else:
-		_text.text = "Пассажиры не покинут поезд до станции. Монстр — тоже."
+		_text.text = "Никто не покинет поезд до станции. Тот, кто это сделал, — тоже."
 		_text.visible_ratio = 1.0
 		_goal_box.visible = true
 		_next.text = "Начать расследование"

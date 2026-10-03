@@ -389,16 +389,45 @@ func _murders() -> void:
 		d["clues"].erase(id)
 
 
+const BRIEF_OPENERS: Array[String] = [
+	"Инспектор, хорошо, что вы здесь. Мне нужна ваша помощь — и тишина.",
+	"Инспектор… прошу, говорите тише. Пассажиры ещё ничего не знают.",
+	"Слава богу, вы в поезде, инспектор. Столько лет на этой линии — а такого не припомню.",
+	"Инспектор, на пару слов. Не здесь — в коридоре нас могут услышать.",
+]
+const BRIEF_ODDITIES: Array[String] = [
+	"Двери были заперты, в коридоре никого не видели. И всё же кто-то там был.",
+	"Никто ничего не слышал. Или делает вид, что не слышал.",
+	"Свет мигнул всего на секунду. Когда он зажёгся, всё уже случилось.",
+	"Странно другое: у каждого пассажира есть объяснение. Слишком гладкое объяснение.",
+]
+const BRIEF_SUSPICIONS: Array[String] = [
+	"Тот, кто это сделал, всё ещё в поезде. Он сидит рядом с нами и улыбается.",
+	"Кто-то из пассажиров — не тот, за кого себя выдаёт. Я не знаю, кто.",
+	"Я смотрю на знакомые лица — и не могу доверять ни одному из них.",
+	"Он среди пассажиров. И, кажется, он знает, что вы здесь.",
+]
+
+
+static func _pick(generator: RandomNumberGenerator, lines: Array[String]) -> String:
+	return lines[generator.randi_range(0, lines.size() - 1)]
+
+
 func _brief_and_truth() -> void:
 	var cs: Dictionary = CRIME_SPOTS[crime_spot]
 	var speaker: String = "john" if culprit == "agata" else "agata"
 	var tt: String = Db.format_time(crime_t)
+	# Вводная в духе детектива: что случилось и что настораживает — без имени злодея и его
+	# способностей (их игрок узнаёт сам, по уликам). Фразы — из наборов, по зерну дела.
+	var flavor := RandomNumberGenerator.new()
+	flavor.seed = hash("%d|brief" % rng.seed)
 	d["brief"] = {"speaker": speaker, "lines": [
-		"Инспектор, хорошо, что вы здесь!",
+		_pick(flavor, BRIEF_OPENERS),
 		"Около %s %s." % [tt, cs["incident"]],
-		"Говорят, в поезде %s." % str(villain.get("short", "прячется монстр")).to_lower().trim_suffix("."),
-		"До станции %s двадцать минут. Будьте осторожны в туннелях." % d["station_to"]],
-		"goal": "Найдите злодея за 20 минут: записи камер, документы, багаж, показания. " + str(villain.get("counter", "")),
+		_pick(flavor, BRIEF_ODDITIES),
+		_pick(flavor, BRIEF_SUSPICIONS),
+		"До станции %s двадцать минут. Там преступник сойдёт — и мы его больше не увидим." % d["station_to"]],
+		"goal": "Найдите виновного за 20 минут: записи камер, документы, багаж, показания. Никому не верьте на слово.",
 		"gives": ["g_incident"] + (["g_archive"] if d["clues"].has("g_archive") else [])}
 	d["truth"] = [
 		"%s выдавал себя за пассажира: %s." % [villain.get("name", "Злодей"), Db.char_name(culprit)],
