@@ -60,6 +60,8 @@ func build(args: Dictionary) -> void:
 	_rebuild_details()
 	if _data.has("on_open"):
 		inv.give(str(_data["on_open"]))
+	for id in _data.get("gives", []):
+		inv.give(str(id))
 	AudioManager.play_sfx("page", -4.0)
 
 

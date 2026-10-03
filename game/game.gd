@@ -53,6 +53,7 @@ func _ready() -> void:
 	train.modulate_node = canvas_modulate
 	train.build(layout, str(case_data.get("ground", "forest")), entities, glow_layer)
 	_spawn_luggage()
+	_spawn_extra_items()
 	investigation.setup(case_id, layout, seed_value, case_data, level_id)
 	# Дальше — копия данных дела с подставленными сценариями убийств.
 	case_data = investigation.data
@@ -133,6 +134,23 @@ func _spawn_luggage() -> void:
 		it.radius = 24.0
 		it.position = Vector2(0, -tex.get_height() / 2.0)
 		s.add_child(it)
+
+
+## Предметы-улики из данных дела (следы на полу, жетоны, чашки) — постоянные объекты мира.
+func _spawn_extra_items() -> void:
+	for it: Dictionary in case_data.get("extra_items", []):
+		var pos := Vector2(layout.offsets[it["carriage"]] + float(it["pos"][0]), float(it["pos"][1]))
+		var s := Sprite2D.new()
+		s.texture = Db.texture("crime/%s.png" % it["sprite"])
+		s.position = pos
+		glow_layer.add_child(s)
+		var node := Interactable.new()
+		node.interact_id = str(it["id"])
+		node.label = str(it.get("label", "Осмотреть"))
+		node.kind = Interactable.Kind.OBJECT
+		node.radius = 24.0
+		node.position = pos
+		glow_layer.add_child(node)
 
 
 func _apply_npcs(t: float) -> void:

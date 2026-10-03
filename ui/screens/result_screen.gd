@@ -48,7 +48,8 @@ func build(args: Dictionary) -> void:
 
 	var row := Ui.hbox(26)
 	var left := Ui.vbox(8)
-	left.add_child(Ui.portrait(Db.villain_portrait(villain_id) if solved else Db.portrait(str(data["culprit"])), 190,
+	# При поражении виновника не раскрываем — только знак вопроса.
+	left.add_child(Ui.portrait(Db.villain_portrait(villain_id) if solved else Db.icon("question"), 190,
 		Color(str(villain.get("color", "#4fd0ff"))).lightened(0.5), Color("#1a1440")))
 	var vn := Ui.label(str(villain.get("name", "")) if solved else "Кто-то из пассажиров...", "SubHeaderLabel", 22, true)
 	vn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -64,7 +65,7 @@ func build(args: Dictionary) -> void:
 	var secs: int = int(round(float(_result.get("elapsed", 0.0)) * 60.0))
 	for item: Array in [
 			["hourglass", "Время расследования", "%d:%02d из %d:00" % [secs / 60, secs % 60, int(Db.deadline_minutes())]],
-			["magnifier", "Ключевые улики", "%d из %d" % [int(_result.get("key_found", 0)), int(_result.get("key_total", 0))]],
+			["magnifier", "Ключевые улики", "найдено: %d" % int(_result.get("key_found", 0))],
 			["guard", "Ошибочные обвинения", str(int(_result.get("mistakes", 0)))]]:
 		var h := Ui.hbox(8)
 		h.add_child(Ui.icon(item[0], 30))
