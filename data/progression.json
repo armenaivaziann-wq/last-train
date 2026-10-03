@@ -1,0 +1,83 @@
+{
+ "carriages": [
+  {"id": "passenger", "name": "Пассажирский вагон", "icon": "passenger", "unlocked": true, "playable": true,
+   "description": "Купе пассажиров, служебное купе проводницы и первые загадки.", "mechanic": "Документы, багаж, допросы."},
+  {"id": "restaurant", "name": "Вагон-ресторан", "icon": "talk", "unlocked": true, "playable": true,
+   "description": "Разговоры, свидетельства и чеки кофейного автомата.", "mechanic": "Свидетели и социальные события."},
+  {"id": "baggage", "name": "Багажный вагон", "icon": "suitcase", "cost": 600,
+   "description": "Склад чемоданов и посылок. Открывает сканер багажа.", "mechanic": "Сканер находит потайные отделения в багаже."},
+  {"id": "surveillance", "name": "Вагон наблюдения", "icon": "cctv", "cost": 900,
+   "description": "Пульт всех камер поезда.", "mechanic": "+1 запрос дополнительной проверки в каждом деле."},
+  {"id": "lab", "name": "Лаборатория", "icon": "lab", "cost": 1500, "reputation": 20,
+   "description": "Анализ образцов и аномалий.", "mechanic": "Анализ физических улик: лаборатория скажет, человеческого ли они происхождения."},
+  {"id": "service", "name": "Служебный вагон", "icon": "gear", "cost": 1000,
+   "description": "Мастерская механиков.", "mechanic": "Улучшения оборудования дешевле на 20%."},
+  {"id": "sleeper", "name": "Спальный вагон", "icon": "hourglass", "cost": 2000, "reputation": 40,
+   "description": "Ночные события, исчезновения и изменившиеся маршруты.", "mechanic": "Новые ночные дела (скоро)."},
+  {"id": "secret", "name": "Секретный вагон", "icon": "lock", "cost": 0, "reputation": 80,
+   "description": "О нём не говорят даже проводники.", "mechanic": "Редкие сюжетные расследования (скоро)."}
+ ],
+ "equipment": [
+  {"id": "magnifier", "name": "Лупа", "icon": "magnifier", "max": 3, "costs": [0, 250, 600],
+   "levels": ["Раскрывает мелкие детали в документах и багаже.", "Зоркий глаз: радиус подсветки деталей в вагоне ×1.6.", "Хрустальная линза: детали в документах подсвечиваются сразу."]},
+  {"id": "notebook", "name": "Блокнот", "icon": "journal", "max": 2, "costs": [0, 300],
+   "levels": ["Хранит улики, показания и хронологию.", "Подсказка сопоставления: блокнот отмечает улики одного времени."]},
+  {"id": "cameras", "name": "Камеры", "icon": "cctv", "max": 3, "costs": [0, 350, 800],
+   "levels": ["4 камеры, воспроизведение ×1 и ×10.", "Перемотка ×40 и метки движения на шкале времени.", "Ночной режим: на записях видны тени (для дел с Теневиком)."]},
+  {"id": "flashlight", "name": "Фонарик", "icon": "flashlight", "max": 2, "costs": [150, 400],
+   "levels": ["Освещает вагон в туннеле — можно продолжать осмотр в темноте.", "Мощный луч: подсветка деталей работает и в туннеле."]},
+  {"id": "recorder", "name": "Диктофон", "icon": "recorder", "max": 1, "costs": [350],
+   "levels": ["Сохраняет точные цитаты показаний в журнале."]},
+  {"id": "badge", "name": "Служебный жетон", "icon": "badge", "max": 1, "costs": [500],
+   "levels": ["+1 право на ошибочное обвинение без провала дела."]}
+ ],
+ "routes": [
+  {"id": "tumannaya_dolina", "name": "Туманная → Долина", "case": "case_01", "reputation": 0, "pos": [180, 150],
+   "description": "Ночной перегон через туманный лес."},
+  {"id": "dolina_pereval", "name": "Долина → Снежный перевал", "case": "", "reputation": 15, "pos": [330, 205],
+   "description": "Метель, туннели и пассажир с ледяным взглядом. Скоро."},
+  {"id": "pereval_ogni", "name": "Снежный перевал → Огни", "case": "", "reputation": 35, "pos": [520, 125],
+   "description": "Город огней, где зеркала смотрят в ответ. Скоро."},
+  {"id": "ogni_ozero", "name": "Огни → Тихое озеро", "case": "", "reputation": 60, "pos": [150, 290],
+   "description": "Озеро, в котором отражается другой поезд. Скоро."}
+ ],
+ "cosmetics": [
+  {"id": "detective", "name": "Классический серый пиджак", "kind": "outfit", "cost": 0, "owned": true},
+  {"id": "detective_coat", "name": "Тёмный плащ для снежного маршрута", "kind": "outfit", "cost": 60},
+  {"id": "detective_vest", "name": "Жилет исследователя", "kind": "outfit", "cost": 80},
+  {"id": "detective_festive", "name": "Праздничный костюм", "kind": "outfit", "cost": 120},
+  {"id": "lens_silver", "name": "Серебряная оправа лупы", "kind": "lens", "cost": 0, "owned": true, "color": "#c9d2de"},
+  {"id": "lens_gold", "name": "Золотая оправа лупы", "kind": "lens", "cost": 40, "color": "#f2c14e"},
+  {"id": "lens_crystal", "name": "Кристальная оправа лупы", "kind": "lens", "cost": 90, "color": "#b88aff"}
+ ],
+ "daily_pool": [
+  {"id": "d_clues", "text": "Найди 6 улик", "stat": "clues", "goal": 6, "coins": 80},
+  {"id": "d_docs", "text": "Проверь документы у 3 пассажиров", "stat": "docs", "goal": 3, "coins": 60},
+  {"id": "d_luggage", "text": "Осмотри 3 багажа", "stat": "luggage", "goal": 3, "coins": 60},
+  {"id": "d_cameras", "text": "Отметь 2 события на записях камер", "stat": "camera_marks", "goal": 2, "coins": 70},
+  {"id": "d_talks", "text": "Поговори с 5 пассажирами", "stat": "talks", "goal": 5, "coins": 50},
+  {"id": "d_deduce", "text": "Сделай 2 вывода в журнале", "stat": "deductions", "goal": 2, "coins": 90, "crystals": 2},
+  {"id": "d_solve", "text": "Раскрой дело", "stat": "solved", "goal": 1, "coins": 120, "crystals": 3},
+  {"id": "d_clean", "text": "Раскрой дело без ошибок", "stat": "solved_clean", "goal": 1, "coins": 150, "crystals": 5}
+ ],
+ "weekly": [
+  {"id": "w_solve3", "text": "Раскрой 3 дела за неделю", "stat": "solved", "goal": 3, "coins": 400, "crystals": 15},
+  {"id": "w_clues30", "text": "Найди 30 улик за неделю", "stat": "clues", "goal": 30, "coins": 250, "crystals": 8}
+ ],
+ "achievements": [
+  {"id": "a_first", "name": "Первое дело", "text": "Раскрой первое дело.", "stat": "solved", "goal": 1, "crystals": 10},
+  {"id": "a_doppel", "name": "Охотник на двойников", "text": "Задержи двойника.", "stat": "caught_doppelganger", "goal": 1, "crystals": 10},
+  {"id": "a_clean", "name": "Безупречный детектив", "text": "Раскрой дело без единой ошибки.", "stat": "solved_clean", "goal": 1, "crystals": 15},
+  {"id": "a_people", "name": "Душа компании", "text": "Познакомься с 8 пассажирами.", "stat": "met", "goal": 8, "crystals": 10},
+  {"id": "a_camera", "name": "Кинооператор", "text": "Отметь 10 событий на записях камер.", "stat": "camera_marks", "goal": 10, "crystals": 10},
+  {"id": "a_logic", "name": "Логик", "text": "Сделай 10 выводов в журнале.", "stat": "deductions", "goal": 10, "crystals": 10},
+  {"id": "a_collector", "name": "Коллекционер улик", "text": "Найди 50 улик.", "stat": "clues", "goal": 50, "crystals": 20}
+ ],
+ "events": [
+  {"id": "autumn_fog", "name": "Осенний туман", "from": "2026-10-01", "to": "2026-10-31", "icon": "event",
+   "description": "В октябре туман гуще, а монстры смелее. Раскрывай дела и получи тёмный плащ.",
+   "task": {"text": "Раскрой 3 дела в октябре", "stat": "solved", "goal": 3}, "reward_cosmetic": "detective_coat", "crystals": 20},
+  {"id": "winter_lights", "name": "Зимние огни", "from": "2026-12-15", "to": "2027-01-10", "icon": "star",
+   "description": "Праздничный рейс со снегом и гирляндами.", "task": {"text": "Найди 40 улик", "stat": "clues", "goal": 40}, "reward_cosmetic": "detective_festive", "crystals": 30}
+ ]
+}

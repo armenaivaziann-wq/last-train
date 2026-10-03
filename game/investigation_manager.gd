@@ -1,0 +1,301 @@
+class_name InvestigationManager
+extends Node
+## Ход дела: игровые часы до станции, события между станциями, улики, выводы, обвинение,
+## дополнительная проверка, итог и награды. Виновник и доказательства заданы данными дела
+## заранее — решение никогда не выбирается случайно.
+
+signal clock_changed(minute: float)
+signal clue_added(clue_id: String)
+signal case_event(event: Dictionary)
+signal escalated(npc: String)
+signal accused(result: Dictionary)
+signal finished(result: Dictionary)
+
+const WRONG_TIME_PENALTY: float = 2.0
+const VERIFY_TIME_COST: float = 1.5
+const WRONG_REPUTATION: int = 5
+
+var case_id: String
+var data: Dictionary
+var layout: TrainLayout
+var timeline: CaseTimeline
+var evidence: EvidenceSystem
+var suspects: SuspectManager
+var dialogue: DialogueSystem
+
+var clock: float = 0.0
+var start_time: float = 0.0
+var arrival_time: float = 0.0
+var history_start: float = 0.0
+var seconds_per_minute: float = 30.0
+## Сколько интерфейсов просят остановить часы (брифинг, журнал, диалог...).
+var _holds: Dictionary = {}
+var mistakes: int = 0
+var verifications_left: int = 0
+var escalated_at: float = -1.0
+var events_done: Array = []
+var camera_marks: int = 0
+var ended: bool = false
+var replay: bool = false
+
+
+func setup(id: String, train_layout: TrainLayout) -> void:
+	case_id = id
+	data = Db.case_data(id)
+	layout = train_layout
+	timeline = CaseTimeline.new(data, layout)
+	evidence = EvidenceSystem.new(data)
+	evidence.clue_added.connect(_on_clue_added)
+	suspects = SuspectManager.new(PackedStringArray(data["suspects"]))
+	dialogue = DialogueSystem.new(data["dialogues"])
+	seconds_per_minute = float(data.get("seconds_per_minute", 30))
+	history_start = Db.parse_time(data["history_start"])
+	start_time = Db.parse_time(data["start"])
+	arrival_time = Db.parse_time(data["arrival"])
+	clock = start_time
+	verifications_left = int(data.get("verifications", 2))
+	if ProgressionManager.has_carriage("surveillance"):
+		verifications_left += 1
+	replay = ProgressionManager.case_solved_before(id)
+
+
+# --- часы ---------------------------------------------------------------------------------
+func hold(reason: String) -> void:
+	_holds[reason] = true
+
+
+func release(reason: String) -> void:
+	_holds.erase(reason)
+
+
+func is_running() -> bool:
+	return _holds.is_empty() and not ended
+
+
+func minutes_left() -> float:
+	return maxf(0.0, arrival_time - clock)
+
+
+func _process(delta: float) -> void:
+	if not is_running():
+		return
+	advance(delta / seconds_per_minute)
+
+
+## Продвинуть часы дела на `minutes` (используется и тестами).
+func advance(minutes: float) -> void:
+	if ended:
+		return
+	clock = minf(clock + minutes, arrival_time)
+	_check_events()
+	clock_changed.emit(clock)
+	if clock >= arrival_time:
+		finish("timeout")
+
+
+func _check_events() -> void:
+	for i in data.get("events", []).size():
+		var ev: Dictionary = data["events"][i]
+		if i in events_done:
+			continue
+		if clock >= Db.parse_time(ev["at"]):
+			events_done.append(i)
+			case_event.emit(ev)
+
+
+# --- улики --------------------------------------------------------------------------------
+func give(clue_id: String) -> bool:
+	return evidence.add(clue_id, clock)
+
+
+func give_all(ids: Array) -> Array[String]:
+	var added: Array[String] = []
+	for id in ids:
+		if give(str(id)):
+			added.append(str(id))
+	return added
+
+
+func _on_clue_added(id: String) -> void:
+	var c: Dictionary = evidence.clue(id)
+	if c.get("type") == "contradiction":
+		Events.add_stat("deductions")
+	else:
+		Events.add_stat("clues")
+	Events.clue_found.emit(id)
+	clue_added.emit(id)
+	_check_escalation()
+
+
+func _check_escalation() -> void:
+	var esc: Dictionary = data.get("escalation", {})
+	if esc.is_empty() or escalated_at >= 0.0:
+		return
+	if evidence.key_found_count() >= int(esc["key_clues"]):
+		escalated_at = clock
+		timeline.override_from(esc["npc"], clock, esc["spot"], esc["act"])
+		escalated.emit(esc["npc"])
+
+
+func deduce(a: String, b: String) -> String:
+	return evidence.deduce(a, b, clock)
+
+
+## Метка на записи камеры: какие улики видны на камере cam в момент t (±допуск).
+func camera_clues_at(cam_id: String, t: float, tolerance_min: float = 10.0 / 60.0) -> Array[String]:
+	var out: Array[String] = []
+	var cam: Dictionary = layout.camera(cam_id)
+	if cam.is_empty():
+		return out
+	for cc: Dictionary in data.get("camera_clues", []):
+		if cc["camera"] != cam_id:
+			continue
+		for w: Array in cc["windows"]:
+			var t0: float = Db.parse_time(w[0]) - tolerance_min
+			var t1: float = Db.parse_time(w[1]) + tolerance_min
+			if t < t0 or t > t1:
+				continue
+			# NPC действительно в кадре рядом с отмеченным моментом
+			var seen: bool = false
+			for k in range(-2, 3):
+				var tt: float = clampf(t + k * tolerance_min / 2.0, Db.parse_time(w[0]), Db.parse_time(w[1]))
+				if cam["rect"].has_point(timeline.position_at(cc["npc"], tt)):
+					seen = true
+			if seen and not cc["id"] in out:
+				out.append(cc["id"])
+	return out
+
+
+func mark_camera(cam_id: String, t: float) -> Array[String]:
+	var added: Array[String] = []
+	for id in camera_clues_at(cam_id, t):
+		if give(id):
+			added.append(id)
+	if not added.is_empty():
+		camera_marks += 1
+		Events.add_stat("camera_marks")
+	return added
+
+
+# --- обвинение ----------------------------------------------------------------------------
+func key_clues_in(clue_ids: Array) -> int:
+	var n: int = 0
+	for id in clue_ids:
+		if evidence.has(str(id)) and evidence.is_key(str(id)):
+			n += 1
+	return n
+
+
+func max_mistakes() -> int:
+	return int(data.get("max_wrong", 2)) + (1 if ProgressionManager.equipment_level("badge") > 0 else 0)
+
+
+## Задержать подозреваемого. clue_ids — улики-основания (до 3), monster_guess — тип монстра.
+func accuse(suspect: String, clue_ids: Array, monster_guess: String = "") -> Dictionary:
+	var result: Dictionary = {"suspect": suspect, "correct": suspect == data["culprit"],
+		"key": key_clues_in(clue_ids), "clues": clue_ids, "monster_guess": monster_guess}
+	if ended:
+		return result
+	if result["correct"]:
+		result["strong"] = int(result["key"]) >= int(data.get("min_key_clues", 2))
+		suspects.set_flag(suspect, "detained")
+		accused.emit(result)
+		return result
+	mistakes += 1
+	suspects.set_flag(suspect, "wrongly_accused")
+	EconomyManager.add("reputation", -WRONG_REPUTATION)
+	clock = minf(clock + WRONG_TIME_PENALTY, arrival_time)
+	result["reaction"] = str(data.get("wrong_reactions", {}).get(suspect, "Я невиновен!"))
+	result["case_failed"] = mistakes >= max_mistakes()
+	accused.emit(result)
+	if result["case_failed"]:
+		finish("mistakes")
+	elif clock >= arrival_time:
+		finish("timeout")
+	return result
+
+
+## Дополнительная проверка: для каждой выбранной улики — касается ли она подозреваемого.
+## Не говорит, монстр ли он: невиновные тоже лгут и скрывают секреты.
+func verify(suspect: String, clue_ids: Array) -> Dictionary:
+	if verifications_left <= 0 or ended:
+		return {}
+	verifications_left -= 1
+	clock = minf(clock + VERIFY_TIME_COST, arrival_time)
+	var out: Dictionary = {}
+	for id in clue_ids:
+		out[str(id)] = suspect in evidence.clue(str(id)).get("points_to", [])
+	if clock >= arrival_time:
+		finish("timeout")
+	return out
+
+
+## Завершить дело: outcome = "solved" / "timeout" / "mistakes".
+func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
+	if ended:
+		return {}
+	ended = true
+	var rw: Dictionary = data.get("rewards", {})
+	var result: Dictionary = {"case_id": case_id, "outcome": outcome, "solved": outcome == "solved",
+		"mistakes": mistakes, "clues": evidence.found.size(), "monster": data["monster"],
+		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay}
+	var rewards: Dictionary = {"coins": 0, "crystals": 0, "reputation": 0}
+	if outcome == "solved":
+		var key: int = mini(3, int(accusation.get("key", 0)))
+		var coins: float = float(rw.get("coins", 300)) + float(rw.get("per_key_clue", 40)) * key
+		if minutes_left() >= 4.0:
+			coins += 50
+			result["time_bonus"] = true
+		var mult: float = maxf(0.3, 1.0 - 0.3 * mistakes)
+		if not accusation.get("strong", true):
+			mult *= 0.7
+		if replay:
+			mult *= 0.4
+		rewards["coins"] = int(round(coins * mult))
+		rewards["crystals"] = int(rw.get("crystals", 10)) if not replay else 2
+		if accusation.get("monster_guess", "") == data["monster"]:
+			rewards["crystals"] += 5
+			result["monster_guessed"] = true
+		rewards["reputation"] = int(rw.get("reputation", 10)) if not replay else 2
+		result["strong"] = accusation.get("strong", true)
+		result["key"] = key
+		result["first_catch"] = ProgressionManager.record_monster(data["monster"])
+		Events.add_stat("solved")
+		if mistakes == 0:
+			Events.add_stat("solved_clean")
+	else:
+		rewards["coins"] = mini(120, 10 * evidence.found.size())
+		rewards["reputation"] = -3
+	result["rewards"] = rewards
+	EconomyManager.grant(rewards)
+	ProgressionManager.add_archive({"case_id": case_id, "title": data["title"], "solved": result["solved"],
+		"outcome": outcome, "mistakes": mistakes, "clues": evidence.found.size(),
+		"date": Time.get_date_string_from_system(), "coins": rewards["coins"]})
+	SaveManager.clear_case_progress()
+	finished.emit(result)
+	Events.case_finished.emit(result)
+	return result
+
+
+# --- сохранение ---------------------------------------------------------------------------
+func snapshot() -> Dictionary:
+	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
+		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
+		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks}
+
+
+func restore(s: Dictionary) -> void:
+	clock = float(s.get("clock", start_time))
+	evidence.restore(s.get("evidence", {}))
+	suspects.restore(s.get("suspects", {}))
+	dialogue.restore(s.get("dialogue", {}))
+	mistakes = int(s.get("mistakes", 0))
+	verifications_left = int(s.get("verifications_left", verifications_left))
+	camera_marks = int(s.get("camera_marks", 0))
+	events_done = []
+	for e in s.get("events_done", []):
+		events_done.append(int(e))
+	escalated_at = float(s.get("escalated_at", -1.0))
+	if escalated_at >= 0.0:
+		var esc: Dictionary = data["escalation"]
+		timeline.override_from(esc["npc"], escalated_at, esc["spot"], esc["act"])

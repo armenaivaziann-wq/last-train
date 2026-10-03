@@ -1,0 +1,123 @@
+{
+ "id": "vestibule",
+ "name": "Тамбур",
+ "size": [
+  64,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   64,
+   60
+  ],
+  [
+   0,
+   192,
+   64,
+   16
+  ],
+  [
+   50,
+   50,
+   8,
+   8
+  ]
+ ],
+ "spots": {
+  "vest_mid": {
+   "pos": [
+    32,
+    150
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_window": {
+   "pos": [
+    32,
+    76
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_door": {
+   "pos": [
+    50,
+    170
+   ],
+   "facing": "right",
+   "pose": "stand"
+  },
+  "vest_side": {
+   "pos": [
+    14,
+    120
+   ],
+   "facing": "right",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "extinguisher",
+   "pos": [
+    54,
+    54
+   ]
+  },
+  {
+   "sprite": "ladder",
+   "pos": [
+    20,
+    150
+   ]
+  },
+  {
+   "sprite": "cctv",
+   "pos": [
+    6,
+    14
+   ]
+  }
+ ],
+ "interactables": [],
+ "luggage_slots": {
+  "vest_floor": [
+   48,
+   96
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam3",
+   "name": "Тамбур",
+   "rect": [
+    -40,
+    40,
+    144,
+    168
+   ]
+  }
+ ],
+ "doors": [],
+ "windows": [],
+ "lamps": [
+  [
+   32,
+   12
+  ]
+ ],
+ "window_lights": [
+  [
+   32,
+   60
+  ]
+ ],
+ "flicker_lamp": [
+  32,
+  12
+ ]
+}

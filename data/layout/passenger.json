@@ -1,0 +1,696 @@
+{
+ "id": "passenger",
+ "name": "Пассажирский вагон",
+ "size": [
+  656,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   656,
+   60
+  ],
+  [
+   0,
+   192,
+   656,
+   16
+  ],
+  [
+   18,
+   58,
+   62,
+   26
+  ],
+  [
+   84,
+   64,
+   16,
+   12
+  ],
+  [
+   104,
+   56,
+   6,
+   72
+  ],
+  [
+   112,
+   60,
+   22,
+   64
+  ],
+  [
+   192,
+   60,
+   22,
+   64
+  ],
+  [
+   148,
+   58,
+   30,
+   28
+  ],
+  [
+   216,
+   56,
+   6,
+   72
+  ],
+  [
+   224,
+   60,
+   22,
+   64
+  ],
+  [
+   304,
+   60,
+   22,
+   64
+  ],
+  [
+   260,
+   58,
+   30,
+   28
+  ],
+  [
+   328,
+   56,
+   6,
+   72
+  ],
+  [
+   336,
+   60,
+   22,
+   64
+  ],
+  [
+   416,
+   60,
+   22,
+   64
+  ],
+  [
+   372,
+   58,
+   30,
+   28
+  ],
+  [
+   440,
+   56,
+   6,
+   72
+  ],
+  [
+   448,
+   60,
+   22,
+   64
+  ],
+  [
+   528,
+   60,
+   22,
+   64
+  ],
+  [
+   484,
+   58,
+   30,
+   28
+  ],
+  [
+   552,
+   56,
+   6,
+   72
+  ],
+  [
+   562,
+   60,
+   76,
+   30
+  ],
+  [
+   156,
+   182,
+   12,
+   8
+  ],
+  [
+   492,
+   182,
+   12,
+   8
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   648,
+   0,
+   8,
+   140
+  ],
+  [
+   648,
+   188,
+   8,
+   20
+  ]
+ ],
+ "spots": {
+  "svc_desk": {
+   "pos": [
+    50,
+    102
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "svc_register": {
+   "pos": [
+    62,
+    98
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "svc_shelf": {
+   "pos": [
+    88,
+    100
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "svc_door": {
+   "pos": [
+    64,
+    166
+   ],
+   "facing": "right",
+   "pose": "stand"
+  },
+  "bay1_l1": {
+   "pos": [
+    124,
+    86
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 142
+  },
+  "bay1_l2": {
+   "pos": [
+    124,
+    114
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 142
+  },
+  "bay1_r1": {
+   "pos": [
+    202,
+    86
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 184
+  },
+  "bay1_r2": {
+   "pos": [
+    202,
+    114
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 184
+  },
+  "bay1_w": {
+   "pos": [
+    163,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bay1_c": {
+   "pos": [
+    163,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "corr_win1": {
+   "pos": [
+    163,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "bay2_l1": {
+   "pos": [
+    236,
+    86
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 254
+  },
+  "bay2_l2": {
+   "pos": [
+    236,
+    114
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 254
+  },
+  "bay2_r1": {
+   "pos": [
+    314,
+    86
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 296
+  },
+  "bay2_r2": {
+   "pos": [
+    314,
+    114
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 296
+  },
+  "bay2_w": {
+   "pos": [
+    275,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bay2_c": {
+   "pos": [
+    275,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "corr_win2": {
+   "pos": [
+    275,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "bay3_l1": {
+   "pos": [
+    348,
+    86
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 366
+  },
+  "bay3_l2": {
+   "pos": [
+    348,
+    114
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 366
+  },
+  "bay3_r1": {
+   "pos": [
+    426,
+    86
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 408
+  },
+  "bay3_r2": {
+   "pos": [
+    426,
+    114
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 408
+  },
+  "bay3_w": {
+   "pos": [
+    387,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bay3_c": {
+   "pos": [
+    387,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "corr_win3": {
+   "pos": [
+    387,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "bay4_l1": {
+   "pos": [
+    460,
+    86
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 478
+  },
+  "bay4_l2": {
+   "pos": [
+    460,
+    114
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 478
+  },
+  "bay4_r1": {
+   "pos": [
+    538,
+    86
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 520
+  },
+  "bay4_r2": {
+   "pos": [
+    538,
+    114
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 520
+  },
+  "bay4_w": {
+   "pos": [
+    499,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bay4_c": {
+   "pos": [
+    499,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "corr_win4": {
+   "pos": [
+    499,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "end_rack": {
+   "pos": [
+    586,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "end_mirror": {
+   "pos": [
+    612,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "end_corner": {
+   "pos": [
+    634,
+    120
+   ],
+   "facing": "left",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "monitor",
+   "pos": [
+    30,
+    74
+   ]
+  },
+  {
+   "sprite": "samovar",
+   "pos": [
+    92,
+    76
+   ]
+  },
+  {
+   "sprite": "luggage_rack",
+   "pos": [
+    600,
+    92
+   ]
+  },
+  {
+   "sprite": "mirror",
+   "pos": [
+    611,
+    30
+   ]
+  },
+  {
+   "sprite": "plant",
+   "pos": [
+    162,
+    190
+   ]
+  },
+  {
+   "sprite": "plant",
+   "pos": [
+    498,
+    190
+   ]
+  },
+  {
+   "sprite": "cctv",
+   "pos": [
+    540,
+    12
+   ]
+  },
+  {
+   "sprite": "cctv",
+   "pos": [
+    96,
+    50
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_register",
+   "pos": [
+    54,
+    70
+   ],
+   "label": "Осмотреть журнал",
+   "sprite": "register",
+   "radius": 34
+  },
+  {
+   "id": "obj_monitor",
+   "pos": [
+    34,
+    70
+   ],
+   "label": "Камеры",
+   "sprite": null,
+   "radius": 30
+  },
+  {
+   "id": "obj_rack",
+   "pos": [
+    600,
+    88
+   ],
+   "label": "Осмотреть стеллаж",
+   "sprite": null,
+   "radius": 30
+  }
+ ],
+ "luggage_slots": {
+  "bay1_left": [
+   141,
+   82
+  ],
+  "bay1_right": [
+   185,
+   82
+  ],
+  "bay2_left": [
+   253,
+   82
+  ],
+  "bay2_right": [
+   297,
+   82
+  ],
+  "bay3_left": [
+   365,
+   82
+  ],
+  "bay3_right": [
+   409,
+   82
+  ],
+  "bay4_left": [
+   477,
+   82
+  ],
+  "bay4_right": [
+   521,
+   82
+  ],
+  "end_floor": [
+   618,
+   134
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam1",
+   "name": "Пассажирский вагон",
+   "rect": [
+    100,
+    40,
+    556,
+    168
+   ]
+  },
+  {
+   "id": "cam2",
+   "name": "Служебное купе",
+   "rect": [
+    0,
+    40,
+    150,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": true
+  },
+  {
+   "id": "right",
+   "pos": [
+    652,
+    164
+   ],
+   "locked": false
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   56,
+   12
+  ],
+  [
+   219,
+   20
+  ],
+  [
+   331,
+   20
+  ],
+  [
+   443,
+   20
+  ],
+  [
+   555,
+   20
+  ]
+ ],
+ "window_lights": [
+  [
+   50,
+   60
+  ],
+  [
+   163,
+   60
+  ],
+  [
+   275,
+   60
+  ],
+  [
+   387,
+   60
+  ],
+  [
+   499,
+   60
+  ]
+ ],
+ "bays": [
+  110,
+  222,
+  334,
+  446
+ ]
+}

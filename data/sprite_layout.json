@@ -1,0 +1,115 @@
+{
+ "frame_w": 32,
+ "frame_h": 40,
+ "foot_y": 38,
+ "rows": {
+  "idle_down": {
+   "row": 0,
+   "frames": 2,
+   "fps": 2.0,
+   "loop": true
+  },
+  "idle_up": {
+   "row": 1,
+   "frames": 2,
+   "fps": 2.0,
+   "loop": true
+  },
+  "idle_left": {
+   "row": 2,
+   "frames": 2,
+   "fps": 2.0,
+   "loop": true
+  },
+  "walk_down": {
+   "row": 3,
+   "frames": 4,
+   "fps": 8.0,
+   "loop": true
+  },
+  "walk_up": {
+   "row": 4,
+   "frames": 4,
+   "fps": 8.0,
+   "loop": true
+  },
+  "walk_left": {
+   "row": 5,
+   "frames": 4,
+   "fps": 8.0,
+   "loop": true
+  },
+  "sit_down": {
+   "row": 6,
+   "frames": 2,
+   "fps": 1.5,
+   "loop": true
+  },
+  "sit_up": {
+   "row": 7,
+   "frames": 2,
+   "fps": 1.5,
+   "loop": true
+  },
+  "sit_left": {
+   "row": 8,
+   "frames": 2,
+   "fps": 1.5,
+   "loop": true
+  },
+  "talk_down": {
+   "row": 9,
+   "frames": 2,
+   "fps": 4.0,
+   "loop": true
+  },
+  "inspect": {
+   "row": 10,
+   "frames": 3,
+   "fps": 5.0,
+   "loop": false
+  },
+  "interact": {
+   "row": 11,
+   "frames": 2,
+   "fps": 5.0,
+   "loop": false
+  },
+  "note": {
+   "row": 12,
+   "frames": 3,
+   "fps": 5.0,
+   "loop": true
+  },
+  "suspicion": {
+   "row": 13,
+   "frames": 2,
+   "fps": 3.0,
+   "loop": true
+  },
+  "discovery": {
+   "row": 14,
+   "frames": 2,
+   "fps": 4.0,
+   "loop": false
+  },
+  "wrong": {
+   "row": 15,
+   "frames": 2,
+   "fps": 3.0,
+   "loop": true
+  },
+  "arrest": {
+   "row": 16,
+   "frames": 2,
+   "fps": 3.0,
+   "loop": false
+  },
+  "victory": {
+   "row": 17,
+   "frames": 2,
+   "fps": 3.0,
+   "loop": true
+  }
+ }
+}
