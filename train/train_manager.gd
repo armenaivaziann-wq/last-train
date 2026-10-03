@@ -64,7 +64,7 @@ func _build_outside() -> void:
 	add_child(_outside)
 	var w: float = layout.width + 1400.0
 	var x0: float = -700.0
-	var grass: Color = Color("#1c3a3e") if _ground_kind == "forest" else Color("#c8d0e8")
+	var grass: Color = Color("#14223a") if _ground_kind == "forest" else Color("#9aa4c8")
 	_fill_top = ColorRect.new()
 	_fill_top.color = grass
 	_fill_top.position = Vector2(x0, -900)

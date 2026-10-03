@@ -60,6 +60,6 @@ static func shadow_texture() -> Texture2D:
 			var dx: float = (x + 0.5 - 11.0) / 11.0
 			var dy: float = (y + 0.5 - 4.0) / 4.0
 			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0.05, 0.02, 0.12, 0.42))
+				img.set_pixel(x, y, Color(0.04, 0.01, 0.1, 0.55 if dx * dx + dy * dy < 0.5 else 0.38))
 	_shadow_cache = ImageTexture.create_from_image(img)
 	return _shadow_cache

@@ -598,6 +598,12 @@ def main():
     bub.outline()
     bub.save("ui/bubble.png")
     act_icons()
+    ring = Canvas(30, 12)
+    ring.ellipse(15, 6, 14, 5.5, "#ffd86b")
+    ring.ellipse(15, 6, 11.5, 3.6, (0, 0, 0, 0))
+    for x in (2, 27):
+        ring.set(x, 6, "#fff4c0")
+    ring.save("ui/target_ring.png")
 
 
 

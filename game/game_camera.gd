@@ -3,9 +3,10 @@ extends Camera2D
 ## Камера строго сверху: мягко следует за детективом по длине поезда, по высоте держит
 ## вагон в кадре. Положение округляется до пикселя мира — пиксель-арт не «плывёт».
 
-const ZOOM: float = 2.0
+## Зум 3: вагон (208 px) почти целиком заполняет экран 720 px — как на референсе.
+const ZOOM: float = 3.0
 const FOLLOW_SPEED: float = 6.0
-const TRAIN_CENTER_Y: float = 108.0
+const TRAIN_CENTER_Y: float = 106.0
 
 var target: Node2D
 var left_limit: float = -60.0
@@ -35,7 +36,7 @@ func _desired() -> Vector2:
 		x = clampf(x, left_limit + half_w, right_limit - half_w)
 	else:
 		x = (left_limit + right_limit) / 2.0
-	var y: float = TRAIN_CENTER_Y + clampf((p.y - TRAIN_CENTER_Y) * 0.25, -10.0, 10.0)
+	var y: float = TRAIN_CENTER_Y
 	return Vector2(x, y)
 
 

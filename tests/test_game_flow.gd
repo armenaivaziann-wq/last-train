@@ -243,3 +243,40 @@ func test_save_and_resume() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_save.json"))
 	SaveManager.enabled = false
 	SaveManager.save_path = SaveManager.SAVE_PATH
+
+
+func test_context_button_labels() -> void:
+	await start_case()
+	var hud: Hud = game.hud
+	game.player.global_position = Vector2(300, 170)
+	await wait_frames(3)
+	check_eq(hud._interact_label.text, "Лупа", "без цели кнопка — лупа")
+	var agata: NPCController = game.npcs["agata"]
+	game.player.global_position = agata.global_position + Vector2(-16, 0)
+	game.player.facing = "right"
+	await wait_frames(3)
+	check_eq(hud._interact_label.text, "Поговорить", "рядом пассажир")
+	game.player.global_position = Vector2(372, 106)
+	game.player.facing = "up"
+	await wait_frames(3)
+	check_eq(hud._interact_label.text, "Проверить", "рядом багаж")
+	check(game.highlight.visible, "предмет подсвечен")
+
+
+func test_camera_switching_keeps_marks() -> void:
+	await start_case()
+	game.open_cameras()
+	await wait_frames(3)
+	var scr: Node = game.ui.top()
+	for id in ["cam1", "cam3", "cam4", "cam2"]:
+		scr._select(id)
+		await wait_frames(1)
+		check_eq(scr._selected, id, "выбрана " + id)
+	scr._on_scrub(Db.parse_time("01:42:30"))
+	scr._select("cam4")
+	scr._mark()
+	check(_inv().evidence.has("c_rest_trash"), "отметка на К4 после переключения")
+	scr._on_scrub(Db.parse_time("01:40:30"))
+	scr._select("cam2")
+	scr._mark()
+	check(_inv().evidence.has("c_svc_robert"), "отметка на К2")

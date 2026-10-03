@@ -17,6 +17,7 @@ var _buttons: VBoxContainer
 
 
 func _ready() -> void:
+	theme = UiTheme.theme
 	Ui.full_rect(self)
 	_build_background()
 	_build_logo()

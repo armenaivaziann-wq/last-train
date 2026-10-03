@@ -15,6 +15,8 @@ var _layer: Control
 
 
 func _ready() -> void:
+	# Контролы под CanvasLayer не наследуют тему окна — назначаем явно.
+	theme = UiTheme.theme
 	Ui.full_rect(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_ALWAYS

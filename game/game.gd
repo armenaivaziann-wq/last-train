@@ -25,6 +25,7 @@ var layout: TrainLayout
 var player: PlayerController
 var npcs: Dictionary = {}  # id → NPCController
 var arrest: ArrestSequence
+var highlight: TargetHighlight
 var _autosave_timer: float = AUTOSAVE_INTERVAL
 var _bark_timer: float = 2.0
 var _marker_timer: float = 0.0
@@ -49,6 +50,8 @@ func _ready() -> void:
 	hud.setup(self)
 	hud.set_case_title("Дело: «%s»" % case_data["title"])
 	arrest = ArrestSequence.new(self)
+	highlight = TargetHighlight.new()
+	glow_layer.add_child(highlight)
 	_connect_signals()
 	_apply_npcs(investigation.clock)
 	if SaveManager.pending_resume and SaveManager.has_case_progress():
@@ -127,6 +130,7 @@ func _process(delta: float) -> void:
 	if _marker_timer <= 0.0:
 		_marker_timer = 0.5
 		_update_markers()
+		update_goal()
 	_autosave_timer -= delta
 	if _autosave_timer <= 0.0:
 		_autosave_timer = AUTOSAVE_INTERVAL
@@ -272,8 +276,9 @@ func _on_target_changed(t: Interactable) -> void:
 	if t:
 		text = t.label
 		if t.kind == Interactable.Kind.NPC:
-			text = "Поговорить: " + Db.char_name(t.owner_id)
+			text = Db.char_name(t.owner_id)
 	hud.set_target(t, text)
+	highlight.set_target(t)
 
 
 func _on_ui_stack(has_modal: bool) -> void:
@@ -288,6 +293,32 @@ func _on_ui_stack(has_modal: bool) -> void:
 		if not has_modal:
 			npcs[id].talking_to = null
 	hud.overlay.visible = not has_modal and not arrest.running
+
+
+## Одна текущая цель в HUD. Формулировки не подсказывают виновника.
+func update_goal() -> void:
+	var ev: EvidenceSystem = investigation.evidence
+	var facts: int = 0
+	var deductions: int = 0
+	for id in ev.found:
+		if ev.clue(id).get("type") == "contradiction":
+			deductions += 1
+		else:
+			facts += 1
+	var met: bool = false
+	for id: String in npcs:
+		if investigation.suspects.flag(id, "met"):
+			met = true
+	var goal: String
+	if not met:
+		goal = "Цель: поговорите с проводницей"
+	elif facts < 8:
+		goal = "Цель: найдите улики (%d/8)" % facts
+	elif deductions == 0:
+		goal = "Цель: сопоставьте улики в журнале"
+	else:
+		goal = "Цель: выберите подозреваемого в журнале"
+	hud.set_goal(goal)
 
 
 func _on_clock(minute: float) -> void:

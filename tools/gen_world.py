@@ -130,9 +130,9 @@ def ground_strip(kind):
     W, H = 256, 96
     rng = noise_rng(31 if kind == "forest" else 47)
     c = Canvas(W, H)
-    grass = "#1c3a3e" if kind == "forest" else "#c8d0e8"
-    grass_d = "#16302f" if kind == "forest" else "#a8b0d0"
-    grass_l = "#2a5a52" if kind == "forest" else "#e8eef8"
+    grass = "#14223a" if kind == "forest" else "#9aa4c8"
+    grass_d = "#0f1a2e" if kind == "forest" else "#828cb4"
+    grass_l = "#1e3450" if kind == "forest" else "#b8c0dc"
     for y in range(H):
         for x in range(W):
             c.set(x, y, grass)
@@ -140,21 +140,23 @@ def ground_strip(kind):
         x, y = rng.randrange(W), rng.randrange(18, H)
         c.set(x, y, rng.choice((grass_d, grass_l, grass_d)))
     # щебень у полотна
-    for y in range(0, 18):
+    for y in range(0, 22):
         for x in range(W):
             v = rng.random()
-            c.set(x, y, "#4a4658" if v < 0.4 else ("#5e5a70" if v < 0.75 else "#35323f"))
+            c.set(x, y, "#3a3650" if v < 0.4 else ("#4a4662" if v < 0.75 else "#2a2638"))
     for x in range(0, W, 16):
-        c.rect(x + 2, 0, 9, 7, "#4a3426")
-        c.rect(x + 2, 0, 9, 1, "#6a4a36")
-        c.rect(x + 2, 6, 9, 1, "#2e2018")
-    c.rect(0, 17, W, 1, shade(grass, -0.3))
+        c.rect(x + 2, 0, 10, 12, "#4a3426")
+        c.rect(x + 2, 0, 10, 1, "#6a4a36")
+        c.rect(x + 2, 11, 10, 1, "#2e2018")
+    c.rect(0, 4, W, 2, "#8a94b8")
+    c.rect(0, 4, W, 1, "#c8d0f0")
+    c.rect(0, 21, W, 1, shade(grass, -0.3))
     # кустики, цветы/сугробы
     for _ in range(14):
         x, y = rng.randrange(W), rng.randrange(28, H - 6)
         if kind == "forest":
-            c.ellipse(x, y, 5, 3.5, "#1f4a3e")
-            c.ellipse(x - 1, y - 1, 3, 2, "#2f6a52")
+            c.ellipse(x, y, 5, 3.5, "#1a3448")
+            c.ellipse(x - 1, y - 1, 3, 2, "#244a5a")
             if rng.random() < 0.4:
                 c.set(x + 2, y - 2, "#e86aa8")
         else:
@@ -163,8 +165,8 @@ def ground_strip(kind):
     if kind == "forest":
         for _ in range(30):
             x, y = rng.randrange(W), rng.randrange(24, H)
-            c.set(x, y, "#3a7a5a")
-            c.set(x, y - 1, "#3a7a5a")
+            c.set(x, y, "#2a4a6a")
+            c.set(x, y - 1, "#2a4a6a")
     return c
 
 

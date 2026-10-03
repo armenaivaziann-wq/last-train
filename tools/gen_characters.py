@@ -16,7 +16,7 @@ FW, FH = 32, 40
 CHARACTERS = {
     "detective": dict(
         skin="#f2c9a0", hair="#4a2f2a", hair_style="neat", eyes="#3a2a24",
-        top="#8a93a6", top_style="jacket", trim="#d8dfea", shirt="#f0e6cf", tie="#8c2f3f",
+        top="#9aa4bc", top_style="jacket", trim="#eef3fb", shirt="#f0e6cf", tie="#8c2f3f",
         pants="#2d3350", shoes="#1f1c28", accessories=["magnifier", "notebook", "badge"],
     ),
     "agata": dict(

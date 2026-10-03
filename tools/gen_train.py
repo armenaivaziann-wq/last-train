@@ -200,10 +200,11 @@ def window(c, x, y, w, h, curtain="#6b2f7a", arched=False):
 
 
 def sconce(c, x, y):
-    c.rect(x - 1, y + 2, 3, 6, GOLD)
-    c.ellipse(x + 0.5, y, 4, 3.5, "#ffe8a8")
-    c.ellipse(x + 0.5, y - 0.5, 2.5, 2, "#fff8e0")
-    c.rect(x - 3, y + 3, 7, 1, "#b07a2a")
+    c.rect(x - 1, y + 2, 3, 8, GOLD)
+    c.rect(x - 4, y + 8, 9, 2, "#b07a2a")
+    c.ellipse(x + 0.5, y, 5, 4.5, "#ffd27a")
+    c.ellipse(x + 0.5, y - 0.5, 3.5, 3, "#ffe8a8")
+    c.ellipse(x + 0.5, y - 1, 2, 1.6, "#ffffff")
 
 
 def end_walls(c, w, layout, left_locked=False, right_locked=False):
@@ -238,6 +239,8 @@ def bottom_wall(c, w, window_xs, glass="#6a8ab8"):
 
 def bench_vertical(c, x, y, w, h, facing):
     """Мягкая скамья вдоль перегородки; facing — куда смотрит сидящий ('right'/'left')."""
+    # тень на полу (свет ламп сверху-слева)
+    c.brect(x + 3, y + 4, w, h + 2, (24, 10, 34, 70))
     c.rrect(x, y, w, h, 3, VELVET_D)
     back_x = x if facing == "right" else x + w - 7
     seat_x = x + 7 if facing == "right" else x
@@ -257,7 +260,7 @@ def bench_vertical(c, x, y, w, h, facing):
 
 
 def table_top(c, x, y, w, h, cloth=False):
-    c.rect(x + 2, y + h, w - 2, 3, (20, 12, 30, 90))  # тень
+    c.brect(x + 3, y + h, w - 1, 5, (20, 10, 34, 90))  # тень
     if cloth:
         c.rrect(x, y, w, h, 2, "#f0ece4")
         c.rect(x, y + h - 4, w, 4, "#d8d0dc")

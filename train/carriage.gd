@@ -90,7 +90,8 @@ func build(entities: Node2D, glow_layer: Node2D) -> void:
 		g.texture = glow_tex
 		g.material = add_mat
 		g.position = position + Vector2(float(l[0]), float(l[1]) + 6.0)
-		g.modulate = Color(1, 0.85, 0.6, 0.55)
+		g.modulate = Color(1, 0.82, 0.55, 0.6)
+		g.scale = Vector2(1.35, 1.35)
 		glow_layer.add_child(g)
 		lamp_glows.append(g)
 	var win_tex: Texture2D = Db.texture("props/window_light.png")

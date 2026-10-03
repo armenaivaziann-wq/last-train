@@ -53,13 +53,16 @@ static func icon_button(icon_name: String, size: int = 72, variation: String = "
 	b.theme_type_variation = variation
 	b.icon = Db.icon(icon_name)
 	b.expand_icon = true
+	b.add_theme_constant_override("icon_max_width", 0)
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.custom_minimum_size = Vector2(size, size)
 	b.focus_mode = Control.FOCUS_NONE
 	b.tooltip_text = tooltip
 	var pad: int = int(size * 0.18)
 	for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
-		var box: StyleBox = b.get_theme_stylebox(st).duplicate()
+		# Стиль берём прямо из темы игры: кнопка ещё не в дереве и тему не унаследовала.
+		var src: StyleBox = UiTheme.theme.get_stylebox(st, variation) if UiTheme.theme.has_stylebox(st, variation) else UiTheme.theme.get_stylebox(st, "Button")
+		var box: StyleBox = src.duplicate()
 		if box is StyleBoxFlat:
 			(box as StyleBoxFlat).set_corner_radius_all(int(size * 0.32))
 			box.content_margin_left = pad
