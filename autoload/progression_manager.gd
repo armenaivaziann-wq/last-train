@@ -157,6 +157,88 @@ func stat(name: String) -> int:
 	return int(_p()["stats"].get(name, 0))
 
 
+# --- кампания -------------------------------------------------------------------------------
+func _camp() -> Dictionary:
+	return _p()["campaign"]
+
+
+func level_number(level_id: String) -> int:
+	return int(Db.level(level_id).get("number", 0))
+
+
+func level_unlocked(level_id: String) -> bool:
+	var n: int = level_number(level_id)
+	return n > 0 and n <= int(_camp()["unlocked"])
+
+
+func level_stars(level_id: String) -> int:
+	return int(_camp()["stars"].get(level_id, 0))
+
+
+func level_completed(level_id: String) -> bool:
+	return level_stars(level_id) > 0
+
+
+func level_best_time(level_id: String) -> float:
+	return float(_camp()["best_time"].get(level_id, -1.0))
+
+
+func total_stars() -> int:
+	var n: int = 0
+	for l: Dictionary in Db.levels():
+		n += level_stars(l["id"])
+	return n
+
+
+## Записать итог попытки. Звёзды и награда за них начисляются один раз: повтор может
+## улучшить рекорд, но платит только за новые звёзды. Успех сразу открывает следующее дело.
+func record_level(level_id: String, solved: bool, stars: int, elapsed: float) -> Dictionary:
+	var c: Dictionary = _camp()
+	c["attempts"][level_id] = int(c["attempts"].get(level_id, 0)) + 1
+	var out: Dictionary = {"new_stars": 0, "unlocked_next": "", "best": 0}
+	if level_id == "daily":
+		var day: String = Time.get_date_string_from_system()
+		var dl: Dictionary = c["daily"]
+		if dl.get("day", "") != day:
+			dl["day"] = day
+			dl["best_stars"] = 0
+		out["new_stars"] = maxi(0, stars - int(dl["best_stars"]))
+		dl["best_stars"] = maxi(int(dl["best_stars"]), stars)
+		out["best"] = dl["best_stars"]
+		return out
+	if not solved:
+		out["best"] = level_stars(level_id)
+		return out
+	var prev_rewarded: int = int(c["rewarded_stars"].get(level_id, 0))
+	out["new_stars"] = maxi(0, stars - prev_rewarded)
+	c["rewarded_stars"][level_id] = maxi(prev_rewarded, stars)
+	c["stars"][level_id] = maxi(level_stars(level_id), stars)
+	var bt: float = level_best_time(level_id)
+	if bt < 0.0 or elapsed < bt:
+		c["best_time"][level_id] = elapsed
+	out["best"] = c["stars"][level_id]
+	var n: int = level_number(level_id)
+	if n >= int(c["unlocked"]) and not Db.next_level(level_id).is_empty():
+		c["unlocked"] = n + 1
+		out["unlocked_next"] = str(Db.next_level(level_id)["id"])
+	if stars >= 3:
+		Events.add_stat("three_stars")
+	return out
+
+
+## Коллекция маскировок: в чьём облике был пойман злодей.
+func record_disguise(villain: String, character: String) -> void:
+	var dg: Dictionary = _camp()["disguises"]
+	if not dg.has(villain):
+		dg[villain] = []
+	if not character in dg[villain]:
+		dg[villain].append(character)
+
+
+func disguises(villain: String) -> Array:
+	return _camp()["disguises"].get(villain, [])
+
+
 # --- задания и достижения ------------------------------------------------------------------
 func _day_key() -> String:
 	return Time.get_date_string_from_system()

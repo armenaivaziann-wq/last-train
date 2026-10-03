@@ -204,7 +204,7 @@ func test_correct_accusation_rewards() -> void:
 	game.accuse("robert", ["x_signature", "c_svc_robert", "p_torn_page"], "doppelganger")
 	await wait_seconds(9.0)
 	check(_inv().ended, "дело завершено")
-	check_eq(ProgressionManager.monster_caught("doppelganger"), 1, "двойник в бестиарии")
+	check_eq(ProgressionManager.monster_caught("black_cloak"), 1, "Чёрный плащ в бестиарии")
 	check(EconomyManager.coins() > coins0 + 300, "монеты начислены (%d)" % (EconomyManager.coins() - coins0))
 	check(game.ui.top() != null and game.ui.top().name == "result_screen", "экран итога")
 

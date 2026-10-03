@@ -54,11 +54,11 @@ func setup(game_node: Node) -> void:
 	var tl := Ui.panel("PillPanel")
 	var tlv := Ui.vbox(2)
 	var row := Ui.hbox(8)
-	row.add_child(Ui.icon("clock", 30))
-	_time_label = Ui.label("01:58", "NumberLabel", 28)
+	row.add_child(Ui.icon("hourglass", 34))
+	# Крупный таймер: сколько игрового времени осталось до дедлайна (мм:сс).
+	_time_label = Ui.label("20:00", "NumberLabel", 36)
 	row.add_child(_time_label)
-	row.add_child(Ui.icon("arrow_right", 18))
-	_station_label = Ui.label("Долина", "GoldLabel", 19)
+	_station_label = Ui.label("", "SmallLabel", 16)
 	row.add_child(_station_label)
 	tlv.add_child(row)
 	_trip_bar = Ui.progress(0, 1, "CyanBar", 6)
@@ -82,12 +82,10 @@ func setup(game_node: Node) -> void:
 
 	# --- сверху справа: валюты и пауза
 	var tr := Ui.hbox(8)
-	var c: Array = Ui.pill("coin", "0", 26)
-	_coins = c[1]
-	tr.add_child(c[0])
-	var cr: Array = Ui.pill("crystal", "0", 26)
-	_crystals = cr[1]
-	tr.add_child(cr[0])
+	# Только число найденных ключевых улик (какие именно — не подсказываем).
+	var kc: Array = Ui.pill("magnifier", "0", 26)
+	_coins = kc[1]
+	tr.add_child(kc[0])
 	pause_btn = Ui.icon_button("pause", 56, "GhostButton", func() -> void: game.ui.open("pause_menu"), "Пауза")
 	tr.add_child(pause_btn)
 	_top_right = tr
@@ -246,19 +244,43 @@ func set_goal(text: String) -> void:
 
 
 func update_clock(minute: float, start: float, arrival: float, station: String) -> void:
-	_time_label.text = Db.format_time(minute)
-	_station_label.text = "%s %s" % [station, Db.format_time(arrival)]
+	var left: float = maxf(0.0, arrival - minute)
+	var secs: int = int(ceil(left * 60.0 - 0.001))
+	_time_label.text = "%02d:%02d" % [secs / 60, secs % 60]
+	_station_label.text = "до ст. " + station
 	_trip_bar.max_value = arrival - start
 	_trip_bar.value = minute - start
-	var warn: bool = arrival - minute <= 3.0
-	if warn != _warn:
-		_warn = warn
-		_time_label.add_theme_color_override("font_color", UiTheme.DANGER if warn else UiTheme.TEXT)
+	var col: Color = UiTheme.TEXT
+	if left <= 1.0:
+		col = UiTheme.DANGER
+	elif left <= 5.0:
+		col = UiTheme.GOLD
+	_time_label.add_theme_color_override("font_color", col)
+	if left <= 1.0 and left > 0.0:
+		_time_label.modulate.a = 0.65 + 0.35 * sin(Time.get_ticks_msec() / 120.0)
+	else:
+		_time_label.modulate.a = 1.0
+
+
+## Предупреждение о дедлайне: мягкое (10 мин), заметное (5), срочное (1). Управление не блокирует.
+func deadline_warning(threshold: int) -> void:
+	var texts := {10: "Осталось 10 минут", 5: "Осталось 5 минут! Пора делать выводы", 1: "Последняя минута! Задержите подозреваемого"}
+	show_toast(str(texts.get(threshold, "")), "hourglass")
+	if threshold <= 5:
+		var tw := _time_label.create_tween()
+		_time_label.pivot_offset = _time_label.size / 2.0
+		for i in (2 if threshold == 5 else 4):
+			tw.tween_property(_time_label, "scale", Vector2(1.25, 1.25), 0.15)
+			tw.tween_property(_time_label, "scale", Vector2.ONE, 0.15)
+		AudioManager.play_sfx("camera_beep", -4.0 if threshold == 1 else -10.0)
+
+
+func set_key_clues(n: int) -> void:
+	_coins.text = str(n)
 
 
 func update_resources() -> void:
-	_coins.text = str(EconomyManager.coins())
-	_crystals.text = str(EconomyManager.crystals())
+	pass
 
 
 ## Контекстная кнопка: подпись и значок зависят от того, что перед героем.

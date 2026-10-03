@@ -1,0 +1,31 @@
+{
+ "deadline_minutes": 20,
+ "stars": {
+  "three": {"max_minutes": 12, "min_key_clues": 3, "max_mistakes": 0},
+  "two": {"max_minutes": 16, "max_mistakes": 1}
+ },
+ "star_reward": {"coins": 40, "crystals": 5},
+ "levels": [
+  {"id": "level_01", "number": 1, "title": "Чёрный плащ", "villain": "black_cloak", "case": "case_01",
+   "from": "Туманная", "to": "Долина", "pos": [70, 300], "tutorial": true},
+  {"id": "level_02", "number": 2, "title": "Перевёртыш туннеля", "villain": "shapeshifter", "case": "gen",
+   "from": "Долина", "to": "Каменный мост", "pos": [150, 250]},
+  {"id": "level_03", "number": 3, "title": "Зеркальник", "villain": "mirror", "case": "gen",
+   "from": "Каменный мост", "to": "Озёрная", "pos": [230, 300]},
+  {"id": "level_04", "number": 4, "title": "Мимик багажа", "villain": "mimic", "case": "gen",
+   "from": "Озёрная", "to": "Сосновый бор", "pos": [300, 235]},
+  {"id": "level_05", "number": 5, "title": "Теневик", "villain": "shadow", "case": "gen",
+   "from": "Сосновый бор", "to": "Старая шахта", "pos": [360, 175]},
+  {"id": "level_06", "number": 6, "title": "Голос за дверью", "villain": "voice", "case": "gen",
+   "from": "Старая шахта", "to": "Эхо", "pos": [440, 215]},
+  {"id": "level_07", "number": 7, "title": "Сонник", "villain": "sleeper", "case": "gen",
+   "from": "Эхо", "to": "Лунный разъезд", "pos": [500, 270]},
+  {"id": "level_08", "number": 8, "title": "Двойник проводницы", "villain": "conductor_double", "case": "gen",
+   "from": "Лунный разъезд", "to": "Снежный перевал", "pos": [560, 200]},
+  {"id": "level_09", "number": 9, "title": "Кукловод", "villain": "puppeteer", "case": "gen",
+   "from": "Снежный перевал", "to": "Огни", "pos": [520, 120]},
+  {"id": "level_10", "number": 10, "title": "Пассажир ноль", "villain": "passenger_zero", "case": "gen",
+   "from": "Огни", "to": "Конечная", "pos": [420, 80], "final": true}
+ ],
+ "daily": {"rewards": {"coins": 150, "crystals": 6}}
+}

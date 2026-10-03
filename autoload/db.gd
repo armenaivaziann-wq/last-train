@@ -9,6 +9,7 @@ var characters: Dictionary = {}
 var monsters: Dictionary = {}
 var progression: Dictionary = {}
 var sprite_layout: Dictionary = {}
+var campaign: Dictionary = {}
 
 var _cases: Dictionary = {}
 var _layouts: Dictionary = {}
@@ -21,6 +22,7 @@ func _ready() -> void:
 	monsters = load_json("monsters.json")
 	progression = load_json("progression.json")
 	sprite_layout = load_json("sprite_layout.json")
+	campaign = load_json("campaign.json")
 
 
 func load_json(rel_path: String) -> Dictionary:
@@ -44,6 +46,70 @@ func case_data(case_id: String) -> Dictionary:
 
 func has_case(case_id: String) -> bool:
 	return case_id != "" and FileAccess.file_exists(DATA_DIR + "cases/%s.json" % case_id)
+
+
+## Данные дела для запуска: статичный файл (с выбором варианта по seed) или дело,
+## собранное генератором из шаблона злодея ("gen:<уровень или злодей>"). Всегда копия.
+func resolve_case(case_ref: String, seed_value: int) -> Dictionary:
+	if case_ref.begins_with("gen:"):
+		return CaseGenerator.generate(case_ref.substr(4), seed_value)
+	var d: Dictionary = case_data(case_ref).duplicate(true)
+	CaseVariants.apply(d, seed_value)
+	return d
+
+
+# --- кампания -------------------------------------------------------------------------------
+func levels() -> Array:
+	return campaign.get("levels", [])
+
+
+func level(id: String) -> Dictionary:
+	for l: Dictionary in levels():
+		if l["id"] == id:
+			return l
+	return {}
+
+
+func next_level(id: String) -> Dictionary:
+	var ls: Array = levels()
+	for i in ls.size():
+		if ls[i]["id"] == id and i + 1 < ls.size():
+			return ls[i + 1]
+	return {}
+
+
+## Ссылка на дело уровня: свой файл дела или генератор.
+func level_case_ref(lvl: Dictionary) -> String:
+	var c: String = str(lvl.get("case", "gen"))
+	return "gen:" + str(lvl["id"]) if c == "gen" else c
+
+
+func deadline_minutes() -> float:
+	return float(campaign.get("deadline_minutes", 20))
+
+
+func villain_frames(id: String) -> SpriteFrames:
+	var key: String = "villain_" + id
+	if _frames.has(key):
+		return _frames[key]
+	var tex: Texture2D = texture("villains/%s.png" % id)
+	var frames := SpriteFrames.new()
+	frames.remove_animation(&"default")
+	for row: Array in [["idle", 0, 2.0], ["menace", 1, 5.0]]:
+		frames.add_animation(row[0])
+		frames.set_animation_speed(row[0], row[2])
+		for i in 2:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = tex
+			atlas.region = Rect2(i * 32, int(row[1]) * 40, 32, 40)
+			frames.add_frame(row[0], atlas)
+	_frames[key] = frames
+	return frames
+
+
+func villain_portrait(id: String) -> Texture2D:
+	var p: String = "portraits/villain_%s.png" % id
+	return texture(p) if ResourceLoader.exists(SPRITES + p) else monster_portrait(id)
 
 
 func layout(carriage_id: String) -> Dictionary:

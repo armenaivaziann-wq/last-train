@@ -37,16 +37,23 @@ var _bark_rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	case_id = SaveManager.pending_case if SaveManager.pending_case != "" else "case_01"
-	case_data = Db.case_data(case_id)
+	var resume: bool = SaveManager.pending_resume and SaveManager.has_case_progress()
+	var level_id: String = SaveManager.pending_level
+	var seed_value: int = SaveManager.pending_seed
+	if resume:
+		var cp: Dictionary = SaveManager.profile["case_progress"]
+		case_id = str(cp.get("case_id", case_id))
+		level_id = str(cp.get("level", level_id))
+		seed_value = int(cp.get("seed", cp.get("murders", {}).get("seed", -1)))
+	if seed_value < 0:
+		seed_value = randi() % 1000000
+	# Данные дела собираются один раз на попытку: вариант улик/событий зависит от seed.
+	case_data = Db.resolve_case(case_id, seed_value)
 	layout = TrainLayout.build(PackedStringArray(case_data["carriages"]))
 	train.modulate_node = canvas_modulate
 	train.build(layout, str(case_data.get("ground", "forest")), entities, glow_layer)
 	_spawn_luggage()
-	var resume: bool = SaveManager.pending_resume and SaveManager.has_case_progress()
-	var seed_value: int = -1
-	if resume:
-		seed_value = int(SaveManager.profile["case_progress"].get("murders", {}).get("seed", -1))
-	investigation.setup(case_id, layout, seed_value)
+	investigation.setup(case_id, layout, seed_value, case_data, level_id)
 	# Дальше — копия данных дела с подставленными сценариями убийств.
 	case_data = investigation.data
 	_spawn_npcs()
@@ -74,6 +81,7 @@ func _ready() -> void:
 	AudioManager.play_music("music_explore")
 	AudioManager.set_train_ambience(true)
 	_on_clock(investigation.clock)
+	hud.set_key_clues(investigation.evidence.key_found_count())
 
 
 func _connect_signals() -> void:
@@ -339,12 +347,16 @@ func update_goal() -> void:
 
 func _on_clock(minute: float) -> void:
 	hud.update_clock(minute, investigation.start_time, investigation.arrival_time, str(case_data["station_to"]))
+	var warn: int = investigation.check_deadline_warnings()
+	if warn > 0 and not investigation.ended:
+		hud.deadline_warning(warn)
 	var tension: bool = investigation.minutes_left() <= 4.0 or investigation.escalated_at >= 0.0
 	if not arrest.running and not investigation.ended:
 		AudioManager.play_music("music_tension" if tension else "music_explore")
 
 
 func _on_clue(clue_id: String) -> void:
+	hud.set_key_clues(investigation.evidence.key_found_count())
 	var c: Dictionary = investigation.evidence.clue(clue_id)
 	var is_deduction: bool = c.get("type") == "contradiction"
 	hud.add_new_clue()

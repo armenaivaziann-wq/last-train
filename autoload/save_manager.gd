@@ -13,6 +13,33 @@ var profile: Dictionary = {}
 ## Дело, которое надо запустить в game.tscn (выставляет меню перед сменой сцены).
 var pending_case: String = ""
 var pending_resume: bool = false
+## Уровень кампании ("level_01"... или "daily") и seed попытки (−1 — выбрать новый).
+var pending_level: String = ""
+var pending_seed: int = -1
+
+
+## Подготовить запуск уровня кампании (новая попытка — новый seed, вариант дела меняется).
+func prepare_level(level_id: String) -> void:
+	var lvl: Dictionary = Db.level(level_id)
+	pending_level = level_id
+	pending_case = Db.level_case_ref(lvl)
+	pending_seed = randi() % 1000000
+	pending_resume = false
+	clear_case_progress()
+
+
+## Дело дня: одинаковый seed для всех в этот день, злодей — из открытых уровней.
+func prepare_daily() -> void:
+	var day: String = Time.get_date_string_from_system()
+	var seed_value: int = absi(hash("daily:" + day)) % 1000000
+	var unlocked: int = int(profile["campaign"]["unlocked"])
+	var pool: Array = Db.levels().slice(0, maxi(1, mini(unlocked, Db.levels().size())))
+	var lvl: Dictionary = pool[seed_value % pool.size()]
+	pending_level = "daily"
+	pending_case = "gen:" + str(lvl["villain"])
+	pending_seed = seed_value
+	pending_resume = false
+	clear_case_progress()
 
 
 func _ready() -> void:
@@ -33,6 +60,9 @@ func default_profile() -> Dictionary:
 		"quests": {"day": "", "daily": [], "week": "", "weekly": [], "claimed_achievements": [], "claimed_events": []},
 		"settings": {"music": 0.7, "sfx": 0.9, "ambient": 0.7, "vibration": true},
 		"case_progress": {},
+		# Кампания: доступ к сюжетным делам не зависит от монет и репутации.
+		"campaign": {"unlocked": 1, "stars": {}, "best_time": {}, "rewarded_stars": {}, "attempts": {},
+			"disguises": {}, "daily": {"day": "", "best_stars": 0}},
 	}
 
 
@@ -89,7 +119,8 @@ func set_setting(key: String, value: Variant) -> void:
 # --- незавершённое дело --------------------------------------------------------------------
 func has_case_progress() -> bool:
 	var cp: Dictionary = profile.get("case_progress", {})
-	return not cp.is_empty() and Db.has_case(str(cp.get("case_id", "")))
+	var cid: String = str(cp.get("case_id", ""))
+	return not cp.is_empty() and (cid.begins_with("gen:") or Db.has_case(cid))
 
 
 func store_case_progress(snapshot: Dictionary) -> void:

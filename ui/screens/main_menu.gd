@@ -162,9 +162,9 @@ func _refresh() -> void:
 		var cont := Ui.button("Продолжить дело", "play", "PrimaryButton", _continue_case, 70)
 		cont.tooltip_text = "«%s», %s" % [title, Db.format_time(float(cp.get("clock", 0)))]
 		_buttons.add_child(cont)
-		_buttons.add_child(Ui.button("Новое расследование", "map", "CyanButton", func() -> void: ui.open("route_map_screen"), 64))
+		_buttons.add_child(Ui.button("Кампания", "map", "CyanButton", func() -> void: ui.open("route_map_screen"), 64))
 	else:
-		_buttons.add_child(Ui.button("Новое расследование", "map", "PrimaryButton", func() -> void: ui.open("route_map_screen"), 70))
+		_buttons.add_child(Ui.button("Кампания", "map", "PrimaryButton", func() -> void: ui.open("route_map_screen"), 70))
 	_buttons.add_child(Ui.button("Развитие поезда", "train", "", func() -> void: ui.open("train_screen"), 60))
 	_buttons.add_child(Ui.button("Коллекции", "collection", "", func() -> void: ui.open("collection_screen"), 60))
 	var quests := Ui.button("Задания и события", "quest", "", func() -> void: ui.open("quests_screen"), 60)

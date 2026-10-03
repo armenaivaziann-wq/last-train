@@ -65,6 +65,9 @@ func _flash(color: Color, fade_in: float) -> ColorRect:
 	return r
 
 
+## Правильное задержание (≈2,5 с): реплика подозреваемого → мерцание света → дрожь силуэта →
+## обычный спрайт исчезает → истинная форма злодея (отдельный спрайт villains/<id>.png) →
+## короткая угрожающая поза → итог. Никакого фиолетового свечения — только свет и тень.
 func play_arrest(suspect: String) -> void:
 	var npc: NPCController = game.npcs.get(suspect)
 	if npc == null:
@@ -72,53 +75,39 @@ func play_arrest(suspect: String) -> void:
 	_begin()
 	AudioManager.play_music("")
 	await _approach(npc)
+	var villain_id: String = str(game.case_data["monster"])
+	var villain: Dictionary = Db.monster(villain_id)
 	npc.set_detained(true)
-	game.player.play_action("arrest", 1.4)
-	AudioManager.play_sfx("arrest")
-	game.hud.overlay.show_bark(npc, "Что?! Я... я просто пассажир!")
-	await _wait(1.2)
-	# Раскрытие: дрожь, вспышка, истинная форма
+	npc.sprite.modulate = Color.WHITE
+	game.player.play_action("arrest", 1.0)
+	AudioManager.play_sfx("arrest", -6.0)
+	game.hud.overlay.show_bark(npc, str(villain.get("reveal_line", "Я просто пассажир!")))
+	await _wait(0.6)
+	game.train.flicker(0.9)
+	AudioManager.play_sfx("lights_flicker", -6.0)
 	var tw := npc.create_tween()
 	for i in 6:
-		tw.tween_property(npc.sprite, "position:x", 2.0 if i % 2 == 0 else -2.0, 0.05)
+		tw.tween_property(npc.sprite, "position:x", 1.5 if i % 2 == 0 else -1.5, 0.05)
 	tw.tween_property(npc.sprite, "position:x", 0.0, 0.05)
 	await tw.finished
-	AudioManager.play_sfx("reveal")
-	var flash := _flash(Color(1, 0.95, 1, 1), 0.12)
-	await _wait(0.15)
+	game.train.blackout(0.25)
+	AudioManager.play_sfx("villain_sting")
+	await _wait(0.12)
 	npc.sprite.visible = false
-	var monster := AnimatedSprite2D.new()
-	monster.sprite_frames = Db.monster_frames(str(game.case_data["monster"]))
-	monster.offset = Vector2(0, -22)
-	monster.scale = Vector2(0.2, 0.2)
-	monster.play()
-	npc.add_child(monster)
-	var glow := Sprite2D.new()
-	glow.texture = Db.texture("ui/glow_purple.png")
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	glow.material = mat
-	glow.position = Vector2(0, -20)
-	glow.scale = Vector2(2.2, 2.2)
-	npc.add_child(glow)
-	var ft := flash.create_tween()
-	ft.tween_property(flash, "modulate:a", 0.0, 0.35)
-	ft.tween_callback(flash.get_parent().queue_free)
-	var mt := monster.create_tween()
-	mt.tween_property(monster, "scale", Vector2(1.15, 1.15), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	mt.tween_property(monster, "scale", Vector2.ONE, 0.15)
-	game.hud.overlay.show_bark(npc, "Ой-ой... Меня раскрыли!")
-	for i in 6:
-		game._sparkle(npc.global_position + Vector2(randf_range(-20, 20), randf_range(-30, 0)))
-	await _wait(1.0)
-	game.player.play_action("victory", 1.4)
-	AudioManager.play_sfx("success")
-	# Монстра забирает волшебная ловушка-фонарь
-	var gt := glow.create_tween().set_parallel(true)
-	gt.tween_property(glow, "scale", Vector2(0.3, 0.3), 1.0)
-	gt.tween_property(monster, "scale", Vector2(0.3, 0.3), 1.0).set_delay(0.3)
-	gt.tween_property(monster, "modulate:a", 0.0, 0.6).set_delay(0.7)
-	await _wait(1.5)
+	var true_form := AnimatedSprite2D.new()
+	true_form.name = "TrueForm"
+	true_form.sprite_frames = Db.villain_frames(villain_id)
+	true_form.offset = Vector2(0, CharacterSprite.FOOT_OFFSET)
+	true_form.play("idle")
+	npc.add_child(true_form)
+	await _wait(0.45)
+	true_form.play("menace")
+	game.hud.overlay.show_bark(npc, str(villain.get("menace_line", "...")))
+	await _wait(0.8)
+	true_form.play("idle")
+	game.player.play_action("victory", 1.0)
+	AudioManager.play_sfx("success", -4.0)
+	await _wait(0.5)
 	_end()
 
 
@@ -142,14 +131,35 @@ func play_wrong(suspect: String, reaction: String) -> void:
 	_end()
 
 
+## Поражение. По дедлайну злодей побеждает: короткая сцена его исчезновения.
 func play_failure(result: Dictionary) -> void:
 	_begin()
 	AudioManager.play_music("")
+	var villain_id: String = str(game.case_data["monster"])
+	var villain: Dictionary = Db.monster(villain_id)
 	if result["outcome"] == "timeout":
 		game.train.set_station(true)
-		Events.notify("Поезд прибыл на станцию %s. Монстр скрылся в толпе..." % game.case_data["station_to"], "train")
+		var npc: NPCController = game.npcs.get(str(game.case_data["culprit"]))
+		if npc and not npc.dead:
+			game.camera.focus_point = npc.global_position
+			game.train.flicker(1.0)
+			AudioManager.play_sfx("villain_escape")
+			await _wait(0.5)
+			npc.sprite.visible = false
+			var form := AnimatedSprite2D.new()
+			form.sprite_frames = Db.villain_frames(villain_id)
+			form.offset = Vector2(0, CharacterSprite.FOOT_OFFSET)
+			form.play("menace")
+			npc.add_child(form)
+			game.hud.overlay.show_bark(npc, str(villain.get("menace_line", "...")))
+			var tw := form.create_tween()
+			tw.tween_interval(0.6)
+			tw.tween_property(form, "modulate:a", 0.0, 0.7)
+			await tw.finished
+			npc.set_dead(true)
+		Events.notify(str(villain.get("escape_text", "Злодей скрылся.")), "train")
 	else:
 		Events.notify("Слишком много ошибок — охрана прекратила расследование.", "guard")
-	game.player.play_action("wrong", 1.6)
-	await _wait(2.2)
+	game.player.play_action("wrong", 1.2)
+	await _wait(1.2)
 	_end()

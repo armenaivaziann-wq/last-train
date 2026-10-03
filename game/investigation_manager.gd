@@ -40,12 +40,20 @@ var events_done: Array = []
 var camera_marks: int = 0
 var ended: bool = false
 var replay: bool = false
+## Уровень кампании ("level_01"..., "daily" или "") и seed попытки (вариант дела, убийства).
+var level_id: String = ""
+var case_seed: int = 0
+## Время ведётся одними часами дела: дедлайн, расписание пассажиров и убийства не расходятся.
+var deadline_minutes: float = 20.0
+var _warned: Array = []
 
 
-func setup(id: String, train_layout: TrainLayout, murder_seed: int = -1) -> void:
+func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_data: Dictionary = {}, level: String = "") -> void:
 	case_id = id
+	level_id = level
+	case_seed = seed_value if seed_value >= 0 else randi() % 1000000
 	# Копия: сценарии убийств дописывают в данные улики и объекты с конкретным временем.
-	data = Db.case_data(id).duplicate(true)
+	data = case_data if not case_data.is_empty() else Db.resolve_case(id, case_seed)
 	layout = train_layout
 	timeline = CaseTimeline.new(data, layout)
 	evidence = EvidenceSystem.new(data)
@@ -55,14 +63,17 @@ func setup(id: String, train_layout: TrainLayout, murder_seed: int = -1) -> void
 	seconds_per_minute = float(data.get("seconds_per_minute", 30))
 	history_start = Db.parse_time(data["history_start"])
 	start_time = Db.parse_time(data["start"])
-	arrival_time = Db.parse_time(data["arrival"])
+	# Дедлайн — 20 игровых минут с начала расследования (единый для всех дел).
+	deadline_minutes = Db.deadline_minutes()
+	arrival_time = start_time + deadline_minutes
+	data["arrival"] = Db.format_time(arrival_time)
 	clock = start_time
 	verifications_left = int(data.get("verifications", 2))
 	if ProgressionManager.has_carriage("surveillance"):
 		verifications_left += 1
 	replay = ProgressionManager.case_solved_before(id)
 	murders = MurderDirector.new()
-	murders.plan(data, layout, timeline, start_time, arrival_time, murder_seed)
+	murders.plan(data, layout, timeline, start_time, arrival_time, case_seed)
 
 
 # --- часы ---------------------------------------------------------------------------------
@@ -76,6 +87,28 @@ func release(reason: String) -> void:
 
 func is_running() -> bool:
 	return _holds.is_empty() and not ended
+
+
+func elapsed() -> float:
+	return clock - start_time
+
+
+## Звёзды за раскрытие (правила — в data/campaign.json):
+## 3 — за ≤12 мин, ≥3 ключевых улик и без ошибок; 2 — за ≤16 мин и не больше одной ошибки;
+## 1 — раскрыто до дедлайна; 0 — поражение.
+func compute_stars(solved: bool) -> int:
+	if not solved:
+		return 0
+	var rules: Dictionary = Db.campaign.get("stars", {})
+	var three: Dictionary = rules.get("three", {"max_minutes": 12, "min_key_clues": 3, "max_mistakes": 0})
+	var two: Dictionary = rules.get("two", {"max_minutes": 16, "max_mistakes": 1})
+	var t: float = elapsed()
+	if t <= float(three["max_minutes"]) + 0.0001 and evidence.key_found_count() >= int(three["min_key_clues"]) \
+			and mistakes <= int(three["max_mistakes"]):
+		return 3
+	if t <= float(two["max_minutes"]) + 0.0001 and mistakes <= int(two["max_mistakes"]):
+		return 2
+	return 1
 
 
 func minutes_left() -> float:
@@ -257,7 +290,10 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 	var rw: Dictionary = data.get("rewards", {})
 	var result: Dictionary = {"case_id": case_id, "outcome": outcome, "solved": outcome == "solved",
 		"mistakes": mistakes, "clues": evidence.found.size(), "monster": data["monster"],
-		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay}
+		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay,
+		"elapsed": elapsed(), "key_found": evidence.key_found_count(), "level": level_id,
+		"key_total": _key_total()}
+	result["stars"] = compute_stars(outcome == "solved")
 	var rewards: Dictionary = {"coins": 0, "crystals": 0, "reputation": 0}
 	if outcome == "solved":
 		var key: int = mini(3, int(accusation.get("key", 0)))
@@ -285,6 +321,23 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 	else:
 		rewards["coins"] = mini(120, 10 * evidence.found.size())
 		rewards["reputation"] = -3
+	# Звёзды кампании: награда только за новые звёзды, лучший результат сохраняется.
+	if level_id != "":
+		var rec: Dictionary = ProgressionManager.record_level(level_id, result["solved"], int(result["stars"]), elapsed())
+		result["new_stars"] = rec["new_stars"]
+		result["best_stars"] = rec["best"]
+		result["unlocked_next"] = rec["unlocked_next"]
+		var sr: Dictionary = Db.campaign.get("star_reward", {"coins": 40, "crystals": 5})
+		rewards["coins"] += int(sr["coins"]) * int(rec["new_stars"])
+		rewards["crystals"] += int(sr["crystals"]) * int(rec["new_stars"])
+		if level_id == "daily" and result["solved"] and int(rec["new_stars"]) > 0 and int(result["stars"]) == int(rec["new_stars"]):
+			var dr: Dictionary = Db.campaign.get("daily", {}).get("rewards", {})
+			rewards["coins"] += int(dr.get("coins", 0))
+			rewards["crystals"] += int(dr.get("crystals", 0))
+	if result["solved"]:
+		ProgressionManager.record_disguise(str(data["monster"]), str(data["culprit"]))
+		if evidence.key_found_count() >= _key_total() and _key_total() > 0:
+			Events.add_stat("all_key_clues")
 	result["rewards"] = rewards
 	EconomyManager.grant(rewards)
 	ProgressionManager.add_archive({"case_id": case_id, "title": data["title"], "solved": result["solved"],
@@ -296,12 +349,50 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 	return result
 
 
+## Сколько ключевых улик можно было найти: без улик убийств, которые не произошли
+## (сценарии из пула, которые не выбраны, или убийства после раскрытия).
+func _key_total() -> int:
+	var n: int = 0
+	for id: String in data.get("key_clues", []):
+		var sid: String = murder_scenario_of_clue(id)
+		if sid == "":
+			n += 1
+			continue
+		for m: Dictionary in murders.killed():
+			if m["id"] == sid:
+				n += 1
+	return n
+
+
+## Id сценария убийства, к которому относится улика (по префиксу), или "".
+func murder_scenario_of_clue(id: String) -> String:
+	var scenarios: Dictionary = data.get("murders", {}).get("scenarios", {})
+	for sid: String in scenarios:
+		var pre: String = str(scenarios[sid].get("prefix", ""))
+		if pre != "" and (id.begins_with(pre + "_") or id == "c_" + pre or id.begins_with("x_" + pre + "_")):
+			return sid
+	return ""
+
+
+func check_deadline_warnings() -> int:
+	## Возвращает порог (10/5/1 мин), который только что пройден, или 0.
+	var left: float = minutes_left()
+	for th: int in [10, 5, 1]:
+		if left <= th and not th in _warned:
+			_warned.append(th)
+			for smaller: int in [10, 5, 1]:
+				if smaller > th and not smaller in _warned:
+					_warned.append(smaller)
+			return th
+	return 0
+
+
 # --- сохранение ---------------------------------------------------------------------------
 func snapshot() -> Dictionary:
 	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
 		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
-		"murders": murders.serialize()}
+		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned}
 
 
 func restore(s: Dictionary) -> void:
@@ -312,6 +403,7 @@ func restore(s: Dictionary) -> void:
 	mistakes = int(s.get("mistakes", 0))
 	verifications_left = int(s.get("verifications_left", verifications_left))
 	camera_marks = int(s.get("camera_marks", 0))
+	_warned = s.get("warned", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):
 		events_done.append(int(e))

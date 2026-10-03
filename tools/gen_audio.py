@@ -396,7 +396,24 @@ def murder_sfx():
     save("discovery_stinger", reverb(b, mix_=0.4), 0.65)
 
 
+def villain_sfx():
+    """Тихий низкий акцент раскрытия злодея и короткий «уход в темноту» при поражении."""
+    b = buf(1.6)
+    for n_ in (33, 40, 44):
+        add_tone(b, 0.0, 1.5, note_freq(n_), 0.2, "tri", a=0.02, d=0.4, s=0.4, r=0.8, vib=0.004)
+    add_noise(b, 0, 0.5, 0.25, 0.05, 6)
+    save("villain_sting", lowpass(reverb(b, mix_=0.35), 0.35), 0.45)
+    b = buf(1.8)
+    for i in range(len(b)):
+        t = i / RATE
+        b[i] = rnd.uniform(-1, 1) * max(0.0, 1 - t / 1.8) * 0.6
+    b = lowpass(b, 0.04)
+    add_tone(b, 0.0, 1.6, 98, 0.25, "sine", a=0.05, d=0.5, s=0.3, r=0.9)
+    save("villain_escape", reverb(b, mix_=0.3), 0.5)
+
+
 def main():
+    villain_sfx()
     murder_sfx()
     sfx()
     train_loop()
