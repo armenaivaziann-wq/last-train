@@ -37,6 +37,9 @@ func _ok(cond: Dictionary, evidence: EvidenceSystem, ctx: Dictionary) -> bool:
 		if not ev in ctx.get("events", []):
 			return false
 	var states: Array = cond.get("requires_state", [])
+	# Спящий не отвечает — кроме реплик, написанных именно для сна (притворщик тоже «спит»).
+	if str(ctx.get("state", "")) == "asleep" and not "asleep" in states:
+		return false
 	if not states.is_empty() and not str(ctx.get("state", "calm")) in states:
 		return false
 	for h: String in cond.get("hide_if", []):
@@ -50,6 +53,8 @@ func greet(who: String, evidence: EvidenceSystem = null, ctx: Dictionary = {}) -
 	if ctx.get("wrong", false) and d.has("wrong_greet"):
 		return str(d["wrong_greet"])
 	var text: String = str(d.get("greet", "..."))
+	if str(ctx.get("state", "")) == "asleep":
+		text = str(d.get("sleep_greet", "Хр-р-р... (крепко спит)"))
 	if evidence:
 		for g: Dictionary in d.get("greets", []):
 			if _ok(g, evidence, ctx):
@@ -109,6 +114,8 @@ func reaction(who: String, clue_id: String, evidence: EvidenceSystem, ctx: Dicti
 			if _ok(v, evidence, ctx):
 				chosen = v
 	if chosen.is_empty():
+		if str(ctx.get("state", "")) == "asleep":
+			return {"a": ["Хр-р-р... (не просыпается)"], "known": false}
 		return {"a": [str(d.get("default_reaction", DEFAULT_REACTION))], "known": false}
 	var out: Dictionary = chosen.duplicate()
 	out["known"] = true

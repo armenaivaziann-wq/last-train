@@ -78,7 +78,7 @@ func _sweep() -> bool:
 		for h: Dictionary in o.get("hotspots", []):
 			inv.give(str(h["clue"]))
 	for npc: String in d.get("dialogues", {}):
-		if inv.state_of(npc) in ["dead", "missing", "asleep"]:
+		if inv.state_of(npc) in ["dead", "missing"]:
 			continue
 		var ctx: Dictionary = inv.dialogue_ctx(npc)
 		for t: Dictionary in inv.dialogue.topics(npc, ev, ctx):
@@ -156,11 +156,7 @@ func _play(level_id: String, seed_value: int) -> void:
 	inv.restore(JSON.parse_string(JSON.stringify(snap)))
 	check_eq(inv.evidence.found.size(), found, level_id + ": загрузка сохраняет улики")
 	check_eq(inv.story.done.size(), fired, level_id + ": загрузка сохраняет события")
-	# Неверное обвинение: ошибка, но дело продолжается.
-	inv.clock = inv.start_time + 10.0  # решатель шёл до конца; обвинения — посреди дела
-	var wrong: String = d["suspects"].filter(func(s: String) -> bool: return s != d["culprit"] and inv.state_of(s) != "dead")[0]
-	var r0: Dictionary = inv.accuse(wrong, against.slice(0, 3), "", 0, 0)
-	check(not r0["correct"] and not inv.ended, level_id + ": неверное обвинение — ошибка без конца дела")
+	inv.clock = inv.start_time + 10.0  # решатель шёл до конца; обвинение — посреди дела
 	# Верное обвинение с верным мотивом и способом.
 	var vd: Dictionary = d["verdict"]
 	var r: Dictionary = inv.accuse(d["culprit"], against.slice(0, 3), "", int(vd["motive"]), int(vd["method"]))
@@ -187,6 +183,28 @@ func test_levels_timeout() -> void:
 		_inv().finished.connect(func(x: Dictionary) -> void: res.append(x))
 		_inv().advance(21.0)
 		check(res.size() == 1 and res[0]["outcome"] == "timeout" and int(res[0]["stars"]) == 0, level_id + ": время вышло — поражение")
+		game.queue_free()
+		game = null
+		await wait_frames(2)
+
+
+func test_levels_wrong_accusation() -> void:
+	for level_id: String in AUTHORED:
+		if Db.level(level_id).get("case", "gen") == "gen":
+			continue
+		await _start_level(level_id, 5)
+		var inv: InvestigationManager = _inv()
+		var d: Dictionary = inv.data
+		var res: Array = []
+		inv.finished.connect(func(x: Dictionary) -> void: res.append(x))
+		var wrong: String = d["suspects"].filter(func(s: String) -> bool: return s != d["culprit"])[0]
+		var r: Dictionary = inv.accuse(wrong, [], "", 0, 0)
+		check(not r["correct"] and inv.mistakes == 1, level_id + ": неверное обвинение засчитано ошибкой")
+		if inv.max_mistakes() > 1:
+			check(not inv.ended, level_id + ": после первой ошибки дело продолжается")
+			check(inv.dialogue_ctx(wrong)["wrong"], level_id + ": обвинённый помнит ошибку (реплика после обвинения)")
+		else:
+			check(inv.ended and res.size() == 1 and res[0]["outcome"] == "mistakes" and int(res[0]["stars"]) == 0, level_id + ": права на ошибку нет — поражение")
 		game.queue_free()
 		game = null
 		await wait_frames(2)
