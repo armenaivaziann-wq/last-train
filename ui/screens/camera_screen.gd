@@ -248,8 +248,16 @@ func _apply_time() -> void:
 		_status.text = "В кадре никого. Перематывайте шкалу — метки показывают движение."
 	else:
 		var names: PackedStringArray = []
+		var silhouettes: int = 0
 		for id in who:
-			names.append(Db.char_name(id))
+			# В тёмной зоне лица не видно; перевёртыша камера видит в чужом облике.
+			var car: String = inv.layout.carriage_at(inv.timeline.position_at(id, _t).x)
+			if cs.villain_world and cs.villain_world._in_zone(car, _t):
+				silhouettes += 1
+			else:
+				names.append(Db.char_name(inv.hooks.appearance(id, _t)))
+		if silhouettes > 0:
+			names.append("силуэт" if silhouettes == 1 else "силуэты (%d)" % silhouettes)
 		_status.text = "В кадре: " + ", ".join(names)
 
 

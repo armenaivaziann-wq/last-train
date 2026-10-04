@@ -205,14 +205,14 @@ func _update_window_reflections() -> void:
 				continue
 			var p: Vector2 = inv.timeline.position_at(id, tt)
 			var d: Vector2 = p - w["pos"]
-			if absf(d.x) < 28.0 and absf(d.y) < 34.0 and d.length() < bd:
+			if absf(d.x) < 34.0 and d.y > -30.0 and d.y < 60.0 and d.length() < bd:
 				bd = d.length()
 				var sheet: String = str(Db.character(game.npcs[id].look_id).get("sprite", id))
 				best_tex = Db.character_frames(sheet).get_frame_texture(&"idle_down", 0)
 		var tr: Array = game.player.track_at(tt)
 		if not tr.is_empty():
 			var dp: Vector2 = (tr[1] as Vector2) - w["pos"]
-			if absf(dp.x) < 28.0 and absf(dp.y) < 34.0 and dp.length() < bd:
+			if absf(dp.x) < 34.0 and dp.y > -30.0 and dp.y < 60.0 and dp.length() < bd:
 				best_tex = game.player.sprite.sprite_frames.get_frame_texture(&"idle_down", 0)
 		spr.visible = best_tex != null
 		spr.texture = best_tex

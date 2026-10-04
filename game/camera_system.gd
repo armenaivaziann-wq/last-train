@@ -92,6 +92,8 @@ func visible_on(cam_id: String, t: float) -> Array[String]:
 	var out: Array[String] = []
 	var cam: Dictionary = layout.camera(cam_id)
 	for id in investigation.timeline.npc_ids():
+		if investigation.hidden_at(id, t):
+			continue
 		if cam["rect"].has_point(investigation.timeline.position_at(id, t)):
 			out.append(id)
 	return out

@@ -142,6 +142,9 @@ func _object_place(oid: String) -> String:
 	for it: Dictionary in inv.data.get("extra_items", []):
 		if it["id"] == oid:
 			return inv.layout.carriage_name(it["carriage"]).to_lower()
+	for l: Dictionary in inv.data.get("shadow_ghost", {}).get("linger", []):
+		if l["object"] == oid:
+			return inv.layout.carriage_name(l["carriage"]).to_lower()
 	var def: Dictionary = inv.story.item_def(oid)
 	if not def.is_empty():
 		return inv.layout.carriage_name(def["carriage"]).to_lower()

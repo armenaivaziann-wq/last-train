@@ -388,9 +388,11 @@ func update_goal() -> void:
 		if investigation.suspects.flag(id, "met"):
 			met = true
 	var goal: String = murder_goal()
+	if goal == "":
+		goal = story_goal()
 	var speaker: String = str(case_data.get("brief", {}).get("speaker", "agata"))
 	if goal == "" and not met:
-		goal = "Цель: поговорите с %s" % ("проводницей" if speaker == "agata" else Db.char_name(speaker))
+		goal = "Цель: поговорите с проводницей" if speaker == "agata" else "Цель: выслушайте рассказ — %s" % Db.char_name(speaker)
 	elif goal == "" and facts < 8:
 		goal = "Цель: найдите улики (%d/8)" % facts
 	elif goal == "" and deductions == 0:
@@ -402,6 +404,19 @@ func update_goal() -> void:
 
 ## Следующий шаг по последнему убийству — из фактов события и уже найденных улик.
 ## Пусто, если по убийствам всё сделано (тогда цель — общее расследование).
+## Цели авторского дела по ходу расследования: "goals": [{text, until: [улики], requires: [улики]}].
+## Берётся первая цель, для которой всё нужное найдено, а результата ещё нет.
+func story_goal() -> String:
+	var ev: EvidenceSystem = investigation.evidence
+	for g: Dictionary in case_data.get("goals", []):
+		if g.get("requires", []).any(func(id: String) -> bool: return not ev.has(id)):
+			continue
+		if g.get("until", []).any(func(id: String) -> bool: return ev.has(id)):
+			continue
+		return "Цель: " + str(g["text"])
+	return ""
+
+
 func murder_goal() -> String:
 	var ev: EvidenceSystem = investigation.evidence
 	var killed: Array = investigation.murders.killed()

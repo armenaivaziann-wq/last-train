@@ -180,6 +180,14 @@ func test_levels_timeout() -> void:
 			continue
 		await _start_level(level_id, 3)
 		var res: Array = []
+		# Подсказки: три ступени для одной цели, тексты есть, рейтинг снижается.
+		var levels: Array = []
+		for i in 3:
+			var h: Dictionary = _inv().take_hint()
+			check(str(h.get("text", "")).length() > 10, "%s: подсказка %d с текстом" % [level_id, i + 1])
+			levels.append(int(h["level"]))
+		check_eq(levels, [1, 2, 3], level_id + ": подсказки становятся точнее")
+		check(_inv().compute_stars(true) <= 1, level_id + ": 3 подсказки снижают рейтинг")
 		_inv().finished.connect(func(x: Dictionary) -> void: res.append(x))
 		_inv().advance(21.0)
 		check(res.size() == 1 and res[0]["outcome"] == "timeout" and int(res[0]["stars"]) == 0, level_id + ": время вышло — поражение")
