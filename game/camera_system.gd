@@ -53,7 +53,7 @@ func set_time(t: float) -> void:
 		var was_dead: bool = npc.dead
 		npc.detained = false
 		npc.dead = false
-		npc.visible = not investigation.murders.dead_at(id, playback_time)
+		npc.visible = not investigation.murders.dead_at(id, playback_time) and not investigation.hidden_at(id, playback_time)
 		npc.apply(investigation.timeline.state_at(id, playback_time))
 		npc.detained = was_detained
 		npc.dead = was_dead

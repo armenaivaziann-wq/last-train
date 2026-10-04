@@ -137,6 +137,10 @@ func apply(t: float) -> void:
 		var st: Dictionary = tl.state_at(owner, t + lead)
 		_ghost.visible = not game.investigation.murders.dead_at(owner, t)
 		_ghost.global_position = (st["pos"] as Vector2) + Vector2(4, 2)
+		# Отлучки тени без хозяина: тень одна стоит в другом месте.
+		for a: Dictionary in sg.get("away", []):
+			if t >= Db.parse_time(str(a["from"])) and t < Db.parse_time(str(a["to"])):
+				_ghost.global_position = Vector2(game.layout.offsets[a["carriage"]] + float(a["pos"][0]), float(a["pos"][1]))
 		for l: Dictionary in _lingers:
 			var on: bool = t >= Db.parse_time(str(l["def"]["from"])) and t < Db.parse_time(str(l["def"]["to"]))
 			l["sprite"].visible = on

@@ -91,6 +91,15 @@ static func finish(d: Dictionary) -> void:
 			out.append([fmt(en[0]), en[1], en[2]])
 		d["schedules"][npc] = out
 	for c: Dictionary in d.get("auto_cameras", []):
+		if c.has("window"):
+			# Запись без человека в кадре (тень, свет): окно задано явно.
+			d["camera_clues"].append({"id": c["id"], "camera": c["camera"], "npc": str(c.get("npc", "")), "windows": [c["window"]]})
+			d["clues"][c["id"]] = {"type": "camera", "title": str(c["title"]).replace("{cam}", "К" + str(c["camera"]).substr(3)),
+				"text": str(c["text"]).replace("{cam}", "К" + str(c["camera"]).substr(3)), "points_to": c.get("points_to", []),
+				"time": Db.format_time(Db.parse_time(c["window"][0]))}
+			if c.get("key", false) and not c["id"] in d["key_clues"]:
+				d["key_clues"].append(c["id"])
+			continue
 		var at2: float = Db.parse_time(str(c["at"]))
 		var npc2: String = str(c["npc"])
 		var cam: String = str(c.get("camera", ""))

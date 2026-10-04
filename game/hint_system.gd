@@ -126,6 +126,9 @@ func _object_in_world(oid: String) -> bool:
 			return true
 	if oid in inv.story.spawned:
 		return true
+	for l: Dictionary in inv.data.get("shadow_ghost", {}).get("linger", []):
+		if l["object"] == oid and inv.clock >= Db.parse_time(str(l["from"])) and inv.clock < Db.parse_time(str(l["to"])):
+			return true
 	if inv.murders.murders.any(func(m: Dictionary) -> bool: return m["victim"] != "" and inv.murders.stage_done(m, "kill") and (MurderDirector.body_object_id(m) == oid or "obj_%s_steps" % m["prefix"] == oid)):
 		return true
 	for cid in inv.layout.carriage_ids:

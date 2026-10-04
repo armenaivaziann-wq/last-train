@@ -249,6 +249,14 @@ func state_of(npc: String) -> String:
 	return str(npc_state.get(npc, "calm"))
 
 
+## Человек спрятан (заперт, пропал) по сюжету — на записях камер его нет: "hidden": [{npc, from, to}].
+func hidden_at(npc: String, t: float) -> bool:
+	for h: Dictionary in data.get("hidden", []):
+		if h["npc"] == npc and t >= Db.parse_time(str(h["from"])) and t < Db.parse_time(str(h["to"])):
+			return true
+	return false
+
+
 ## Контекст для диалогов: что уже произошло и в каком состоянии собеседник.
 func dialogue_ctx(npc: String) -> Dictionary:
 	return {"events": story.done, "state": state_of(npc), "wrong": suspects.flag(npc, "wrongly_accused")}
@@ -296,8 +304,10 @@ func camera_clues_at(cam_id: String, t: float, tolerance_min: float = 10.0 / 60.
 			if t < t0 or t > t1:
 				continue
 			# NPC действительно в кадре рядом с отмеченным моментом
-			var seen: bool = false
+			var seen: bool = str(cc.get("npc", "")) == ""  # запись без человека (тень, свет, звук)
 			for k in range(-2, 3):
+				if seen:
+					break
 				var tt: float = clampf(t + k * tolerance_min / 2.0, Db.parse_time(w[0]), Db.parse_time(w[1]))
 				if cam["rect"].has_point(timeline.position_at(cc["npc"], tt)):
 					seen = true

@@ -28,6 +28,9 @@ func _inv() -> InvestigationManager:
 
 func _world_objects() -> Array:
 	var out: Array = game.world_items.keys()
+	for l: Dictionary in _inv().data.get("shadow_ghost", {}).get("linger", []):
+		if _inv().clock >= Db.parse_time(str(l["from"])) and _inv().clock < Db.parse_time(str(l["to"])):
+			out.append(l["object"])
 	for cid in game.layout.carriage_ids:
 		for it: Dictionary in Db.layout(cid).get("interactables", []):
 			out.append(it["id"])
