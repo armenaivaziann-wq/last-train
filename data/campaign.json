@@ -20,7 +20,7 @@
    "from": "Старая шахта", "to": "Эхо", "pos": [440, 215]},
   {"id": "level_07", "number": 7, "title": "Поезд спит", "villain": "sleeper", "case": "level_07",
    "from": "Эхо", "to": "Лунный разъезд", "pos": [500, 270]},
-  {"id": "level_08", "number": 8, "title": "Двойник проводницы", "villain": "conductor_double", "case": "gen",
+  {"id": "level_08", "number": 8, "title": "Два проводника", "villain": "conductor_double", "case": "level_08",
    "from": "Лунный разъезд", "to": "Снежный перевал", "pos": [560, 200]},
   {"id": "level_09", "number": 9, "title": "Кукловод", "villain": "puppeteer", "case": "gen",
    "from": "Снежный перевал", "to": "Огни", "pos": [520, 120]},
