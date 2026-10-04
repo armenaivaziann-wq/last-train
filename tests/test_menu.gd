@@ -16,7 +16,7 @@ func test_menu_and_meta_screens_open() -> void:
 
 func test_continue_generated_case_title() -> void:
 	SaveManager.profile["case_progress"] = {"case_id": "gen:level_04", "level": "level_04", "clock": 124.0, "seed": 5}
-	check_eq(load("res://ui/screens/main_menu.gd").case_title(SaveManager.profile["case_progress"]), "Дело 4: Мимик багажа", "название сгенерированного дела берётся из кампании")
+	check_eq(load("res://ui/screens/main_menu.gd").case_title(SaveManager.profile["case_progress"]), "Дело 4: Чемодан, который дышит", "название сгенерированного дела берётся из кампании")
 	SaveManager.profile["case_progress"] = {"case_id": "gen:shadow", "level": "daily", "clock": 124.0, "seed": 5}
 	check_eq(load("res://ui/screens/main_menu.gd").case_title(SaveManager.profile["case_progress"]), "Дело дня", "дело дня")
 	var menu: Control = load("res://ui/screens/main_menu.tscn").instantiate()

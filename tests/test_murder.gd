@@ -58,7 +58,7 @@ func test_victims_vary_between_seeds() -> void:
 		var md := MurderDirector.new()
 		md.plan(c, tl, CaseTimeline.new(c, tl), 118.0, 138.0, s)
 		firsts[md.murders[0]["victim"]] = true
-	check(firsts.size() >= 2, "первая жертва случайна (%s)" % firsts.keys())
+	check(firsts.size() >= 2, "первая жертва случайна (%s)" % [firsts.keys()])
 
 
 func test_one_murder_per_tunnel_and_once() -> void:

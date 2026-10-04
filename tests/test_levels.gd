@@ -137,7 +137,7 @@ func _play(level_id: String, seed_value: int) -> void:
 	await _start_level(level_id, seed_value)
 	var inv: InvestigationManager = _inv()
 	_check_data(level_id)
-	check(inv.data.get("murders", {}).get("victim_pool", []).is_empty() or level_id == "level_10", level_id + ": в туннелях не убивают (если не задумано)")
+	check(inv.data.get("murders", {}).get("victim_pool", []).is_empty(), level_id + ": в туннелях не убивают (если не задумано)")
 	_solve_all()
 	var d: Dictionary = inv.data
 	var missing: Array = d["key_clues"].filter(func(id: String) -> bool: return not inv.evidence.has(id))

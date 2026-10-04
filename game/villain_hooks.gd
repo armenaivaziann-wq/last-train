@@ -130,6 +130,8 @@ func _plan_mirror() -> void:
 
 
 func has_reflection(npc: String) -> bool:
+	if inv and npc in inv.data.get("no_reflection", []):
+		return false
 	return not (villain == "mirror" and npc == culprit)
 
 

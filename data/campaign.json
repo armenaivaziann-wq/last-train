@@ -22,9 +22,9 @@
    "from": "Эхо", "to": "Лунный разъезд", "pos": [500, 270]},
   {"id": "level_08", "number": 8, "title": "Два проводника", "villain": "conductor_double", "case": "level_08",
    "from": "Лунный разъезд", "to": "Снежный перевал", "pos": [560, 200]},
-  {"id": "level_09", "number": 9, "title": "Кукловод", "villain": "puppeteer", "case": "gen",
+  {"id": "level_09", "number": 9, "title": "Кукловод", "villain": "puppeteer", "case": "level_09",
    "from": "Снежный перевал", "to": "Огни", "pos": [520, 120]},
-  {"id": "level_10", "number": 10, "title": "Пассажир ноль", "villain": "passenger_zero", "case": "gen",
+  {"id": "level_10", "number": 10, "title": "Пассажир ноль", "villain": "passenger_zero", "case": "level_10",
    "from": "Огни", "to": "Конечная", "pos": [420, 80], "final": true}
  ],
  "daily": {"rewards": {"coins": 150, "crystals": 6}}

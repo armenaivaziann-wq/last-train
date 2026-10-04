@@ -73,6 +73,11 @@ func setup(g: Game) -> void:
 		dark.visible = false
 		g.glow_layer.add_child(dark)
 		_dark[cid] = dark
+	# Люди без тени по сюжету дела.
+	for id: String in g.case_data.get("no_shadow", []):
+		var ns: NPCController = g.npcs.get(id)
+		if ns:
+			ns._shadow.visible = false
 	var sg: Dictionary = g.case_data.get("shadow_ghost", {})
 	if not sg.is_empty():
 		_ghost = _shadow_sprite()

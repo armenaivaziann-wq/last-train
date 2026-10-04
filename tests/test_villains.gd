@@ -4,7 +4,10 @@ extends TestSuite
 
 func _start(level_id: String, seed_value: int = 21) -> void:
 	SaveManager.profile["campaign"]["unlocked"] = 10
-	SaveManager.prepare_level(level_id)
+	# Общие способности злодеев живут в сгенерированных делах (дело дня); уровни кампании —
+	# авторские и описывают проявления злодея сами.
+	SaveManager.prepare_daily()
+	SaveManager.pending_case = "gen:" + str(Db.level(level_id)["villain"])
 	SaveManager.pending_seed = seed_value
 	game = load("res://game/game.tscn").instantiate()
 	add_child(game)
