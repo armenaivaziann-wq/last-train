@@ -158,7 +158,7 @@ func _refresh() -> void:
 	Ui.clear(_buttons)
 	if SaveManager.has_case_progress():
 		var cp: Dictionary = SaveManager.profile["case_progress"]
-		var title: String = str(Db.case_data(str(cp["case_id"])).get("title", ""))
+		var title: String = case_title(cp)
 		var cont := Ui.button("Продолжить дело", "play", "PrimaryButton", _continue_case, 70)
 		cont.tooltip_text = "«%s», %s" % [title, Db.format_time(float(cp.get("clock", 0)))]
 		_buttons.add_child(cont)
@@ -173,6 +173,20 @@ func _refresh() -> void:
 		quests.theme_type_variation = "PurpleButton"
 	_buttons.add_child(quests)
 	_buttons.add_child(Ui.button("Как играть", "question", "GhostButton", func() -> void: ui.open("help_screen"), 56))
+
+
+## Название сохранённого дела: у уровней кампании — из data/campaign.json, у дела дня —
+## «Дело дня», у дела-файла — из него. Сгенерированные дела не читаются как файлы.
+static func case_title(cp: Dictionary) -> String:
+	var lvl: Dictionary = Db.level(str(cp.get("level", "")))
+	if not lvl.is_empty():
+		return "Дело %d: %s" % [int(lvl["number"]), lvl["title"]]
+	if str(cp.get("level", "")) == "daily":
+		return "Дело дня"
+	var cid: String = str(cp.get("case_id", ""))
+	if Db.has_case(cid):
+		return str(Db.case_data(cid).get("title", ""))
+	return "Незавершённое дело"
 
 
 func _has_claimable() -> bool:
