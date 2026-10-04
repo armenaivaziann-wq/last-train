@@ -54,7 +54,12 @@ func resolve_case(case_ref: String, seed_value: int) -> Dictionary:
 	if case_ref.begins_with("gen:"):
 		return CaseGenerator.generate(case_ref.substr(4), seed_value)
 	var d: Dictionary = case_data(case_ref).duplicate(true)
+	# Авторское дело кампании: своя история поверх общего поезда.
+	if d.has("extends"):
+		d = CaseBuilder.extend(case_data(str(d["extends"])), d)
 	CaseVariants.apply(d, seed_value)
+	if d.has("excursions") or d.has("auto_cameras"):
+		CaseBuilder.finish(d)
 	return d
 
 

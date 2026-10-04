@@ -26,6 +26,8 @@ var dead: bool = false
 var look_id: String = ""
 ## Тень теневика: падает к лампе и дёргается при мигании.
 var shadow_wrong: bool = false
+## Состояние по ходу дела: calm / scared / sick / asleep / missing / rescued / hiding / suspicious.
+var condition: String = "calm"
 var _react_left: float = 0.0
 var _react_pos: Vector2
 ## Сбой копирования (признак двойника): [мин, макс] секунд между вспышками, пусто — нет.
@@ -113,6 +115,18 @@ func apply(s: Dictionary) -> void:
 
 
 ## Погиб: персонаж исчезает из мира (его заменяет тело на месте преступления).
+## Видимое состояние пассажира (болен — бледный и кашляет, спит, испуган, пропал).
+func set_condition(state: String) -> void:
+	condition = state
+	var missing: bool = state == "missing"
+	if not dead:
+		visible = not missing
+		interactable.enabled = not missing
+	sprite.modulate = Color(0.82, 1.0, 0.78) if state == "sick" else Color.WHITE
+	if state in ["scared", "asleep", "sick"]:
+		_react_left = 0.0
+
+
 func set_look(char_id: String) -> void:
 	if char_id == look_id:
 		return
@@ -148,11 +162,15 @@ func _process(delta: float) -> void:
 	# Облачко занятия появляется периодически (не у идущих и не во время разговора)
 	_react_left = maxf(0.0, _react_left - delta)
 	var reacting: bool = _react_left > 0.0 and not detained
+	var cond_icon: String = {"sick": "sick", "asleep": "sleep", "scared": "sweat", "hiding": "dots"}.get(condition, "")
 	var show_bubble: bool = reacting or (state != "walking" and talking_to == null and not detained \
-		and fmod(_time + _bubble_phase, 7.0) < 2.6 and ACT_ICON.has(act))
+		and (cond_icon != "" or (fmod(_time + _bubble_phase, 7.0) < 2.6 and ACT_ICON.has(act))))
+	if cond_icon != "" and not reacting:
+		show_bubble = show_bubble and fmod(_time + _bubble_phase, 3.0) < 2.2
 	_bubble.visible = show_bubble
 	if show_bubble:
-		_bubble_icon.texture = Db.texture("acts/%s.png" % ("exclaim" if reacting else ACT_ICON[act]))
+		var icon_name: String = "exclaim" if reacting else (cond_icon if cond_icon != "" else ACT_ICON[act])
+		_bubble_icon.texture = Db.texture("acts/%s.png" % icon_name)
 		_bubble.position.y = -46 + (3 if state == "sitting" else 0) + round(sin(_time * 3.0))
 	_update_glitch(delta)
 	if shadow_wrong:

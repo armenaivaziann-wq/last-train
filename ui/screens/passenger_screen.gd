@@ -52,7 +52,7 @@ func build(args: Dictionary) -> void:
 	var main := Ui.hbox(14)
 	var talk := Ui.button("Поговорить", "talk", "CyanButton", func() -> void: game.open_dialogue(_id), 70)
 	talk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	if inv.dialogue.has_new_topics(_id, inv.evidence):
+	if inv.dialogue.has_new_topics(_id, inv.evidence, inv.dialogue_ctx(_id)):
 		talk.text = "Поговорить  •"
 	main.add_child(talk)
 	var check := Ui.button("Проверить", "idcard", "PrimaryButton", _toggle_check, 70)

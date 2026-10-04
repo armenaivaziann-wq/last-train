@@ -12,6 +12,10 @@ signal accused(result: Dictionary)
 signal finished(result: Dictionary)
 ## Стадия события-убийства (tunnel_in, flicker, kill, tunnel_out, discovered).
 signal murder_stage(murder: Dictionary, stage: String)
+## Сработало сюжетное событие (визуальные и звуковые эффекты применяет Game).
+signal story_event(event: Dictionary)
+## Изменилось состояние пассажира (болен, спит, пропал...).
+signal npc_state_changed(npc: String, state: String)
 
 const WRONG_TIME_PENALTY: float = 2.0
 const VERIFY_TIME_COST: float = 1.5
@@ -26,6 +30,17 @@ var suspects: SuspectManager
 var dialogue: DialogueSystem
 var murders: MurderDirector
 var hooks: VillainHooks
+var story: StoryDirector
+## Состояния пассажиров: calm / scared / sick / asleep / missing / rescued / suspicious / hiding.
+var npc_state: Dictionary = {}
+## Сколько подсказок взял игрок (снижает итоговый рейтинг, но не мешает пройти дело).
+var hints_used: int = 0
+## Какие улики кому уже предъявлены: "npc|clue".
+var presented: Array = []
+## Верно ли названы мотив и способ в последнем обвинении (если дело их спрашивает).
+var verdict_ok: bool = true
+var hint_system: HintSystem
+var _hint_levels: Dictionary = {}   # цель подсказки → уже выданный уровень
 
 var clock: float = 0.0
 var start_time: float = 0.0
@@ -77,6 +92,11 @@ func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_dat
 	murders.plan(data, layout, timeline, start_time, arrival_time, case_seed)
 	hooks = VillainHooks.new()
 	hooks.plan(self, case_seed)
+	story = StoryDirector.new()
+	story.plan(self)
+	hint_system = HintSystem.new(self)
+	for npc: String in data.get("initial_states", {}):
+		npc_state[npc] = str(data["initial_states"][npc])
 
 
 # --- часы ---------------------------------------------------------------------------------
@@ -102,6 +122,19 @@ func elapsed() -> float:
 func compute_stars(solved: bool) -> int:
 	if not solved:
 		return 0
+	var base: int = _base_stars()
+	# Неверно названы мотив или способ — максимум 2 звезды.
+	if not verdict_ok:
+		base = mini(base, 2)
+	# Подсказки снижают рейтинг: 1–2 подсказки −1 звезда, 3 и больше −2 (но не ниже 1).
+	if hints_used >= 3:
+		base -= 2
+	elif hints_used >= 1:
+		base -= 1
+	return maxi(1, base)
+
+
+func _base_stars() -> int:
 	var rules: Dictionary = Db.campaign.get("stars", {})
 	var three: Dictionary = rules.get("three", {"max_minutes": 12, "min_key_clues": 3, "max_mistakes": 0})
 	var two: Dictionary = rules.get("two", {"max_minutes": 16, "max_mistakes": 1})
@@ -132,6 +165,8 @@ func advance(minutes: float) -> void:
 	_check_events()
 	for pair: Array in murders.due(clock):
 		murder_stage.emit(pair[0], pair[1])
+	for e: Dictionary in story.due(clock):
+		_fire_story(e)
 	clock_changed.emit(clock)
 	if clock >= arrival_time:
 		finish("timeout")
@@ -169,6 +204,8 @@ func _on_clue_added(id: String) -> void:
 		Events.add_stat("clues")
 	Events.clue_found.emit(id)
 	clue_added.emit(id)
+	for e: Dictionary in story.on_clue(id):
+		_fire_story(e)
 	_check_escalation()
 
 
@@ -181,6 +218,53 @@ func _check_escalation() -> void:
 		timeline.override_from(esc["npc"], clock, esc["spot"], esc["act"])
 		murders.reapply_after(esc["npc"], clock, timeline)
 		escalated.emit(esc["npc"])
+
+
+# --- сюжетные события и состояния ----------------------------------------------------------
+func _fire_story(e: Dictionary) -> void:
+	for fx: Dictionary in e["effects"]:
+		match str(fx["type"]):
+			"state":
+				set_state(str(fx["npc"]), str(fx["state"]))
+			"give":
+				give_all(fx.get("clues", []))
+			"item":
+				if not fx["id"] in story.spawned:
+					story.spawned.append(fx["id"])
+			"remove_item":
+				story.spawned.erase(fx["id"])
+				if not story.spawned.has("-" + str(fx["id"])):
+					story.spawned.append("-" + str(fx["id"]))
+	story_event.emit(e)
+
+
+func set_state(npc: String, state: String) -> void:
+	npc_state[npc] = state
+	npc_state_changed.emit(npc, state)
+
+
+func state_of(npc: String) -> String:
+	if murders.dead_at(npc, clock):
+		return "dead"
+	return str(npc_state.get(npc, "calm"))
+
+
+## Контекст для диалогов: что уже произошло и в каком состоянии собеседник.
+func dialogue_ctx(npc: String) -> Dictionary:
+	return {"events": story.done, "state": state_of(npc), "wrong": suspects.flag(npc, "wrongly_accused")}
+
+
+## Предъявить улику: реакция зависит от конкретной улики и уже известного.
+func present(npc: String, clue_id: String) -> Dictionary:
+	var r: Dictionary = dialogue.reaction(npc, clue_id, evidence, dialogue_ctx(npc))
+	var key: String = npc + "|" + clue_id
+	if not key in presented:
+		presented.append(key)
+		Events.add_stat("presented")
+	if r.has("state"):
+		set_state(npc, str(r["state"]))
+	give_all(r.get("gives", []))
+	return r
 
 
 ## Игрок дошёл до места преступления: место и время записываются в журнал.
@@ -247,9 +331,30 @@ func max_mistakes() -> int:
 
 
 ## Задержать подозреваемого. clue_ids — улики-основания (до 3), monster_guess — тип монстра.
-func accuse(suspect: String, clue_ids: Array, monster_guess: String = "") -> Dictionary:
+## Следующая подсказка: для той же цели уровень растёт (намёк → связь → место).
+## Каждая выданная подсказка учитывается в рейтинге.
+func take_hint() -> Dictionary:
+	var first: Dictionary = hint_system.hint(1)
+	var target: String = str(first["target"])
+	var lvl: int = mini(3, int(_hint_levels.get(target, 0)) + 1)
+	_hint_levels[target] = lvl
+	hints_used += 1
+	Events.add_stat("hints")
+	var h: Dictionary = hint_system.hint(lvl)
+	h["level"] = lvl
+	return h
+
+
+## Обвинение: подозреваемый, основания (до 3 улик), тип злодея и — если дело спрашивает —
+## мотив и способ (индексы вариантов из data["verdict"]).
+func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive: int = -1, method: int = -1) -> Dictionary:
+	var vd: Dictionary = data.get("verdict", {})
 	var result: Dictionary = {"suspect": suspect, "correct": suspect == data["culprit"],
 		"key": key_clues_in(clue_ids), "clues": clue_ids, "monster_guess": monster_guess}
+	if not vd.is_empty():
+		result["motive_ok"] = motive == int(vd.get("motive", -2))
+		result["method_ok"] = method == int(vd.get("method", -2))
+		verdict_ok = result["motive_ok"] and result["method_ok"]
 	if ended:
 		return result
 	if result["correct"]:
@@ -296,7 +401,7 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 		"mistakes": mistakes, "clues": evidence.found.size(), "monster": data["monster"],
 		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay,
 		"elapsed": elapsed(), "key_found": evidence.key_found_count(), "level": level_id,
-		"key_total": _key_total()}
+		"key_total": _key_total(), "hints_used": hints_used, "verdict_ok": verdict_ok}
 	result["stars"] = compute_stars(outcome == "solved")
 	var rewards: Dictionary = {"coins": 0, "crystals": 0, "reputation": 0}
 	if outcome == "solved":
@@ -388,7 +493,9 @@ func snapshot() -> Dictionary:
 	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
 		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
-		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned}
+		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
+		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
+		"hint_levels": _hint_levels}
 
 
 func restore(s: Dictionary) -> void:
@@ -400,6 +507,11 @@ func restore(s: Dictionary) -> void:
 	verifications_left = int(s.get("verifications_left", verifications_left))
 	camera_marks = int(s.get("camera_marks", 0))
 	_warned = s.get("warned", []).duplicate()
+	story.restore(s.get("story", {}))
+	npc_state = s.get("npc_state", npc_state).duplicate()
+	hints_used = int(s.get("hints_used", 0))
+	_hint_levels = s.get("hint_levels", {}).duplicate()
+	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):
 		events_done.append(int(e))

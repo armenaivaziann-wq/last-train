@@ -412,7 +412,42 @@ def villain_sfx():
     save("villain_escape", reverb(b, mix_=0.3), 0.5)
 
 
+def story_sfx():
+    """Звуки авторских дел: дыхание в чемодане, голос за дверью, кашель, скрип, шаги за стеной."""
+    b = buf(1.8)
+    for i in range(len(b)):
+        t = i / RATE
+        env_ = max(0.0, math.sin(math.pi * min(1.0, t / 1.6))) ** 1.5
+        b[i] = rnd.uniform(-1, 1) * env_ * 0.6
+    save("breath", lowpass(lowpass(b, 0.06), 0.1), 0.4)
+    # приглушённая речь за дверью: «слоги» с формантами
+    b = buf(1.6)
+    for s in range(7):
+        f0 = rnd.uniform(180, 260)
+        add_tone(b, s * 0.2, 0.17, f0, 0.3, "tri", a=0.02, d=0.05, s=0.6, r=0.06, vib=0.04)
+        add_tone(b, s * 0.2, 0.17, f0 * 3.1, 0.08, "sine", a=0.02, d=0.05, s=0.6, r=0.06)
+    save("voice_call", lowpass(reverb(b, mix_=0.4), 0.18), 0.5)
+    b = buf(0.5)
+    for k in range(2):
+        add_noise(b, k * 0.18, 0.12, 0.9, 0.35, 18)
+        add_tone(b, k * 0.18, 0.1, 140, 0.4, "tri", a=0.005, d=0.04, s=0.3, r=0.04)
+    save("cough", lowpass(b, 0.3), 0.45)
+    b = buf(0.9)
+    ph = 0.0
+    for i in range(len(b)):
+        t = i / RATE
+        ph += TAU * (90 + 40 * math.sin(t * 9)) / RATE
+        b[i] = (1 if math.sin(ph) > 0.6 else -0.2) * math.sin(math.pi * t / 0.9) * 0.4
+    save("creak", lowpass(b, 0.2), 0.35)
+    b = buf(1.4)
+    for k in range(4):
+        add_noise(b, k * 0.32, 0.08, 0.8, 0.08, 35)
+        add_tone(b, k * 0.32, 0.06, 70, 0.6, "sine", a=0.002, d=0.03, s=0.2, r=0.03)
+    save("steps_wall", lowpass(b, 0.12), 0.4)
+
+
 def main():
+    story_sfx()
     villain_sfx()
     murder_sfx()
     sfx()

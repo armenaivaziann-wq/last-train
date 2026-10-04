@@ -1,6 +1,7 @@
 extends GameScreen
-## Допрос: портрет собеседника, реплики с эффектом печати и список тем. Новые темы
-## открываются найденными уликами. Сказанное записывается в журнал как показание.
+## Допрос: портрет собеседника, реплики с эффектом печати, список тем и предъявление улик.
+## Темы и приветствие зависят от хода дела; реакция на улику — от конкретной улики.
+## Сказанное записывается в журнал как показание.
 
 var _id: String
 var _text: Label
@@ -12,6 +13,9 @@ var _pending_gives: Array = []
 var _hero: TextureRect
 var _continue: Button
 var _tween: Tween
+var _present_mode: bool = false
+var _present_btn: Button
+var _ask_label: Label
 
 
 func build(args: Dictionary) -> void:
@@ -60,27 +64,38 @@ func build(args: Dictionary) -> void:
 	var right := Ui.vbox(8)
 	right.custom_minimum_size = Vector2(420, 0)
 	var th := Ui.hbox(8)
-	th.add_child(Ui.label("Спросить:", "DimLabel"))
+	_ask_label = Ui.label("Спросить:", "DimLabel")
+	th.add_child(_ask_label)
 	th.add_child(Ui.spacer())
 	_hero = Ui.tex(Db.portrait("detective"), 56)
 	th.add_child(_hero)
 	right.add_child(th)
 	_topics = Ui.vbox(8)
 	right.add_child(Ui.scroll(_topics))
-	var bye := Ui.button("Закончить разговор", "close", "GhostButton", close, 52)
-	right.add_child(bye)
+	var actions := Ui.hbox(8)
+	_present_btn = Ui.button("Предъявить улику", "journal", "CyanButton", _toggle_present, 52)
+	_present_btn.toggle_mode = true
+	_present_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_present_btn)
+	var bye := Ui.button("Уйти", "close", "GhostButton", close, 52)
+	actions.add_child(bye)
+	right.add_child(actions)
 	row.add_child(right)
 	p.add_child(row)
 	m.add_child(p)
 	add_child(m)
-	_say([inv.dialogue.greet(_id)], [])
+	_say([inv.dialogue.greet(_id, inv.evidence, inv.dialogue_ctx(_id))], [])
 	_rebuild_topics()
 
 
 func _rebuild_topics() -> void:
 	Ui.clear(_topics)
 	var inv: InvestigationManager = game.investigation
-	for t: Dictionary in inv.dialogue.topics(_id, inv.evidence):
+	if _present_mode:
+		_build_present_list()
+		return
+	_ask_label.text = "Спросить:"
+	for t: Dictionary in inv.dialogue.topics(_id, inv.evidence, inv.dialogue_ctx(_id)):
 		var b := Ui.button(str(t["q"]), "check" if t["asked"] else "question", "ListButton" if t["asked"] else "ChipButton", func() -> void: _ask(t["id"]), 52)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -92,11 +107,47 @@ func _rebuild_topics() -> void:
 
 func _ask(topic_id: String) -> void:
 	var inv: InvestigationManager = game.investigation
-	var t: Dictionary = inv.dialogue.ask(_id, topic_id, inv.evidence)
+	var t: Dictionary = inv.dialogue.ask(_id, topic_id, inv.evidence, inv.dialogue_ctx(_id))
 	if t.is_empty():
 		return
 	game.player.play_action("suspicion", 0.5)
 	_say(t["a"], t.get("gives", []))
+
+
+func _toggle_present() -> void:
+	_present_mode = not _present_mode
+	_present_btn.set_pressed_no_signal(_present_mode)
+	_rebuild_topics()
+
+
+## Список найденных улик для предъявления (уже предъявленные отмечены).
+func _build_present_list() -> void:
+	var inv: InvestigationManager = game.investigation
+	_ask_label.text = "Какую улику показать?"
+	if inv.evidence.found.is_empty():
+		_topics.add_child(Ui.label("Пока нечего предъявить.", "SmallLabel", 18))
+		return
+	var ids: Array = inv.evidence.found.duplicate()
+	ids.reverse()
+	for id: String in ids:
+		var c: Dictionary = inv.evidence.clue(id)
+		var shown: bool = (_id + "|" + id) in inv.presented
+		var b := Ui.button(str(c.get("title", id)), Ui.clue_icon(str(c.get("type", ""))), "ListButton" if shown else "ChipButton", func() -> void: _present(id), 48)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.add_theme_font_size_override("font_size", 17)
+		if shown:
+			b.modulate = Color(1, 1, 1, 0.7)
+		_topics.add_child(b)
+
+
+func _present(clue_id: String) -> void:
+	var inv: InvestigationManager = game.investigation
+	var r: Dictionary = inv.present(_id, clue_id)
+	game.player.play_action("arrest" if r.get("known", false) else "suspicion", 0.5)
+	_present_mode = false
+	_present_btn.set_pressed_no_signal(false)
+	_say(r["a"], [])
 
 
 func _say(lines: Array, gives: Array) -> void:

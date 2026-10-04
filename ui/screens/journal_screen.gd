@@ -25,6 +25,9 @@ var _selected: Array[String] = []
 var _verdict_suspect: String = ""
 var _verdict_clues: Array[String] = []
 var _monster_guess: String = ""
+var _motive: int = -1
+var _method: int = -1
+var _hint_label: Label
 var _verify_result: Dictionary = {}
 
 
@@ -43,7 +46,15 @@ func build(args: Dictionary) -> void:
 	_time_pill = tp[1]
 	head.add_child(tp[0])
 	head.move_child(tp[0], 2)
+	var hint_btn := Ui.button("Подсказка", "question", "PurpleButton", _show_hint, 52)
+	hint_btn.tooltip_text = "Подсказки помогают думать, но снижают итоговый рейтинг"
+	head.add_child(hint_btn)
+	head.move_child(hint_btn, 3)
 	col.add_child(head)
+	_hint_label = Ui.label("", "", 18, true)
+	_hint_label.add_theme_color_override("font_color", Color("#e8d8ff"))
+	_hint_label.visible = false
+	col.add_child(_hint_label)
 	var tabs := Ui.hbox(8)
 	for t: Array in TABS:
 		var b := Ui.button(t[1], t[2], "TabButton", func() -> void: _switch(t[0]), 54)
@@ -434,7 +445,11 @@ func _build_verdict() -> void:
 	row.add_child(left)
 	var right := Ui.vbox(10)
 	right.custom_minimum_size.x = 380
-	right.add_child(Ui.label("3. Кто он на самом деле?", "SubHeaderLabel", 22))
+	var vd: Dictionary = game.case_data.get("verdict", {})
+	if not vd.is_empty():
+		right.add_child(_choice("3. Мотив", vd.get("motives", []), _motive, func(i: int) -> void: _motive = i))
+		right.add_child(_choice("4. Способ", vd.get("methods", []), _method, func(i: int) -> void: _method = i))
+	right.add_child(Ui.label("Кто он на самом деле?", "SubHeaderLabel", 20))
 	var opt := OptionButton.new()
 	opt.add_item("Не знаю")
 	opt.set_item_metadata(0, "")
@@ -452,16 +467,6 @@ func _build_verdict() -> void:
 	opt.item_selected.connect(func(idx: int) -> void: _monster_guess = str(opt.get_item_metadata(idx)))
 	right.add_child(opt)
 	right.add_child(Ui.label("Верно названный тип злодея даёт кристаллы.", "SmallLabel", 16, true))
-	# Справка о злодее: что о нём говорят и как его распознать (без имени виновника).
-	var vill: Dictionary = Db.monster(str(game.case_data["monster"]))
-	var known: bool = ProgressionManager.monster_caught(str(game.case_data["monster"])) > 0
-	var info := Ui.panel("CardPanel")
-	var iv := Ui.vbox(4)
-	iv.add_child(Ui.label("Слухи о злодее", "GoldLabel", 18))
-	iv.add_child(Ui.label(str(vill.get("short", "")), "", 16, true))
-	iv.add_child(Ui.label("Как распознать: " + str(vill.get("counter", "")) if known else "Подробности появятся в бестиарии, когда вы его поймаете.", "SmallLabel", 15, true))
-	info.add_child(iv)
-	right.add_child(info)
 	right.add_child(Ui.spacer(false, true))
 	var arrest := Ui.button("Задержать", "siren", "DangerButton", _confirm_arrest, 66)
 	arrest.disabled = _verdict_suspect == "" or _verdict_clues.is_empty()
@@ -476,6 +481,30 @@ func _build_verdict() -> void:
 	row.add_child(right)
 	v.add_child(row)
 	_content.add_child(v)
+
+
+## Выпадающий выбор (мотив / способ).
+func _choice(title: String, options: Array, current: int, on_pick: Callable) -> Control:
+	var v := Ui.vbox(4)
+	v.add_child(Ui.label(title, "SubHeaderLabel", 20))
+	var opt := OptionButton.new()
+	opt.add_item("Не выбрано")
+	for o in options:
+		opt.add_item(str(o))
+	opt.select(current + 1)
+	opt.custom_minimum_size = Vector2(0, 50)
+	opt.focus_mode = Control.FOCUS_NONE
+	opt.fit_to_longest_item = false
+	opt.item_selected.connect(func(idx: int) -> void: on_pick.call(idx - 1))
+	v.add_child(opt)
+	return v
+
+
+func _show_hint() -> void:
+	var h: Dictionary = inv.take_hint()
+	_hint_label.text = "Подсказка %d/3 (взято: %d, рейтинг снижается): %s" % [int(h["level"]), inv.hints_used, h["text"]]
+	_hint_label.visible = true
+	AudioManager.play_sfx("magnifier", -6.0)
 
 
 func _toggle_verdict_clue(id: String, on: bool) -> void:
@@ -500,5 +529,5 @@ func _confirm_arrest() -> void:
 		"Если пассажир невиновен, вы потеряете репутацию и время, а монстр насторожится.",
 		"Задержать", "Подумать ещё")
 	dlg.confirmed.connect(func() -> void:
-		game.accuse(_verdict_suspect, _verdict_clues.duplicate(), _monster_guess))
+		game.accuse(_verdict_suspect, _verdict_clues.duplicate(), _monster_guess, _motive, _method))
 	add_child(dlg)

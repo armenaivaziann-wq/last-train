@@ -631,6 +631,7 @@ def act_icons():
     c = mk(); c.ring(4, 4, 3.4, 2, "#c9d2de"); c.ellipse(4, 4, 2, 2, "#8fd8ff"); c.line(6, 6, 8, 8, "#3b2a24"); ic["look"] = c
     c = mk(); c.rect(1, 3, 8, 6, "#8a5a3c"); c.rect(3, 1, 4, 2, "#5a3426"); c.rect(1, 5, 8, 1, "#5a3426"); ic["suitcase"] = c
     c = mk(); c.rect(4, 1, 2, 3, "#ff4a6a"); c.ellipse(5, 6, 3, 3, "#ffd27a"); c.set(4, 6, "#3a2a24"); ic["coffee"] = ic["eat"]
+    c = mk(); c.ellipse(5, 5, 4, 4, "#9ad86a"); c.rect(3, 4, 1, 1, OUTLINE); c.rect(6, 4, 1, 1, OUTLINE); c.line(3, 7, 6, 7, OUTLINE); c.set(8, 2, "#c8f0ff"); ic["sick"] = c
     for name, img in ic.items():
         img.save(f"acts/{name}.png")
 

@@ -66,7 +66,8 @@ func build(args: Dictionary) -> void:
 	for item: Array in [
 			["hourglass", "Время расследования", "%d:%02d из %d:00" % [secs / 60, secs % 60, int(Db.deadline_minutes())]],
 			["magnifier", "Ключевые улики", "найдено: %d" % int(_result.get("key_found", 0))],
-			["guard", "Ошибочные обвинения", str(int(_result.get("mistakes", 0)))]]:
+			["guard", "Ошибочные обвинения", str(int(_result.get("mistakes", 0)))],
+			["question", "Подсказки", str(int(_result.get("hints_used", 0)))]]:
 		var h := Ui.hbox(8)
 		h.add_child(Ui.icon(item[0], 30))
 		h.add_child(Ui.label(item[1], "DimLabel", 19))
@@ -87,6 +88,10 @@ func build(args: Dictionary) -> void:
 			note = ""
 		if note != "":
 			right.add_child(Ui.label(note, "SmallLabel", 17, true))
+		if not _result.get("verdict_ok", true):
+			right.add_child(Ui.label("Мотив или способ названы неверно — не больше двух звёзд.", "GoldLabel", 17, true))
+		if int(_result.get("hints_used", 0)) > 0:
+			right.add_child(Ui.label("Подсказки снизили рейтинг.", "SmallLabel", 16, true))
 		right.add_child(_star_rules())
 		var truth := Ui.panel("CardPanel")
 		var tv := Ui.vbox(6)
@@ -125,7 +130,7 @@ func build(args: Dictionary) -> void:
 
 
 func _star_rules() -> Control:
-	var l := Ui.label("★★★ — за 12 мин, 3+ ключевых улики, без ошибок · ★★ — за 16 мин, не больше 1 ошибки · ★ — до дедлайна", "SmallLabel", 15, true)
+	var l := Ui.label("★★★ — за 12 мин, 3+ ключевых улики, без ошибок, верные мотив и способ · ★★ — за 16 мин, не больше 1 ошибки · ★ — до дедлайна. Подсказки: −1★ (1–2), −2★ (3+)", "SmallLabel", 15, true)
 	return l
 
 

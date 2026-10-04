@@ -42,7 +42,7 @@ func end_playback() -> void:
 		scene.show_at(INF)
 	for id: String in npcs:
 		var npc: NPCController = npcs[id]
-		npc.visible = not npc.dead
+		npc.visible = not npc.dead and npc.condition != "missing"
 
 
 func set_time(t: float) -> void:

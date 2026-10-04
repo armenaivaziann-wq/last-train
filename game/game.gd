@@ -28,6 +28,8 @@ var arrest: ArrestSequence
 var highlight: TargetHighlight
 ## Места преступлений: индекс убийства → CrimeScene.
 var crime_scenes: Dictionary = {}
+## Предметы мира из данных дела и сюжетных событий: id → узел.
+var world_items: Dictionary = {}
 var villain_world: VillainWorld
 const DISCOVER_DISTANCE: float = 72.0
 var _autosave_timer: float = AUTOSAVE_INTERVAL
@@ -88,6 +90,10 @@ func _ready() -> void:
 	AudioManager.set_train_ambience(true)
 	_on_clock(investigation.clock)
 	hud.set_key_clues(investigation.evidence.key_found_count())
+	if not resume:
+		for npc: String in investigation.npc_state:
+			if npcs.has(npc):
+				npcs[npc].set_condition(str(investigation.npc_state[npc]))
 
 
 func _connect_signals() -> void:
@@ -97,6 +103,10 @@ func _connect_signals() -> void:
 	investigation.escalated.connect(_on_escalated)
 	investigation.finished.connect(_on_finished)
 	investigation.murder_stage.connect(_on_murder_stage)
+	investigation.story_event.connect(_on_story_event)
+	investigation.npc_state_changed.connect(func(npc: String, st: String) -> void:
+		if npcs.has(npc):
+			npcs[npc].set_condition(st))
 	player.target_changed.connect(_on_target_changed)
 	hud.joystick.vector_changed.connect(func(v: Vector2) -> void: player.touch_vector = v)
 	ui.stack_changed.connect(_on_ui_stack)
@@ -144,18 +154,25 @@ func _spawn_luggage() -> void:
 ## Предметы-улики из данных дела (следы на полу, жетоны, чашки) — постоянные объекты мира.
 func _spawn_extra_items() -> void:
 	for it: Dictionary in case_data.get("extra_items", []):
-		var pos := Vector2(layout.offsets[it["carriage"]] + float(it["pos"][0]), float(it["pos"][1]))
-		var s := Sprite2D.new()
-		s.texture = Db.texture("crime/%s.png" % it["sprite"])
-		s.position = pos
-		glow_layer.add_child(s)
-		var node := Interactable.new()
-		node.interact_id = str(it["id"])
-		node.label = str(it.get("label", "Осмотреть"))
-		node.kind = Interactable.Kind.OBJECT
-		node.radius = 24.0
-		node.position = pos
-		glow_layer.add_child(node)
+		spawn_item(it)
+
+
+## Предмет в мире (улика на полу, подброшенная записка, «дышащий» чемодан...).
+## Спрайт "crime/<имя>" по умолчанию или путь вида "props/<имя>".
+func spawn_item(it: Dictionary) -> void:
+	var id: String = str(it["id"])
+	if world_items.has(id):
+		return
+	var root := StoryItem.new()
+	root.setup(it, Vector2(layout.offsets[it["carriage"]] + float(it["pos"][0]), float(it["pos"][1])))
+	(entities if it.get("tall", false) else glow_layer).add_child(root)
+	world_items[id] = root
+
+
+func remove_item(id: String) -> void:
+	if world_items.has(id):
+		world_items[id].queue_free()
+		world_items.erase(id)
 
 
 func _apply_npcs(t: float) -> void:
@@ -283,6 +300,21 @@ func open_object(object_id: String) -> void:
 	var obj: Dictionary = case_data["objects"].get(object_id, {})
 	if obj.is_empty():
 		Events.notify("Ничего примечательного.", "magnifier")
+		return
+	# Запертый объект: открывается, только когда найдено нужное (ключ, инструмент...).
+	var ev: EvidenceSystem = investigation.evidence
+	var locked: bool = false
+	for r: String in obj.get("requires", []):
+		if not ev.has(r):
+			locked = true
+	var any: Array = obj.get("requires_any", [])
+	if not any.is_empty() and not any.any(func(r: String) -> bool: return ev.has(r)):
+		locked = true
+	if locked:
+		AudioManager.play_sfx("door_locked", -6.0)
+		Events.notify(str(obj.get("locked_text", "Заперто.")), "lock")
+		if obj.has("locked_clue"):
+			investigation.give(str(obj["locked_clue"]))
 		return
 	ui.open("document_screen", {"object": object_id})
 
@@ -481,8 +513,30 @@ func _update_barks(delta: float) -> void:
 func _update_markers() -> void:
 	for id: String in npcs:
 		var show: bool = investigation.suspects.flag(id, "met") \
-			and investigation.dialogue.has_new_topics(id, investigation.evidence) and not npcs[id].detained
+			and investigation.dialogue.has_new_topics(id, investigation.evidence, investigation.dialogue_ctx(id)) and not npcs[id].detained
 		hud.overlay.set_marker(npcs[id], show)
+
+
+# --- сюжетные события ----------------------------------------------------------------------
+func _on_story_event(e: Dictionary) -> void:
+	for fx: Dictionary in e["effects"]:
+		match str(fx["type"]):
+			"toast":
+				Events.notify(str(fx["text"]), str(fx.get("icon", "train")))
+			"sound":
+				AudioManager.play_sfx(str(fx["name"]), float(fx.get("db", 0.0)))
+			"banner":
+				hud.show_banner(str(fx["title"]), str(fx.get("text", "")), 3.5)
+			"voice":
+				var pos := Vector2(layout.offsets[fx["carriage"]] + float(fx["x"]), float(fx["y"]))
+				AudioManager.play_sfx(str(fx.get("sound", "female_scream")), -8.0, float(fx.get("pitch", 0.9)))
+				Events.notify(str(fx["text"]), "talk")
+				hud.show_direction(pos, str(fx.get("label", "Голос!")), 6.0)
+			"item":
+				spawn_item(fx)
+			"remove_item":
+				remove_item(str(fx["id"]))
+	update_goal()
 
 
 # --- события-убийства в туннеле -----------------------------------------------------------
@@ -542,9 +596,9 @@ func _check_discovery() -> void:
 
 # --- обвинение и итог ---------------------------------------------------------------------
 ## Вызывается из журнала («Итог дела» → «Задержать»).
-func accuse(suspect: String, clue_ids: Array, monster_guess: String) -> void:
+func accuse(suspect: String, clue_ids: Array, monster_guess: String, motive: int = -1, method: int = -1) -> void:
 	ui.close_all()
-	var result: Dictionary = investigation.accuse(suspect, clue_ids, monster_guess)
+	var result: Dictionary = investigation.accuse(suspect, clue_ids, monster_guess, motive, method)
 	if result.get("correct", false):
 		await arrest.play_arrest(suspect)
 		investigation.finish("solved", result)
@@ -579,6 +633,14 @@ func autosave_clear() -> void:
 
 func _restore(s: Dictionary) -> void:
 	investigation.restore(s)
+	for id: String in investigation.story.spawned:
+		if id.begins_with("-"):
+			remove_item(id.substr(1))
+		else:
+			spawn_item(investigation.story.item_def(id))
+	for npc: String in investigation.npc_state:
+		if npcs.has(npc):
+			npcs[npc].set_condition(str(investigation.npc_state[npc]))
 	for m: Dictionary in investigation.murders.killed():
 		_kill(m, true)
 	for m: Dictionary in investigation.murders.murders:
