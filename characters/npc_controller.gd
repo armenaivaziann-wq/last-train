@@ -127,6 +127,12 @@ func set_condition(state: String) -> void:
 		_react_left = 0.0
 
 
+## Силуэт в темноте: видны рост, шляпа и очертания, но не лицо.
+func set_silhouette(on: bool) -> void:
+	sprite.self_modulate = Color(0.06, 0.05, 0.12) if on else Color.WHITE
+	_bubble.modulate.a = 0.0 if on else 1.0
+
+
 func set_look(char_id: String) -> void:
 	if char_id == look_id:
 		return

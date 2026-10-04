@@ -68,6 +68,11 @@ static func _neutralize(d: Dictionary) -> void:
 		o["hotspots"] = []
 	for npc: String in d.get("dialogues", {}):
 		d["dialogues"][npc]["topics"] = []
+	var barks: Dictionary = d.get("barks", {})
+	barks["agata"] = ["Чай кому?", "Ох, мои нервы...", "Билеты, пожалуйста."]
+	barks["robert"] = ["Хм.", "Время — деньги.", "Не мешайте, я занят."]
+	barks["nina"] = ["Ля... нет, си-бемоль.", "Надо повторить этюд.", "Ах, извините!"]
+	d["wrong_reactions"] = {}
 	d["events"] = d.get("events", []).filter(func(e: Dictionary) -> bool: return e.get("type") in ["rain_start", "station_approach"])
 
 

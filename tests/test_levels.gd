@@ -1,0 +1,189 @@
+extends TestSuite
+## Авторские дела кампании (уровни 2–10): каждое проходится от начала до решения.
+## «Решатель» действует как игрок — без доступа к ответу: каждую игровую минуту открывает
+## всё, что доступно (документы, багаж, предметы мира, темы разговоров, реакции на улики,
+## записи камер, выводы), и проверяет:
+##   • все ключевые улики получаемы до прибытия;
+##   • против виновника есть ≥3 связанных доказательства и хотя бы один вывод;
+##   • верное обвинение с верным мотивом и способом даёт победу, неверное — ошибку;
+##   • повторный туннель не повторяет события, сохранение/загрузка не ломает дело;
+##   • истечение времени — поражение.
+
+const AUTHORED: Array = ["level_02", "level_03", "level_04", "level_05", "level_06", "level_07", "level_08", "level_09", "level_10"]
+
+
+func _start_level(level_id: String, seed_value: int = 7) -> void:
+	SaveManager.prepare_level(level_id)
+	SaveManager.pending_seed = seed_value
+	game = load("res://game/game.tscn").instantiate()
+	add_child(game)
+	await wait_frames(2)
+	game.ui.close_all()
+	await wait_frames(1)
+
+
+func _inv() -> InvestigationManager:
+	return game.investigation
+
+
+func _world_objects() -> Array:
+	var out: Array = game.world_items.keys()
+	for cid in game.layout.carriage_ids:
+		for it: Dictionary in Db.layout(cid).get("interactables", []):
+			out.append(it["id"])
+	return out
+
+
+## Один проход «как игрок» по всему, что доступно прямо сейчас. Возвращает, найдено ли новое.
+func _sweep() -> bool:
+	var inv: InvestigationManager = _inv()
+	var d: Dictionary = inv.data
+	var ev: EvidenceSystem = inv.evidence
+	var before: int = ev.found.size()
+	for npc: String in d.get("documents", {}):
+		var doc: Dictionary = d["documents"][npc]
+		if doc.has("on_open"):
+			inv.give(str(doc["on_open"]))
+		inv.give_all(doc.get("gives", []))
+		for h: Dictionary in doc.get("hotspots", []):
+			inv.give(str(h["clue"]))
+	for npc: String in d.get("luggage", {}):
+		for it: Dictionary in d["luggage"][npc].get("items", []):
+			if it.has("requires_upgrade"):
+				continue
+			if it.has("on_open"):
+				inv.give(str(it["on_open"]))
+			if it.has("hotspot"):
+				inv.give(str(it["hotspot"]["clue"]))
+	for oid: String in _world_objects():
+		var o: Dictionary = d["objects"].get(oid, {})
+		if o.is_empty():
+			continue
+		var locked: bool = false
+		for r: String in o.get("requires", []):
+			if not ev.has(r):
+				locked = true
+		var any: Array = o.get("requires_any", [])
+		if not any.is_empty() and not any.any(func(r: String) -> bool: return ev.has(r)):
+			locked = true
+		if locked:
+			if o.has("locked_clue"):
+				inv.give(str(o["locked_clue"]))
+			continue
+		if o.has("on_open"):
+			inv.give(str(o["on_open"]))
+		for h: Dictionary in o.get("hotspots", []):
+			inv.give(str(h["clue"]))
+	for npc: String in d.get("dialogues", {}):
+		if inv.state_of(npc) in ["dead", "missing", "asleep"]:
+			continue
+		var ctx: Dictionary = inv.dialogue_ctx(npc)
+		for t: Dictionary in inv.dialogue.topics(npc, ev, ctx):
+			inv.dialogue.ask(npc, t["id"], ev, ctx)
+			inv.give_all(t.get("gives", []))
+		for cid: String in d["dialogues"][npc].get("reactions", {}):
+			if ev.has(cid):
+				inv.present(npc, cid)
+	for cc: Dictionary in d.get("camera_clues", []):
+		if Db.parse_time(cc["windows"][0][0]) <= inv.clock:
+			inv.give(str(cc["id"]))
+	for x: Dictionary in d.get("deductions", []):
+		if ev.has(x["result"]):
+			continue
+		for a: String in x["a"]:
+			for b: String in x["b"]:
+				if ev.has(a) and ev.has(b) and not ev.has(x["result"]):
+					inv.deduce(a, b)
+	return ev.found.size() > before
+
+
+func _solve_all() -> void:
+	var inv: InvestigationManager = _inv()
+	while inv.clock < inv.arrival_time - 0.6:
+		while _sweep():
+			pass
+		inv.advance(0.5)
+	while _sweep():
+		pass
+
+
+## Статическая проверка данных дела: ссылки, тексты, выводы, вердикт.
+func _check_data(level_id: String) -> void:
+	var d: Dictionary = _inv().data
+	var tag: String = level_id + ": "
+	check(d.has("verdict") and d["verdict"]["motives"].size() >= 3 and d["verdict"]["methods"].size() >= 3, tag + "мотив и способ в вердикте")
+	check(d["suspects"].has(d["culprit"]), tag + "виновник среди подозреваемых")
+	for id: String in d["key_clues"]:
+		check(d["clues"].has(id), tag + "ключевая улика описана: " + id)
+	for x: Dictionary in d.get("deductions", []):
+		check(d["clues"].has(x["result"]), tag + "вывод описан: " + str(x["result"]))
+		for id: String in x["a"] + x["b"]:
+			check(d["clues"].has(id), tag + "улика вывода описана: " + id)
+	for id: String in d["clues"]:
+		var c: Dictionary = d["clues"][id]
+		check(str(c.get("title", "")) != "" and str(c.get("text", "")) != "", tag + "текст улики " + id)
+		check(not "страниц" in str(c["text"]) or not "подпис" in str(c["text"]), tag + "нет сюжета первого дела в " + id)
+	var against: int = 0
+	for id: String in d["key_clues"]:
+		if d["culprit"] in d["clues"][id].get("points_to", []):
+			against += 1
+	check(against >= 3, tag + "≥3 ключевых улик против виновника (%d)" % against)
+
+
+func _play(level_id: String, seed_value: int) -> void:
+	await _start_level(level_id, seed_value)
+	var inv: InvestigationManager = _inv()
+	_check_data(level_id)
+	check(inv.data.get("murders", {}).get("victim_pool", []).is_empty() or level_id == "level_10", level_id + ": в туннелях не убивают (если не задумано)")
+	_solve_all()
+	var d: Dictionary = inv.data
+	var missing: Array = d["key_clues"].filter(func(id: String) -> bool: return not inv.evidence.has(id))
+	check(missing.is_empty(), "%s/%d: все ключевые улики достижимы, не найдены: %s" % [level_id, seed_value, missing])
+	var against: Array = d["key_clues"].filter(func(id: String) -> bool: return inv.evidence.has(id) and d["culprit"] in d["clues"][id].get("points_to", []))
+	print("  %s/%d: найдено %d улик, ключевых %d/%d, против виновника %d, событий %s" % [level_id, seed_value, inv.evidence.found.size(), inv.evidence.key_found_count(), d["key_clues"].size(), against.size(), inv.story.done])
+	var deductions: Array = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] == "contradiction")
+	check(against.size() >= 3 and deductions.size() >= 1, "%s: связанная цепочка против виновника (%d улик, %d выводов)" % [level_id, against.size(), deductions.size()])
+	# Повторные туннели и события не срабатывают второй раз.
+	var fired: int = inv.story.done.size()
+	inv.advance(0.0)
+	check_eq(inv.story.done.size(), fired, level_id + ": события не повторяются")
+	# Сохранение / загрузка посреди дела.
+	var snap: Dictionary = inv.snapshot()
+	var found: int = inv.evidence.found.size()
+	inv.restore(JSON.parse_string(JSON.stringify(snap)))
+	check_eq(inv.evidence.found.size(), found, level_id + ": загрузка сохраняет улики")
+	check_eq(inv.story.done.size(), fired, level_id + ": загрузка сохраняет события")
+	# Неверное обвинение: ошибка, но дело продолжается.
+	inv.clock = inv.start_time + 10.0  # решатель шёл до конца; обвинения — посреди дела
+	var wrong: String = d["suspects"].filter(func(s: String) -> bool: return s != d["culprit"] and inv.state_of(s) != "dead")[0]
+	var r0: Dictionary = inv.accuse(wrong, against.slice(0, 3), "", 0, 0)
+	check(not r0["correct"] and not inv.ended, level_id + ": неверное обвинение — ошибка без конца дела")
+	# Верное обвинение с верным мотивом и способом.
+	var vd: Dictionary = d["verdict"]
+	var r: Dictionary = inv.accuse(d["culprit"], against.slice(0, 3), "", int(vd["motive"]), int(vd["method"]))
+	check(r["correct"] and r.get("strong", false) and inv.verdict_ok, level_id + ": верное обвинение с мотивом и способом")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+
+
+func test_levels_solvable() -> void:
+	for level_id: String in AUTHORED:
+		if Db.level(level_id).get("case", "gen") == "gen":
+			continue
+		await _play(level_id, 7)
+		await _play(level_id, 1234)
+
+
+func test_levels_timeout() -> void:
+	for level_id: String in AUTHORED:
+		if Db.level(level_id).get("case", "gen") == "gen":
+			continue
+		await _start_level(level_id, 3)
+		var res: Array = []
+		_inv().finished.connect(func(x: Dictionary) -> void: res.append(x))
+		_inv().advance(21.0)
+		check(res.size() == 1 and res[0]["outcome"] == "timeout" and int(res[0]["stars"]) == 0, level_id + ": время вышло — поражение")
+		game.queue_free()
+		game = null
+		await wait_frames(2)

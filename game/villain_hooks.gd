@@ -21,6 +21,11 @@ func plan(investigation: InvestigationManager, seed_value: int) -> void:
 	inv = investigation
 	villain = str(inv.data["monster"])
 	culprit = str(inv.data["culprit"])
+	# Авторское дело может описать проявления злодея само ("villain_hooks": false) —
+	# тогда общие способности и их автоматические улики не добавляются.
+	if not inv.data.get("villain_hooks", true):
+		villain = ""
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value + 9001
 	match villain:
@@ -78,6 +83,9 @@ func _camera_clue(id: String, npc: String, t: float, title: String, text: String
 func _plan_shapeshifter(rng: RandomNumberGenerator) -> void:
 	var pool: Array = inv.data["suspects"].filter(func(s: String) -> bool: return s != culprit)
 	var cur: String = pool[rng.randi_range(0, pool.size() - 1)]
+	# В авторском деле до первого туннеля он выглядит собой (так его видели свидетели).
+	if inv.data.get("shift_from_self", false):
+		cur = culprit
 	disguises = [[-INF, cur]]
 	var i: int = 0
 	for t: float in _tunnels():
