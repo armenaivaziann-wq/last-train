@@ -167,6 +167,29 @@ func place(npc: String, t: float) -> String:
 	return ("шёл " + p) if s["moving"] else p
 
 
+## Куда ведут следы: «в вагон-ресторан, к 3-му столику», «в тамбур»...
+static func spot_direction(spot: String) -> String:
+	if spot.begins_with("svc_"):
+		return "в служебное купе"
+	if spot.begins_with("bay"):
+		return "в купе №%s" % spot.substr(3, 1)
+	if spot.begins_with("corr_win"):
+		return "к окну в коридоре"
+	if spot.begins_with("end_"):
+		return "в конец пассажирского вагона"
+	if spot.begins_with("vest_"):
+		return "в тамбур"
+	if spot.begins_with("rb"):
+		return "в вагон-ресторан, к %s-му столику" % spot.substr(2, 1)
+	if spot in ["rest_coffee", "rest_trash"]:
+		return "к кофейному автомату"
+	if spot.begins_with("bar_"):
+		return "к барной стойке"
+	if spot == "piano":
+		return "к пианино в ресторане"
+	return "в вагон-ресторан"
+
+
 static func spot_place(spot: String) -> String:
 	if spot.begins_with("svc_"):
 		return "в служебном купе"
@@ -344,49 +367,28 @@ func _generic_clues() -> void:
 	topic("professor", "g_lore", "Что вы знаете о злодее в поезде?", ["%s — %s" % [villain.get("name", ""), str(villain.get("short", "")).to_lower()], str(villain.get("counter", ""))], ["g_lore"])
 
 
-# --- убийства: тексты под конкретного виновника и свидетели --------------------------------
+# --- убийства: кто может погибнуть и как связать улики --------------------------------------
 func _murders() -> void:
 	var cfg: Dictionary = d["murders"]
 	cfg["murderer"] = culprit
-	var look: String = str(_ch(culprit)["look"])
-	var trace: String = str(_ch(culprit)["trace"])
-	var steps: String = str(_ch(culprit)["steps"])
-	var initial: String = Db.char_name(culprit).substr(0, 1)
-	var cands: Dictionary = {"m_vera": ["klara", "john", "louis", "nina"], "m_orlov": ["professor", "tikhon", "klara"], "m_mark": ["louis", "nina", "john"]}
-	var texts: Dictionary = {
-		"mv_glitter": "На рукаве Веры — %s." % trace, "mv_fabric": "У тела — %s." % trace,
-		"mv_steps": "От тела ведут %s." % steps, "mo_ticket": "На билете графа дрожащим почерком: «%s. — не тот, за кого себя выдаёт!»" % initial,
-		"mo_steps": "От купе графа ведут %s." % steps, "mm_cup": "У автомата недопитая чашка — кто-то стоял здесь в темноте.",
-		"mm_sugar": "В рассыпанном сахаре отпечатались %s." % steps,
-	}
-	for id: String in texts:
-		d["clues"][id]["text"] = texts[id]
-		d["clues"][id]["points_to"] = []
-	for cid in ["c_mv", "c_mo", "c_mm"]:
-		d["clues"][cid]["text"] = "Камера: в темноте у места убийства — человек %s." % look
-		d["clues"][cid]["points_to"] = [culprit]
-		key_clues.append(cid)
-	for sid: String in cfg["scenarios"]:
-		var sc: Dictionary = cfg["scenarios"][sid]
-		var pre: String = str(sc["prefix"])
-		var spots: Array = sc["witnesses"].map(func(w: Dictionary) -> String: return w["spot"])
-		var ws: Array = []
-		for c in cands[sid]:
-			if c != culprit and ws.size() < spots.size():
-				ws.append({"npc": c, "spot": spots[ws.size()]})
-		sc["witnesses"] = ws
-		for w: Dictionary in ws:
-			var wid: String = "%s_w_%s" % [pre, w["npc"]]
-			var line: String = "Я слышал%s крик, когда погас свет! Мимо пробежал кто-то %s." % [_g(w["npc"], "", "а"), look]
-			clue(wid, "testimony", "Свидетель: " + Db.char_name(w["npc"]), "%s: «%s»" % [Db.char_name(w["npc"]), line], [culprit], -1.0, true)
-			d["clues"][wid]["time"] = "{time}"
-			topic(w["npc"], "m_" + pre, "Что вы видели, когда погас свет?", [line], [wid], [sc["scene_clue"]])
-		var items: Array = {"mv": ["mv_fabric", "mv_glitter", "mv_steps"], "mo": ["mo_steps", "mo_ticket"], "mm": ["mm_sugar"]}[pre]
-		clue("x_%s_trace" % pre, "contradiction", "Улики у тела совпадают с приметами", "Следы у места убийства совпадают с приметами пассажира: %s." % Db.char_name(culprit), [culprit], -1.0, true)
-		deduction("x_%s_trace" % pre, items, ["d_look_" + culprit])
-	# старые выводы и улики, завязанные на дело 1, здесь не используются
-	for id in ["mv_klara", "mv_john", "mo_prof", "mm_louis", "x_mv_coat", "x_mv_table", "x_mv_coffee", "x_mv_glitter", "x_mo_note", "x_mm_cup", "x_mm_print"]:
-		d["clues"].erase(id)
+	# Защищены: виновник, свидетель происшествия, рассказчик брифинга, профессор (знает о злодее)
+	# и особые участники способности злодея (усыплённый, «куклы»).
+	var protected: Array = [culprit, "detective", "professor", "john" if culprit == "agata" else "agata"]
+	if witness != "":
+		protected.append(witness)
+	for key in ["sleeper_w"]:
+		if has_meta(key):
+			protected.append(get_meta(key))
+	if has_meta("puppets"):
+		protected.append_array(get_meta("puppets"))
+	cfg["protected"] = protected
+	var pool: Array = ["vera", "orlov", "mark"]
+	for s2: String in d["suspects"]:
+		if not s2 in protected:
+			pool.append(s2)
+	cfg["victim_pool"] = pool
+	cfg["murderer_look"] = "высокий, в длинном чёрном плаще и шляпе" if villain_id == "black_cloak" else str(_ch(culprit)["look"])
+	cfg["links"] = {"fibers": ["c_{pre}", "d_look_{culprit}"], "steps": ["g_alibi_{culprit}"], "home_spots": [home_spot(culprit)]}
 
 
 const BRIEF_OPENERS: Array[String] = [

@@ -1658,201 +1658,6 @@
    "points_to": [
     "john"
    ]
-  },
-  "mv_scene": {
-   "type": "physical",
-   "title": "Убийство: Вера Лунина",
-   "text": "{where}, {time}. Во время туннеля погибла певица Вера Лунина.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mv_body": {
-   "type": "physical",
-   "title": "Осмотр тела Веры",
-   "text": "Лицо застыло в испуге. Чашка опрокинута — она не ждала нападения.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mv_glitter": {
-   "type": "physical",
-   "title": "Блёстки на рукаве Веры",
-   "text": "На рукаве Веры — тёплые фиолетовые блёстки.",
-   "points_to": []
-  },
-  "mv_fabric": {
-   "type": "physical",
-   "title": "Обрывок коричневого пальто",
-   "text": "У тела — клочок коричневой шерсти с латунной пуговицей, от длинного пальто.",
-   "points_to": []
-  },
-  "mv_steps": {
-   "type": "physical",
-   "title": "Следы к третьей кабинке",
-   "text": "Мокрые следы ведут от тела к третьей кабинке у окна.",
-   "points_to": []
-  },
-  "mv_klara": {
-   "type": "testimony",
-   "title": "Клэр: крик в темноте",
-   "text": "Клэр: «Я слышала крик, когда погас свет! Кто-то прошёл мимо — пахло сладким кофе».",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mv_john": {
-   "type": "testimony",
-   "title": "Джон: фигура в пальто",
-   "text": "Джон: «Кто-то в длинном пальто метнулся к третьему столику».",
-   "points_to": [
-    "robert"
-   ],
-   "time": "{time}"
-  },
-  "c_mv": {
-   "type": "camera",
-   "title": "К4: фигура у столика Веры",
-   "text": "Камера ресторана: в темноте к столику Веры подошла фигура в длинном коричневом пальто.",
-   "points_to": [
-    "robert"
-   ],
-   "time": "{time}"
-  },
-  "mo_scene": {
-   "type": "physical",
-   "title": "Убийство: граф Орлов",
-   "text": "{where}, {time}. Во время туннеля погиб граф Орлов.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mo_body": {
-   "type": "physical",
-   "title": "Осмотр тела графа",
-   "text": "Монокль разбит, в руке зажат билет.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mo_ticket": {
-   "type": "document",
-   "title": "Записка графа",
-   "text": "На билете графа: «Х. — не тот, за кого себя выдаёт!»",
-   "points_to": []
-  },
-  "mo_steps": {
-   "type": "physical",
-   "title": "Следы к тамбуру",
-   "text": "Следы ведут из купе графа в сторону тамбура.",
-   "points_to": []
-  },
-  "mo_prof": {
-   "type": "testimony",
-   "title": "Профессор: хлопнула дверь",
-   "text": "Профессор: «Я слышал крик, когда погас свет! И сразу хлопнула дверь в тамбур».",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "c_mo": {
-   "type": "camera",
-   "title": "К1: фигура у купе графа",
-   "text": "Камера вагона: в темноте в купе графа заходит фигура в длинном коричневом пальто.",
-   "points_to": [
-    "robert"
-   ],
-   "time": "{time}"
-  },
-  "mm_scene": {
-   "type": "physical",
-   "title": "Убийство: повар Марк",
-   "text": "{where}, {time}. Во время туннеля погиб повар Марк.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mm_body": {
-   "type": "physical",
-   "title": "Осмотр тела повара",
-   "text": "Повар лежит у автомата, вокруг рассыпан сахар.",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "mm_cup": {
-   "type": "physical",
-   "title": "Сладкий кофе у тела",
-   "text": "Двойной кофе, три ложки сахара — кто-то пил его у автомата.",
-   "points_to": []
-  },
-  "mm_sugar": {
-   "type": "physical",
-   "title": "Оплывший отпечаток",
-   "text": "В сахаре — отпечаток ладони, оплывший по краям, будто она из пластилина.",
-   "points_to": []
-  },
-  "mm_louis": {
-   "type": "testimony",
-   "title": "Луи: высокий в пальто",
-   "text": "Луи: «У автомата стоял кто-то высокий, в пальто до колен».",
-   "points_to": [],
-   "time": "{time}"
-  },
-  "c_mm": {
-   "type": "camera",
-   "title": "К4: фигура у автомата",
-   "text": "Камера ресторана: в темноте у автомата стоит фигура в длинном коричневом пальто.",
-   "points_to": [
-    "robert"
-   ],
-   "time": "{time}"
-  },
-  "x_mv_coat": {
-   "type": "contradiction",
-   "title": "Пальто убийцы",
-   "text": "Обрывок у тела Веры — от того же коричневого пальто, что видели у служебного купе.",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mv_table": {
-   "type": "contradiction",
-   "title": "Следы к столику Хейла",
-   "text": "Следы убийцы ведут к третьему столику — тому, где, по его словам, сидел Хейл.",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mv_coffee": {
-   "type": "contradiction",
-   "title": "Запах сладкого кофе",
-   "text": "Убийца пах сладким кофе — тем самым, что взял «Хейл».",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mv_glitter": {
-   "type": "contradiction",
-   "title": "Те же блёстки",
-   "text": "Блёстки на рукаве Веры — такие же, как в потайном кармане портфеля Хейла.",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mo_note": {
-   "type": "contradiction",
-   "title": "Граф раскусил «Х.»",
-   "text": "Граф знал постоянных пассажиров в лицо. «Х.» — это постоянный пассажир Хейл.",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mm_cup": {
-   "type": "contradiction",
-   "title": "Кофе у тела повара",
-   "text": "У тела повара — тот же сладкий двойной кофе, что пьёт «Хейл».",
-   "points_to": [
-    "robert"
-   ]
-  },
-  "x_mm_print": {
-   "type": "contradiction",
-   "title": "Ладонь из пластилина",
-   "text": "Оплывший отпечаток — признак двойника, о котором пишет профессор.",
-   "points_to": []
   }
  },
  "key_clues": [
@@ -1878,17 +1683,7 @@
   "x_signature",
   "x_coffee",
   "x_coffee_desk",
-  "x_daughter",
-  "mv_john",
-  "c_mv",
-  "c_mo",
-  "c_mm",
-  "x_mv_coat",
-  "x_mv_table",
-  "x_mv_coffee",
-  "x_mv_glitter",
-  "x_mo_note",
-  "x_mm_cup"
+  "x_daughter"
  ],
  "deductions": [
   {
@@ -2012,81 +1807,6 @@
    "confirms": [
     "s_john_signed",
     "s_john_alibi"
-   ]
-  },
-  {
-   "result": "x_mv_coat",
-   "a": [
-    "mv_fabric"
-   ],
-   "b": [
-    "s_john_saw",
-    "i_klara_photo",
-    "s_klara_briefcase",
-    "c_mv",
-    "mv_john",
-    "c_vest_robert"
-   ]
-  },
-  {
-   "result": "x_mv_table",
-   "a": [
-    "mv_steps"
-   ],
-   "b": [
-    "s_robert_alibi"
-   ]
-  },
-  {
-   "result": "x_mv_coffee",
-   "a": [
-    "mv_klara"
-   ],
-   "b": [
-    "d_receipt",
-    "s_robert_coffee",
-    "p_coffee_drop"
-   ]
-  },
-  {
-   "result": "x_mv_glitter",
-   "a": [
-    "mv_glitter"
-   ],
-   "b": [
-    "i_robert_glitter"
-   ]
-  },
-  {
-   "result": "x_mo_note",
-   "a": [
-    "mo_ticket"
-   ],
-   "b": [
-    "s_agata_regular",
-    "d_robert_ticket",
-    "s_robert_intro"
-   ]
-  },
-  {
-   "result": "x_mm_cup",
-   "a": [
-    "mm_cup"
-   ],
-   "b": [
-    "d_receipt",
-    "s_robert_coffee",
-    "s_agata_tea"
-   ]
-  },
-  {
-   "result": "x_mm_print",
-   "a": [
-    "mm_sugar"
-   ],
-   "b": [
-    "i_prof_book",
-    "s_prof_doppel"
    ]
   }
  ],
@@ -2321,19 +2041,6 @@
      "gives": [
       "s_prof_doppel"
      ]
-    },
-    {
-     "id": "mo",
-     "q": "Что вы слышали, когда погас свет?",
-     "requires": [
-      "mo_scene"
-     ],
-     "a": [
-      "Я слышал крик, когда погас свет! И сразу — как хлопнула дверь в тамбур."
-     ],
-     "gives": [
-      "mo_prof"
-     ]
     }
    ]
   },
@@ -2395,20 +2102,6 @@
      "gives": [
       "s_klara_briefcase"
      ]
-    },
-    {
-     "id": "mv",
-     "q": "Что вы видели в туннеле?",
-     "requires": [
-      "mv_scene"
-     ],
-     "a": [
-      "Я слышала крик, когда погас свет!",
-      "А потом кто-то прошёл мимо меня в темноте — от него пахло сладким кофе."
-     ],
-     "gives": [
-      "mv_klara"
-     ]
     }
    ]
   },
@@ -2455,20 +2148,6 @@
      "a": [
       "Это Пушок, мой ассистент.",
       "Только не говорите проводнице — животным без билета нельзя!"
-     ]
-    },
-    {
-     "id": "mm",
-     "q": "Что вы видели у автомата?",
-     "requires": [
-      "mm_scene"
-     ],
-     "a": [
-      "Я слышал крик, когда погас свет! Карты рассыпались...",
-      "А у автомата кто-то стоял — высокий, в пальто до колен."
-     ],
-     "gives": [
-      "mm_louis"
      ]
     }
    ]
@@ -2550,20 +2229,6 @@
      ],
      "a": [
       "Там щиток с проводкой. Ключ мне Агата сама дала."
-     ]
-    },
-    {
-     "id": "mv",
-     "q": "Что случилось в туннеле?",
-     "requires": [
-      "mv_scene"
-     ],
-     "a": [
-      "Свет мигнул, и кто-то в длинном пальто метнулся к третьему столику.",
-      "Лица не разглядел."
-     ],
-     "gives": [
-      "mv_john"
      ]
     }
    ]
@@ -2741,257 +2406,35 @@
   ],
   "min_left": 2.5,
   "murderer": "robert",
-  "staged": "m_vera",
-  "pool": [
-   "m_orlov",
-   "m_mark"
+  "victim_pool": [
+   "vera",
+   "orlov",
+   "mark",
+   "louis",
+   "professor"
   ],
-  "scenarios": {
-   "m_vera": {
-    "victim": "vera",
-    "carriage": "restaurant",
-    "where": "Вагон-ресторан",
-    "body": [
-     392,
-     172
-    ],
-    "murderer_spot": "rest_s2_r",
-    "camera": "cam4",
-    "blood": [
-     [
-      404,
-      182,
-      0
-     ],
-     [
-      372,
-      166,
-      1
-     ]
-    ],
-    "witnesses": [
-     {
-      "npc": "klara",
-      "spot": "rest_aisle"
-     },
-     {
-      "npc": "john",
-      "spot": "rest_window"
-     }
-    ],
-    "scene_clue": "mv_scene",
-    "camera_clue": "c_mv",
-    "body_object": {
-     "title": "Тело: Вера Лунина",
-     "fields": [
-      [
-       "Погибшая",
-       "Вера Лунина, певица"
-      ],
-      [
-       "Время",
-       "{time}"
-      ],
-      [
-       "Место",
-       "{where}, у южного столика"
-      ]
-     ],
-     "text": "Лицо застыло в испуге — она увидела что-то страшное. Чашка опрокинута.",
-     "on_open": "mv_body",
-     "hotspots": [
-      {
-       "id": "sleeve",
-       "label": "Рукав платья",
-       "text": "На рукаве — липкие фиолетовые блёстки, ещё тёплые.",
-       "clue": "mv_glitter"
-      }
-     ]
-    },
-    "items": [
-     {
-      "id": "obj_mv_fabric",
-      "sprite": "fabric_scrap",
-      "pos": [
-       428,
-       158
-      ],
-      "label": "Осмотреть обрывок",
-      "title": "Обрывок ткани",
-      "text": "Клочок коричневой шерсти с латунной пуговицей — от длинного пальто.",
-      "on_open": "mv_fabric"
-     },
-     {
-      "id": "obj_mv_steps",
-      "sprite": "footprints",
-      "pos": [
-       340,
-       150
-      ],
-      "label": "Осмотреть следы",
-      "title": "Следы обуви",
-      "text": "Мокрые следы ботинок ведут от тела к третьей кабинке у окна.",
-      "on_open": "mv_steps"
-     }
-    ],
-    "prefix": "mv"
-   },
-   "m_orlov": {
-    "victim": "orlov",
-    "carriage": "passenger",
-    "where": "Пассажирский вагон, купе 1",
-    "body": [
-     164,
-     114
-    ],
-    "murderer_spot": "bay1_w",
-    "camera": "cam1",
-    "blood": [
-     [
-      176,
-      122,
-      2
-     ],
-     [
-      150,
-      110,
-      0
-     ]
-    ],
-    "witnesses": [
-     {
-      "npc": "professor",
-      "spot": "bay1_c"
-     }
-    ],
-    "scene_clue": "mo_scene",
-    "camera_clue": "c_mo",
-    "body_object": {
-     "title": "Тело: граф Орлов",
-     "fields": [
-      [
-       "Погибший",
-       "Граф Орлов"
-      ],
-      [
-       "Время",
-       "{time}"
-      ],
-      [
-       "Место",
-       "{where}"
-      ]
-     ],
-     "text": "Монокль разбит, в руке зажат билет.",
-     "on_open": "mo_body",
-     "hotspots": []
-    },
-    "items": [
-     {
-      "id": "obj_mo_ticket",
-      "sprite": "floor_ticket",
-      "pos": [
-       186,
-       130
-      ],
-      "label": "Осмотреть билет",
-      "title": "Билет графа",
-      "text": "На обороте дрожащим почерком: «Х. — не тот, за кого себя выдаёт!»",
-      "on_open": "mo_ticket"
-     },
-     {
-      "id": "obj_mo_steps",
-      "sprite": "footprints",
-      "pos": [
-       200,
-       150
-      ],
-      "label": "Осмотреть следы",
-      "title": "Следы обуви",
-      "text": "Следы ведут из купе по коридору в сторону тамбура.",
-      "on_open": "mo_steps"
-     }
-    ],
-    "prefix": "mo"
-   },
-   "m_mark": {
-    "victim": "mark",
-    "carriage": "restaurant",
-    "where": "Вагон-ресторан, у кофейного автомата",
-    "body": [
-     516,
-     134
-    ],
-    "murderer_spot": "rest_trash",
-    "camera": "cam4",
-    "blood": [
-     [
-      506,
-      144,
-      1
-     ],
-     [
-      530,
-      130,
-      0
-     ]
-    ],
-    "witnesses": [
-     {
-      "npc": "louis",
-      "spot": "rest_aisle"
-     }
-    ],
-    "scene_clue": "mm_scene",
-    "camera_clue": "c_mm",
-    "body_object": {
-     "title": "Тело: повар Марк",
-     "fields": [
-      [
-       "Погибший",
-       "Повар Марк"
-      ],
-      [
-       "Время",
-       "{time}"
-      ],
-      [
-       "Место",
-       "{where}"
-      ]
-     ],
-     "text": "Повар лежит у автомата, вокруг рассыпан сахар.",
-     "on_open": "mm_body",
-     "hotspots": []
-    },
-    "items": [
-     {
-      "id": "obj_mm_cup",
-      "sprite": "cup_spill",
-      "pos": [
-       540,
-       150
-      ],
-      "label": "Осмотреть чашку",
-      "title": "Опрокинутая чашка",
-      "text": "Двойной кофе, три ложки сахара. Кто-то пил его прямо у автомата.",
-      "on_open": "mm_cup"
-     },
-     {
-      "id": "obj_mm_sugar",
-      "sprite": "sugar",
-      "pos": [
-       496,
-       150
-      ],
-      "label": "Осмотреть сахар",
-      "title": "Рассыпанный сахар",
-      "text": "В сахаре — отпечаток ладони, будто оплывший по краям.",
-      "on_open": "mm_sugar"
-     }
-    ],
-    "prefix": "mm"
-   }
+  "protected": [
+   "agata",
+   "john",
+   "klara",
+   "nina",
+   "robert",
+   "tikhon",
+   "detective"
+  ],
+  "murderer_look": "высокий, в длинном чёрном плаще и шляпе",
+  "links": {
+   "fibers": [
+    "c_{pre}"
+   ],
+   "steps": [
+    "s_robert_alibi",
+    "d_robert_ticket"
+   ],
+   "home_spots": [
+    "rb3_l1",
+    "bay3_l1"
+   ]
   }
  }
 }

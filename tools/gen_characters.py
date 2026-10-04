@@ -1101,8 +1101,10 @@ def main():
             exprs = ["normal", "wide"]
         for e in exprs:
             portrait(p, e).save(f"portraits/{cid}_{e}.png")
-    for vid in ("vera", "orlov", "mark"):
-        build_body(vid, P(CHARACTERS[vid]))
+    # Тело и меловой контур — для каждого пассажира: жертвой может стать любой допустимый.
+    for vid in CHARACTERS:
+        if vid != "detective":
+            build_body(vid, P(CHARACTERS[vid]))
     for oid, over in OUTFITS.items():
         d = dict(CHARACTERS["detective"])
         d.update(over)

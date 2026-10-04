@@ -189,7 +189,7 @@ func discover_murder(m: Dictionary) -> void:
 	if i in murders.discovered:
 		return
 	murders.discovered.append(i)
-	give(str(m["scenario"]["scene_clue"]))
+	give(str(m["prefix"]) + "_scene")
 	murder_stage.emit(m, "discovered")
 
 
@@ -353,29 +353,21 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 	return result
 
 
-## Сколько ключевых улик можно было найти: без улик убийств, которые не произошли
-## (сценарии из пула, которые не выбраны, или убийства после раскрытия).
+## Сколько ключевых улик можно было найти: улики убийств считаются, только если убийство
+## уже произошло (жертвы и улики событий создаются вместе с ними).
 func _key_total() -> int:
 	var n: int = 0
 	for id: String in data.get("key_clues", []):
-		var sid: String = murder_scenario_of_clue(id)
-		if sid == "":
+		var m: Dictionary = murders.murder_of_clue(id)
+		if m.is_empty() or murders.stage_done(m, "kill"):
 			n += 1
-			continue
-		for m: Dictionary in murders.killed():
-			if m["id"] == sid:
-				n += 1
 	return n
 
 
-## Id сценария убийства, к которому относится улика (по префиксу), или "".
+## Относится ли улика к событию-убийству ("" — нет; иначе id события).
 func murder_scenario_of_clue(id: String) -> String:
-	var scenarios: Dictionary = data.get("murders", {}).get("scenarios", {})
-	for sid: String in scenarios:
-		var pre: String = str(scenarios[sid].get("prefix", ""))
-		if pre != "" and (id.begins_with(pre + "_") or id == "c_" + pre or id.begins_with("x_" + pre + "_")):
-			return sid
-	return ""
+	var m: Dictionary = murders.murder_of_clue(id)
+	return "" if m.is_empty() else str(m["id"])
 
 
 func check_deadline_warnings() -> int:

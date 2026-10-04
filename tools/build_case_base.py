@@ -55,9 +55,7 @@ keep_clues = ["d_louis_name", "d_klara_press", "d_tikhon_noticket", "d_nina_less
               "i_louis_rabbit", "i_robert_photo", "i_john_key", "i_nina_note", "i_tikhon_poems", "s_louis_stage",
               "s_klara_secret", "s_tikhon_confess", "s_agata_regular", "s_agata_tea", "s_agata_daughter",
               "s_agata_tikhon", "s_agata_john", "s_klara_louis", "s_john_coffee", "s_nina_liza", "s_robert_intro"]
-# Улики сценариев убийств (тексты генератор переписывает под конкретного виновника).
-for pre in ("mv", "mo", "mm"):
-    keep_clues += [k for k in src["clues"] if (k.startswith(pre + "_") or k == "c_" + pre) and k not in keep_clues]
+# Улики убийств создаются во время игры для каждой жертвы (MurderDirector) — в базе их нет.
 b["clues"] = OD((k, copy.deepcopy(src["clues"][k])) for k in keep_clues)
 # В деле 1 у этих улик есть время/связи с конкретным преступлением — делаем нейтральными.
 b["clues"]["s_john_coffee"]["points_to"] = []

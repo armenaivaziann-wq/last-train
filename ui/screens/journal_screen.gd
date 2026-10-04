@@ -135,6 +135,8 @@ func _suspect_card(id: String) -> Control:
 	v.add_child(icons)
 	if inv.suspects.flag(id, "wrongly_accused"):
 		v.add_child(Ui.chip("Невиновен", UiTheme.SUCCESS))
+	if inv.murders.dead_at(id, inv.clock):
+		v.add_child(Ui.chip("Погиб" + ("ла" if str(Db.character(id).get("gender", "m")) == "f" else ""), UiTheme.DANGER))
 	b.add_child(v)
 	return b
 
@@ -390,7 +392,7 @@ func _build_verdict() -> void:
 		b.custom_minimum_size = Vector2(96, 96)
 		b.tooltip_text = Db.char_name(id)
 		b.focus_mode = Control.FOCUS_NONE
-		b.disabled = inv.suspects.flag(id, "wrongly_accused")
+		b.disabled = inv.suspects.flag(id, "wrongly_accused") or inv.murders.dead_at(id, inv.clock)
 		b.pressed.connect(func() -> void:
 			_verdict_suspect = id
 			_verify_result.clear()

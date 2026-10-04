@@ -355,18 +355,47 @@ func update_goal() -> void:
 	for id: String in npcs:
 		if investigation.suspects.flag(id, "met"):
 			met = true
-	var goal: String
-	if not investigation.murders.undiscovered().is_empty():
-		goal = "Цель: осмотрите место преступления"
-	elif not met:
-		goal = "Цель: поговорите с проводницей"
-	elif facts < 8:
+	var goal: String = murder_goal()
+	var speaker: String = str(case_data.get("brief", {}).get("speaker", "agata"))
+	if goal == "" and not met:
+		goal = "Цель: поговорите с %s" % ("проводницей" if speaker == "agata" else Db.char_name(speaker))
+	elif goal == "" and facts < 8:
 		goal = "Цель: найдите улики (%d/8)" % facts
-	elif deductions == 0:
+	elif goal == "" and deductions == 0:
 		goal = "Цель: сопоставьте улики в журнале"
-	else:
+	elif goal == "":
 		goal = "Цель: выберите подозреваемого в журнале"
 	hud.set_goal(goal)
+
+
+## Следующий шаг по последнему убийству — из фактов события и уже найденных улик.
+## Пусто, если по убийствам всё сделано (тогда цель — общее расследование).
+func murder_goal() -> String:
+	var ev: EvidenceSystem = investigation.evidence
+	var killed: Array = investigation.murders.killed()
+	killed.reverse()
+	for m: Dictionary in killed:
+		var pre: String = m["prefix"]
+		var name: String = Db.char_name(m["victim"])
+		var verb: String = "убита" if str(Db.character(m["victim"]).get("gender", "m")) == "f" else "убит"
+		if not int(m["index"]) in investigation.murders.discovered:
+			if layout.carriage_at(player.global_position.x) != m["carriage"]:
+				return "Цель: идите в %s — там %s %s" % [_to_carriage(m["carriage"]), verb, name]
+			return "Цель: найдите тело: %s (%s)" % [name, str(m["where"]).to_lower()]
+		if not ev.has(pre + "_body"):
+			return "Цель: осмотрите тело — %s" % name
+		if not ev.has(pre + "_steps"):
+			return "Цель: осмотрите следы у тела — %s" % name
+		for w: String in m.get("witnesses", []):
+			if not ev.has("%s_w_%s" % [pre, w]) and not investigation.murders.dead_at(w, investigation.clock):
+				return "Цель: поговорите со свидетелем — %s" % Db.char_name(w)
+		if case_data["clues"].has("c_" + pre) and not ev.has("c_" + pre):
+			return "Цель: изучите запись камеры К%s около %s" % [str(m["camera"]).substr(3), Db.format_time(m["t"]["kill"])]
+	return ""
+
+
+func _to_carriage(cid: String) -> String:
+	return {"passenger": "пассажирский вагон", "vestibule": "тамбур", "restaurant": "вагон-ресторан"}.get(cid, layout.carriage_name(cid))
 
 
 func _on_clock(minute: float) -> void:

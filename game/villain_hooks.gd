@@ -34,6 +34,14 @@ func plan(investigation: InvestigationManager, seed_value: int) -> void:
 			_plan_voice(rng)
 
 
+## Погибнет ли персонаж к моменту t по плану убийств (облик мёртвого и голос мёртвого не берём).
+func _dead_by(npc: String, t: float) -> bool:
+	for m: Dictionary in inv.murders.murders:
+		if m["victim"] == npc and float(m["t"]["kill"]) <= t:
+			return true
+	return false
+
+
 func _tunnels() -> Array:
 	return inv.murders.murders.map(func(m: Dictionary) -> float: return float(m["t"]["tunnel_in"]))
 
@@ -73,7 +81,10 @@ func _plan_shapeshifter(rng: RandomNumberGenerator) -> void:
 	disguises = [[-INF, cur]]
 	var i: int = 0
 	for t: float in _tunnels():
-		var options: Array = pool.filter(func(s: String) -> bool: return s != cur)
+		var sw0: float = t + MurderDirector.TO_FLICKER
+		var options: Array = pool.filter(func(s: String) -> bool: return s != cur and not _dead_by(s, sw0))
+		if options.is_empty():
+			options = pool.filter(func(s: String) -> bool: return s != cur)
 		var nxt: String = options[rng.randi_range(0, options.size() - 1)]
 		var sw: float = t + MurderDirector.TO_FLICKER
 		disguises.append([sw, nxt])
@@ -171,7 +182,10 @@ func _plan_voice(rng: RandomNumberGenerator) -> void:
 			if empty:
 				bay = k
 				break
-		var owner: String = innocents[rng.randi_range(0, innocents.size() - 1)]
+		var living: Array = innocents.filter(func(s: String) -> bool: return not _dead_by(s, t + 3.0))
+		if living.is_empty():
+			continue
+		var owner: String = living[rng.randi_range(0, living.size() - 1)]
 		var spot: String = "bay%d_c" % bay
 		inv.timeline.add_excursion(culprit, t - inv.timeline.travel_minutes(culprit, t - 0.6, spot) - 0.05, spot, "hide", t + 0.6)
 		var where: String = CaseGenerator.spot_place(str(inv.timeline.state_at(owner, t)["spot"]))

@@ -39,12 +39,8 @@ func _sources(c: Dictionary) -> Array:
 	return s
 
 
-func _murder_clue(c: Dictionary, id: String) -> bool:
-	for sid: String in c["murders"]["scenarios"]:
-		var pre: String = str(c["murders"]["scenarios"][sid]["prefix"])
-		if id.begins_with(pre + "_") or id == "c_" + pre or id.begins_with("x_" + pre + "_"):
-			return true
-	return false
+func _murder_clue(_c: Dictionary, id: String) -> bool:
+	return id.begins_with("mk") or id.begins_with("c_mk") or id.begins_with("x_mk")
 
 
 func _check_case(c: Dictionary, label: String) -> void:
@@ -96,12 +92,11 @@ func _check_case(c: Dictionary, label: String) -> void:
 		for r: Array in Db.layout(it["carriage"])["colliders"]:
 			var rect := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
 			check(not rect.has_point(Vector2(float(it["pos"][0]), y)), "%s: предмет %s не внутри мебели" % [label, it["id"]])
-	# убийства: жертва не виновник/герой/подозреваемый, свидетели не виновник
-	for sid: String in c["murders"]["scenarios"]:
-		var sc: Dictionary = c["murders"]["scenarios"][sid]
-		check(not sc["victim"] in c["suspects"], "%s: жертва не подозреваемый" % label)
-		for w: Dictionary in sc["witnesses"]:
-			check(w["npc"] != culprit, "%s: свидетель убийства — не виновник" % label)
+	# убийства: виновник и защищённые сюжетные NPC не могут стать жертвами
+	var pool: Array = MurderDirector.victim_pool(c)
+	check(not culprit in pool and not "detective" in pool, "%s: виновник и герой — не жертвы" % label)
+	for p in c["murders"].get("protected", []):
+		check(not p in pool, "%s: защищённый %s — не жертва" % [label, p])
 	for npc: String in c["schedules"]:
 		for e: Array in c["schedules"][npc]:
 			check(tl.spots.has(str(e[1])), "%s: точка расписания %s" % [label, e[1]])

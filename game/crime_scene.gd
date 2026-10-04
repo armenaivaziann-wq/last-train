@@ -1,9 +1,9 @@
 class_name CrimeScene
 extends Node2D
 ## Место преступления: неподвижное тело, неровный меловой контур по форме тела, небольшие
-## стилизованные пятна и улики на полу. Всё это — постоянные объекты мира: остаются на месте,
-## даже когда игрок далеко, и восстанавливаются после загрузки сохранения.
-## Действия: осмотреть тело, осмотреть улики (Interactable), поговорить со свидетелем (NPC).
+## стилизованные пятна и улики на полу — всё из данных конкретного события-убийства.
+## Это постоянные объекты мира: остаются на месте, даже когда игрок далеко, и
+## восстанавливаются после загрузки сохранения.
 
 var murder: Dictionary
 var kill_time: float = 0.0
@@ -12,14 +12,12 @@ var kill_time: float = 0.0
 func build(m: Dictionary, layout: TrainLayout) -> void:
 	murder = m
 	kill_time = float(m["t"]["kill"])
-	var sc: Dictionary = m["scenario"]
-	var ox: float = layout.offsets[sc["carriage"]]
+	var ox: float = layout.offsets[m["carriage"]]
 	name = "CrimeScene_%s" % m["id"]
 	global_position = m["scene_pos"]
-	for b: Array in sc.get("blood", []):
+	for b: Array in m.get("blood", []):
 		var s := Sprite2D.new()
 		s.texture = Db.texture("crime/blood_%d.png" % int(b[2]))
-		s.global_position = Vector2(ox + float(b[0]), float(b[1]))
 		s.top_level = true
 		add_child(s)
 		s.global_position = Vector2(ox + float(b[0]), float(b[1]))
@@ -36,7 +34,7 @@ func build(m: Dictionary, layout: TrainLayout) -> void:
 	it.radius = 34.0
 	it.needs_light = false
 	add_child(it)
-	for item: Dictionary in sc.get("items", []):
+	for item: Dictionary in m.get("items", []):
 		var p := Vector2(ox + float(item["pos"][0]), float(item["pos"][1]))
 		var s2 := Sprite2D.new()
 		s2.texture = Db.texture("crime/%s.png" % item["sprite"])
@@ -57,6 +55,3 @@ func build(m: Dictionary, layout: TrainLayout) -> void:
 ## Для записей камер: до момента убийства места преступления ещё нет.
 func show_at(t: float) -> void:
 	visible = t >= kill_time
-	for c in get_children():
-		if c is CanvasItem and (c as CanvasItem).top_level:
-			(c as CanvasItem).visible = visible
