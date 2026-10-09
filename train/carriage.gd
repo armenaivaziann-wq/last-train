@@ -78,6 +78,7 @@ func build(entities: Node2D, glow_layer: Node2D) -> void:
 		var door := TrainDoor.new()
 		door.locked = bool(d.get("locked", false))
 		door.locked_message = left_door_message if d["id"] == "left" else right_door_message
+		door.locked_message = str(data.get("door_messages", {}).get(d["id"], door.locked_message))
 		door.position = Vector2(float(d["pos"][0]), float(d["pos"][1]))
 		add_child(door)
 		doors.append(door)

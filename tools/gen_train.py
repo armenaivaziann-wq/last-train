@@ -305,6 +305,65 @@ def table_items(c, x, y, rng, rich=False):
         c.hline(x + 13, x + 17, y + 8, "#a8a0b8")
 
 
+def make_story_props():
+    """Предметы новых вагонов: ящики, мешки почты, клетка, длинный чёрный ящик."""
+    c = Canvas(28, 26)
+    c.rect(1, 6, 26, 19, "#9a7448")
+    c.rect(1, 4, 26, 4, "#b48a58")
+    for x in (1, 13, 26):
+        c.vline(x, 4, 24, "#6a4c2c")
+    c.line(2, 8, 25, 23, "#7a5a36")
+    c.rect(8, 12, 10, 5, "#d8c49a")
+    c.hline(9, 16, 14, "#6a4c2c")
+    prop_sprite("crate", c.outline())
+    c = Canvas(30, 40)
+    for i, (x, y, w, h) in enumerate(((1, 18, 28, 21), (4, 2, 22, 17))):
+        col = "#8a6840" if i == 0 else "#a07c4c"
+        c.rect(x, y, w, h, col)
+        c.rect(x, y, w, 3, shade(col, 0.15))
+        c.vline(x, y, y + h - 1, shade(col, -0.35))
+        c.vline(x + w - 1, y, y + h - 1, shade(col, -0.35))
+        c.line(x + 1, y + 4, x + w - 2, y + h - 2, shade(col, -0.2))
+    c.rect(9, 24, 12, 5, "#d8c49a")
+    prop_sprite("crate_stack", c.outline())
+    c = Canvas(22, 20)
+    c.ellipse(11, 12, 10, 7, "#8a8466")
+    c.ellipse(11, 10, 9, 6, "#a8a07c")
+    c.rect(8, 2, 6, 5, "#a8a07c")
+    c.rect(7, 6, 8, 2, "#6a4c2c")
+    c.rect(6, 12, 9, 4, "#e8dcc0")
+    c.hline(7, 13, 13, "#c0394b")
+    prop_sprite("mail_sack", c.outline())
+    c = Canvas(34, 34)
+    c.rect(1, 30, 32, 3, "#3a3a44")
+    c.rect(1, 2, 32, 2, "#5a5a68")
+    for x in range(1, 34, 5):
+        c.vline(x, 2, 31, "#7a7a8c")
+    c.rect(1, 16, 32, 1, "#5a5a68")
+    c.rect(14, 18, 6, 5, "#d9a441")
+    c.set(17, 20, "#222222")
+    for x, y in ((8, 27), (12, 28), (20, 27), (24, 28)):
+        c.set(x, y, "#c8c0b0")
+    prop_sprite("cage", c.outline())
+    c = Canvas(18, 46)
+    c.poly([(4, 1), (13, 1), (17, 10), (14, 45), (3, 45), (0, 10)], "#2a1e26")
+    c.poly([(5, 3), (12, 3), (15, 10), (12, 43), (5, 43), (2, 10)], "#3e2a36")
+    c.vline(8, 8, 30, "#8a6a3c")
+    c.hline(5, 12, 14, "#8a6a3c")
+    for y in (6, 40):
+        c.hline(4, 13, y, "#6a5040")
+    prop_sprite("coffin", c.outline())
+    c = Canvas(30, 22)
+    c.rect(1, 6, 28, 12, "#6a4c2c")
+    c.rect(1, 4, 28, 3, "#8a6840")
+    c.rect(3, 18, 3, 4, "#4a3420")
+    c.rect(24, 18, 3, 4, "#4a3420")
+    c.rect(5, 1, 9, 5, "#efe6c8")
+    c.rect(17, 2, 8, 4, "#d8c49a")
+    c.ellipse(24, 3, 3, 2, "#ffd27a")
+    prop_sprite("mail_desk", c.outline())
+
+
 # --- спрайты-предметы (сортировка по Y) --------------------------------------------------
 PROPS = {}
 
@@ -834,13 +893,207 @@ def restaurant():
     L.save()
 
 
+def berth(c, x, y, w, h, blanket, pillow_top=True):
+    """Полка спального купе: матрас, одеяло, подушка."""
+    c.brect(x + 3, y + 4, w, h + 2, (24, 10, 34, 70))
+    c.rrect(x, y, w, h, 3, WOOD_D)
+    c.rrect(x + 2, y + 2, w - 4, h - 4, 2, "#e8e0d0")
+    py = y + 4 if pillow_top else y + h - 14
+    c.rrect(x + 4, py, w - 8, 10, 3, "#ffffff")
+    c.rect(x + 5, py + 7, w - 10, 2, "#d8d0dc")
+    by0 = y + 16 if pillow_top else y + 3
+    c.rrect(x + 2, by0, w - 4, h - 20, 2, blanket)
+    for yy in range(by0 + 3, by0 + h - 22, 6):
+        c.hline(x + 3, x + w - 4, yy, shade(blanket, -0.2))
+    c.rect(x + 2, by0, w - 4, 2, shade(blanket, 0.2))
+
+
+def sleeper():
+    W = 656
+    L = Layout("sleeper", "Спальный вагон", W)
+    c = Canvas(W, H)
+    rng = noise_rng(31)
+    wall_face(c, 0, W, "#2a3a5e", "#34477a", "stripes", wain="#4a2c1e", seed=7)
+    wood_floor(c, 8, FACE_BOTTOM, W - 8, FLOOR_BOTTOM, base="#6e4a34", seed=9)
+    carpet_runner(c, 8, 146, W - 8, 186, base="#2f5a4a", dark="#1e3e32", trim=GOLD, motif="diamond")
+    for i in range(6):
+        c.brect(8, FACE_BOTTOM + i, W - 16, 1, (20, 10, 40, 90 - i * 15))
+    bottom_wall(c, W, range(40, W - 40, 72))
+    L.col(0, 0, W, 60)
+    L.col(0, FLOOR_BOTTOM, W, H - FLOOR_BOTTOM)
+
+    # --- купе проводника
+    window(c, 30, 16, 40, 22, curtain="#2f4377")
+    table_top(c, 18, 58, 62, 26)
+    L.col(18, 58, 62, 26)
+    L.prop("samovar", 92, 76, collider=[84, 64, 16, 12])
+    partition(c, 104, FACE_BOTTOM, 128)
+    L.col(104, FACE_BOTTOM, 6, 72)
+    L.spot("sl_svc_desk", 50, 102, "up", "sit")
+    L.spot("sl_svc_shelf", 88, 100, "up")
+    L.spot("sl_svc_door", 64, 166, "right")
+    L.inter("obj_sl_journal", 54, 70, "Журнал спального вагона", "register", radius=34)
+    L.d["lamps"].append([56, 12])
+    sconce(c, 20, 22)
+    L.d["window_lights"].append([50, 60])
+
+    # --- 4 закрытых купе: две полки, столик у окна, дверь в коридор
+    blankets = ("#7a2a4a", "#2f4377", "#2f6a4a", "#6b2f7a")
+    for k in range(4):
+        x0 = 110 + 112 * k
+        n = k + 1
+        window(c, x0 + 30, 16, 46, 22, curtain="#2f4a6b")
+        berth(c, x0 + 3, 62, 30, 60, blankets[k])
+        berth(c, x0 + 73, 62, 30, 60, blankets[(k + 2) % 4])
+        L.col(x0 + 3, 62, 30, 60)
+        L.col(x0 + 73, 62, 30, 60)
+        table_top(c, x0 + 40, 58, 26, 18)
+        teacup(c, x0 + 47, 64)
+        L.col(x0 + 40, 58, 26, 18)
+        # передняя стенка купе с дверным проёмом (x0+44..x0+68)
+        for (a, b) in ((x0, x0 + 44), (x0 + 68, x0 + 112 if k < 3 else x0 + 112)):
+            c.rect(a, 124, b - a, 10, WOOD_D)
+            c.rect(a, 124, b - a, 6, shade(WOOD, -0.1))
+            c.rect(a, 124, b - a, 1, WOOD_L)
+            c.rect(a, 133, b - a, 1, GOLD)
+            L.col(a, 124, b - a, 10)
+        # открытая дверь-купе (сдвинута за стенку) и номер
+        c.rect(x0 + 70, 120, 22, 4, "#5e3a26")
+        c.rect(x0 + 50, 126, 12, 5, GOLD)
+        c.rect(x0 + 52, 127, 8, 3, "#2a1e26")
+        c.set(x0 + 55, 128, GOLD_L)
+        door = x0 + 56
+        L.spot(f"sl{n}_b1", x0 + 18, 92, "right", "sit", via=door)
+        L.spot(f"sl{n}_b2", x0 + 88, 92, "left", "sit", via=door)
+        L.spot(f"sl{n}_w", x0 + 53, 96, "up", via=door)
+        L.spot(f"sl{n}_in", x0 + 56, 112, "down", via=door)
+        L.spot(f"sl{n}_door", door, CORRIDOR_Y, "up")
+        L.spot(f"sl_corr{n}", x0 + 53, 184, "down")
+        L.d["luggage_slots"][f"sl{n}_shelf"] = [x0 + 53, 108]
+        L.d["window_lights"].append([x0 + 53, 60])
+        L.d["lamps"].append([x0 + 53, 30])
+        if k < 3:
+            partition(c, x0 + 106, FACE_BOTTOM, 134)
+            L.col(x0 + 106, FACE_BOTTOM, 6, 78)
+        sconce(c, x0 + 18, 24)
+    partition(c, 552, FACE_BOTTOM, 134)
+    L.col(552, FACE_BOTTOM, 6, 78)
+
+    # --- торец: умывальник, зеркало, расписание
+    c.rect(570, 60, 40, 18, "#c8ccd8")
+    c.ellipse(590, 68, 12, 6, "#e8ecf4")
+    c.ellipse(590, 68, 8, 4, "#9aa4b4")
+    L.col(570, 60, 40, 18)
+    L.prop("mirror", 590, 30)
+    c.rect(616, 18, 26, 30, "#efe6c8")
+    for yy in range(22, 46, 4):
+        c.hline(619, 639, yy, "#7a6a8a")
+    L.spot("sl_basin", 590, 92, "up")
+    L.spot("sl_end_corner", 632, 120, "left")
+    L.inter("obj_sl_timetable", 628, 70, "Расписание поезда", None, radius=30)
+    L.d["lamps"].append([600, 20])
+    sconce(c, 600, 24)
+
+    L.prop("plant", 120, 190, collider=[114, 182, 12, 8])
+    end_walls(c, W, L, left_locked=True)
+    L.prop("cctv", 540, 12)
+    L.prop("cctv", 96, 50)
+    L.d["cameras"].append({"id": "cam5", "name": "Коридор спального вагона", "rect": [100, 136, 556, 72]})
+    L.d["cameras"].append({"id": "cam7", "name": "Купе проводника", "rect": [0, 40, 150, 168]})
+    L.d["door_messages"] = {"left": "Дверь в локомотив заперта."}
+    c.save("train/sleeper_bg.png")
+    L.save()
+
+
+def baggage():
+    W = 656
+    L = Layout("baggage", "Багажный вагон", W)
+    c = Canvas(W, H)
+    rng = noise_rng(41)
+    # дощатые стены и грубый пол
+    c.rect(0, CAP, W, FACE_BOTTOM - CAP, "#3e3a30")
+    for x in range(0, W, 10):
+        c.vline(x, CAP, FACE_BOTTOM - 1, "#2e2a22")
+        c.vline(x + 1, CAP, FACE_BOTTOM - 1, "#4e4838")
+    for y in (20, 38):
+        c.rect(0, y, W, 2, "#5a4c34")
+    c.rect(0, 0, W, CAP, "#232038")
+    c.rect(0, CAP - 2, W, 2, "#3a3456")
+    wood_floor(c, 8, FACE_BOTTOM, W - 8, FLOOR_BOTTOM, base="#5a4632", seed=13, plank_h=10)
+    for i in range(6):
+        c.brect(8, FACE_BOTTOM + i, W - 16, 1, (10, 8, 20, 110 - i * 18))
+    # сдвижная грузовая дверь, солома, пятна, жёлтая разметка прохода
+    c.rect(560, CAP + 2, 70, FACE_BOTTOM - CAP - 2, "#4a4436")
+    c.frame(560, CAP + 2, 70, FACE_BOTTOM - CAP - 2, "#2a2620")
+    c.hline(556, 634, CAP + 3, "#7a7a8c")
+    c.rect(592, 30, 6, 3, "#9aa4b4")
+    for _ in range(260):
+        x, y = rng.randint(12, W - 12), rng.randint(FACE_BOTTOM + 4, FLOOR_BOTTOM - 4)
+        c.set(x, y, rng.choice(("#c8a85a", "#b0904a", "#d8bc6a")))
+        if rng.random() < 0.4:
+            c.set(x + 1, y + (1 if rng.random() < 0.5 else -1), "#a8884a")
+    for _ in range(7):
+        c.ellipse(rng.randint(40, W - 40), rng.randint(130, 180), rng.uniform(6, 14), rng.uniform(3, 6), (30, 22, 18, 70), blend=True)
+    for x in range(12, W - 12, 12):
+        c.rect(x, 150, 6, 2, "#c8a038")
+        c.rect(x, 182, 6, 2, "#c8a038")
+    # маленькие зарешёченные окна
+    for x in (90, 270, 450):
+        window(c, x, 18, 26, 16, curtain="#3e3a30")
+        for gx in range(x + 4, x + 26, 6):
+            c.vline(gx, 18, 33, "#2a2a2a")
+        L.d["window_lights"].append([x + 13, 60])
+    bottom_wall(c, W, range(60, W - 60, 120), glass="#4a5a7a")
+    L.col(0, 0, W, 60)
+    L.col(0, FLOOR_BOTTOM, W, H - FLOOR_BOTTOM)
+
+    # почтовый стол
+    L.prop("mail_desk", 40, 96, collider=[26, 76, 30, 20])
+    L.spot("bg_desk", 40, 112, "up", "sit")
+    L.inter("obj_bg_manifest", 40, 82, "Накладные", None, radius=30)
+    L.prop("mail_sack", 76, 92, collider=[66, 82, 20, 12])
+    L.prop("mail_sack", 92, 100)
+    L.spot("bg_mail", 84, 118, "up")
+    # штабеля ящиков
+    for x, sprite in ((150, "crate_stack"), (186, "crate"), (232, "crate_stack"), (330, "crate"), (366, "crate_stack")):
+        h = 40 if sprite == "crate_stack" else 26
+        L.prop(sprite, x, 100, collider=[x - 14, 100 - h + 8, 28, h - 8])
+    L.spot("bg_crates1", 168, 120, "up")
+    L.spot("bg_crates2", 300, 112, "up")
+    # клетка для животных
+    L.prop("cage", 440, 104, collider=[424, 76, 34, 28])
+    L.spot("bg_cage", 440, 124, "up")
+    # длинный чёрный ящик на козлах
+    c.rect(500, 96, 4, 10, "#3a2a1e")
+    c.rect(540, 96, 4, 10, "#3a2a1e")
+    L.prop("coffin", 522, 104, collider=[512, 62, 20, 42])
+    L.spot("bg_coffin", 548, 112, "left")
+    L.spot("bg_corner", 618, 110, "left")
+    L.spot("bg_aisle", 300, CORRIDOR_Y, "up")
+    L.spot("bg_door", 30, 166, "right")
+    L.d["luggage_slots"]["bg_floor"] = [600, 140]
+    for x in (120, 330, 560):
+        L.d["lamps"].append([x, 14])
+        c.rect(x - 1, 8, 2, 8, "#5a5a68")
+        c.ellipse(x, 18, 4, 3, "#ffd27a")
+    end_walls(c, W, L, right_locked=True)
+    L.prop("cctv", 20, 12)
+    L.d["cameras"].append({"id": "cam6", "name": "Багажный вагон", "rect": [0, 40, 656, 168]})
+    L.d["door_messages"] = {"right": "Хвост поезда. Дальше — только рельсы."}
+    c.save("train/baggage_bg.png")
+    L.save()
+
+
 def main():
     make_props()
+    make_story_props()
     for name, img in PROPS.items():
         img.save(f"props/{name}.png")
     passenger()
     vestibule()
     restaurant()
+    sleeper()
+    baggage()
 
 
 if __name__ == "__main__":

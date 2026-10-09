@@ -249,10 +249,131 @@ def passenger_zero(f, menace):
     return c
 
 
+# --- Глава 2 -----------------------------------------------------------------------------
+def ghost(f, menace):
+    """Призрак: полупрозрачная бледная фигура в старинном платье, низ растворяется."""
+    c = Canvas(FW, FH)
+    body, light, dark = (200, 220, 255, 150), (235, 245, 255, 190), (150, 170, 220, 120)
+    sway = f
+    c.poly([(16, 12), (7 + sway, 34), (25 + sway, 34)], body, blend=True)
+    for x in range(8 + sway, 25 + sway, 3):
+        c.blend(x, 35 + (x % 2), dark)
+        c.blend(x + 1, 37, (150, 170, 220, 60))
+    c.rrect(11, 3 - (1 if menace else 0), 10, 10, 4, light, blend=True)
+    # волосы и тёмные глазницы
+    c.rect(11, 3 - (1 if menace else 0), 10, 3, (120, 130, 170, 170))
+    ey = 8 - (1 if menace else 0)
+    c.rect(13, ey, 2, 2, (20, 30, 60, 220))
+    c.rect(18, ey, 2, 2, (20, 30, 60, 220))
+    if menace:
+        c.line(9, 16, 2, 8 - f, body)
+        c.line(23, 16, 30, 8 - f, body)
+        c.rect(15, 11, 3, 2, (20, 30, 60, 220))
+    else:
+        c.line(10, 16, 8, 26, body)
+        c.line(22, 16, 24, 26, body)
+    return c
+
+
+def vampire(f, menace):
+    c = Canvas(FW, FH)
+    legs(c, "#1a1420")
+    cape = "#1a0c14"
+    lining = "#8a1424"
+    if menace:
+        c.poly([(16, 11), (1, 30 - f), (8, 36), (24, 36), (31, 30 - f)], cape)
+        c.poly([(16, 13), (5, 29 - f), (10, 34), (22, 34), (27, 29 - f)], lining)
+    else:
+        c.poly([(16, 11), (7, 36), (25, 36)], cape)
+        c.poly([(16, 13), (10, 35), (13, 35)], lining)
+    c.rect(12, 14, 8, 20, "#241a2a")
+    c.rect(15, 14, 2, 8, "#f0ecf4")
+    c.set(16, 16, RED)
+    # высокий воротник
+    c.poly([(9, 13), (12, 7), (14, 13)], cape)
+    c.poly([(23, 13), (20, 7), (18, 13)], cape)
+    c.rrect(12, 4, 8, 9, 3, "#e8e0ec")
+    c.poly([(12, 4), (16, 7), (20, 4), (20, 2), (12, 2)], "#140c18")
+    c.set(14, 8, RED)
+    c.set(18, 8, RED)
+    if menace or f == 1:
+        c.set(14, 11, "#ffffff")
+        c.set(18, 11, "#ffffff")
+    c.hline(14, 18, 10, "#5a1424")
+    c.outline("#4a4062")
+    return c
+
+
+def werewolf(f, menace):
+    c = Canvas(FW, FH)
+    fur, fur_d, fur_l = "#6a5a4a", "#4a3e32", "#8a7a64"
+    c.rect(11, 31, 4, 6, fur_d)
+    c.rect(18, 31, 4, 6, fur_d)
+    c.rect(10, 36, 6, 2, "#2a221c")
+    c.rect(17, 36, 6, 2, "#2a221c")
+    c.rrect(9, 14, 15, 18, 5, fur)
+    c.rect(12, 18, 9, 10, fur_l)
+    # рваные остатки зелёной куртки
+    c.poly([(9, 16), (13, 15), (12, 28), (9, 26)], "#4e5a2c")
+    c.poly([(24, 16), (20, 15), (21, 27), (24, 25)], "#4e5a2c")
+    arm_up = 4 if menace else 0
+    c.rect(5, 16 - arm_up, 4, 12, fur)
+    c.rect(24, 16 - arm_up, 4, 12, fur)
+    for x in (5, 7, 24, 26):
+        c.set(x, 28 - arm_up, "#f0ecdf")
+    # голова с мордой и ушами
+    c.rrect(10, 4, 13, 11, 4, fur)
+    c.poly([(10, 6), (11, 0), (14, 4)], fur_d)
+    c.poly([(23, 6), (22, 0), (19, 4)], fur_d)
+    c.rrect(13, 9, 7, 6, 2, fur_l)
+    c.rect(15, 9, 3, 2, "#1a1414")
+    ey = 7
+    c.set(12, ey, "#ffd23a" if (menace or f == 0) else "#b08a2a")
+    c.set(20, ey, "#ffd23a" if (menace or f == 0) else "#b08a2a")
+    if menace:
+        c.hline(14, 19, 14, "#ffffff")
+        c.set(14, 13, "#ffffff")
+        c.set(19, 13, "#ffffff")
+    c.outline("#4a4062")
+    return c
+
+
+def witch(f, menace):
+    c = Canvas(FW, FH)
+    legs(c, "#1e1434")
+    robe, robe_d = "#2e1f4a", "#1e1434"
+    c.poly([(16, 12), (6, 37), (26, 37)], robe)
+    c.poly([(16, 14), (8, 36), (11, 36)], "#43306a")
+    c.vline(16, 16, 36, robe_d)
+    # пояс со склянками
+    c.rect(10, 22, 13, 2, "#6a4c2c")
+    for x, col in ((11, "#7fd18a"), (15, "#c0394b"), (19, "#5ab8f0")):
+        c.rect(x, 24, 2, 3, col)
+    if menace:
+        c.line(9, 16, 3, 9 - f, robe)
+        c.line(23, 16, 29, 9 - f, robe)
+        for i in range(5):
+            c.set(29 + (i % 2), 7 - f - i, "#7fd18a")
+            c.set(2 - (i % 2), 7 - f - i, "#7fd18a")
+    else:
+        c.rect(7, 18, 3, 10, robe)
+        c.rect(22, 18, 3, 10, robe)
+    c.rrect(12, 6, 8, 8, 3, "#ece2ea")
+    c.set(14, 9, "#7fd18a")
+    c.set(18, 9, "#7fd18a")
+    # остроконечная шляпа
+    c.rect(8, 6, 16, 2, "#140c22")
+    c.poly([(11, 6), (21, 6), (18 + f, -1), (16 + f, -2)], "#1e1434")
+    c.rect(11, 5, 10, 1, "#7fd18a")
+    c.outline("#4a4062")
+    return c
+
+
 VILLAINS = {
     "black_cloak": black_cloak, "shapeshifter": shapeshifter, "mirror": mirror, "mimic": mimic,
     "shadow": shadow, "voice": voice, "sleeper": sleeper, "conductor_double": conductor_double,
     "puppeteer": puppeteer, "passenger_zero": passenger_zero,
+    "ghost": ghost, "vampire": vampire, "werewolf": werewolf, "witch": witch,
 }
 
 

@@ -7,6 +7,8 @@ var _info: VBoxContainer
 var _map: Control
 var _nodes: Array = []
 var _path: Control
+var _chapter: int = 1
+var _tabs: HBoxContainer
 
 
 func build(_args: Dictionary) -> void:
@@ -31,32 +33,30 @@ func build(_args: Dictionary) -> void:
 	_map.add_child(_path)
 	var current: Dictionary = {}
 	for l: Dictionary in Db.levels():
-		var id: String = l["id"]
-		var unlocked: bool = ProgressionManager.level_unlocked(id)
-		var done: bool = ProgressionManager.level_completed(id)
-		if unlocked and not done and current.is_empty():
+		if ProgressionManager.level_unlocked(l["id"]) and not ProgressionManager.level_completed(l["id"]) and current.is_empty():
 			current = l
-		var b := Ui.icon_button("check" if done else ("lock" if not unlocked else "train"), 70,
-			"CyanButton" if done else ("PrimaryButton" if unlocked else "GhostButton"), func() -> void: _select(l))
-		var num := Ui.label(str(int(l["number"])), "NumberLabel", 18)
-		num.position = Vector2(4, -2)
-		b.add_child(num)
-		_map.add_child(b)
-		var lbl := Ui.label(("%s" % l["title"]) + ("  " + "★".repeat(ProgressionManager.level_stars(id)) if done else ""), "", 17)
-		lbl.add_theme_constant_override("outline_size", 6)
-		lbl.add_theme_color_override("font_outline_color", UiTheme.OUTLINE)
-		if done:
-			lbl.add_theme_color_override("font_color", UiTheme.GOLD)
-		elif not unlocked:
-			lbl.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
-		_map.add_child(lbl)
-		_nodes.append({"level": l, "button": b, "label": lbl})
-	_path.nodes = _nodes
+	if not current.is_empty():
+		_chapter = int(current.get("chapter", 1))
+	elif ProgressionManager.level_completed(str(Db.levels()[-1]["id"])):
+		_chapter = int(Db.levels()[-1].get("chapter", 1))
+	_build_nodes()
 	var head := Ui.panel("GlassPanel")
 	var hh := Ui.header("Кампания", "map", close)
 	var st: Array = Ui.pill("star", "%d / %d" % [ProgressionManager.total_stars(), Db.levels().size() * 3], 28)
 	hh.add_child(st[0])
 	hh.move_child(st[0], 2)
+	# Главы маршрута
+	_tabs = Ui.hbox(8)
+	for ch: Dictionary in Db.campaign.get("chapters", []):
+		var n: int = int(ch["number"])
+		var first: String = str(Db.levels().filter(func(l: Dictionary) -> bool: return int(l.get("chapter", 1)) == n)[0]["id"])
+		var open: bool = ProgressionManager.level_unlocked(first)
+		var b := Ui.button("Глава %d" % n, "map" if open else "lock", "PrimaryButton" if n == _chapter else "GhostButton", func() -> void: _set_chapter(n), 48)
+		b.disabled = not open
+		b.tooltip_text = str(ch["title"])
+		_tabs.add_child(b)
+	hh.add_child(_tabs)
+	hh.move_child(_tabs, 2)
 	head.add_child(hh)
 	head.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	head.offset_left = 30
@@ -74,7 +74,47 @@ func build(_args: Dictionary) -> void:
 	add_child(side)
 	resized.connect(_layout)
 	_layout.call_deferred()
-	_select(current if not current.is_empty() else Db.levels()[0])
+	var chapter_levels: Array = Db.levels().filter(func(l: Dictionary) -> bool: return int(l.get("chapter", 1)) == _chapter)
+	_select(current if not current.is_empty() and int(current.get("chapter", 1)) == _chapter else chapter_levels[0])
+
+
+## Узлы дел выбранной главы.
+func _build_nodes() -> void:
+	for n: Dictionary in _nodes:
+		n["button"].queue_free()
+		n["label"].queue_free()
+	_nodes.clear()
+	for l: Dictionary in Db.levels():
+		if int(l.get("chapter", 1)) != _chapter:
+			continue
+		var id: String = l["id"]
+		var unlocked: bool = ProgressionManager.level_unlocked(id)
+		var done: bool = ProgressionManager.level_completed(id)
+		var b := Ui.icon_button("check" if done else ("lock" if not unlocked else "train"), 70,
+			"CyanButton" if done else ("PrimaryButton" if unlocked else "GhostButton"), func() -> void: _select(l))
+		var num := Ui.label(str(int(l["number"])), "NumberLabel", 18)
+		num.position = Vector2(4, -2)
+		b.add_child(num)
+		_map.add_child(b)
+		var lbl := Ui.label(("%s" % l["title"]) + ("  " + "★".repeat(ProgressionManager.level_stars(id)) if done else ""), "", 17)
+		lbl.add_theme_constant_override("outline_size", 6)
+		lbl.add_theme_color_override("font_outline_color", UiTheme.OUTLINE)
+		if done:
+			lbl.add_theme_color_override("font_color", UiTheme.GOLD)
+		elif not unlocked:
+			lbl.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+		_map.add_child(lbl)
+		_nodes.append({"level": l, "button": b, "label": lbl})
+	_path.nodes = _nodes
+
+
+func _set_chapter(n: int) -> void:
+	_chapter = n
+	_build_nodes()
+	for b: Button in _tabs.get_children():
+		b.theme_type_variation = "PrimaryButton" if b.text == "Глава %d" % n else "GhostButton"
+	_layout()
+	_select(Db.levels().filter(func(l: Dictionary) -> bool: return int(l.get("chapter", 1)) == n)[0])
 
 
 func _layout() -> void:

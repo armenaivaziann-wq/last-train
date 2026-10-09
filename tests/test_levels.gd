@@ -9,7 +9,13 @@ extends TestSuite
 ##   • повторный туннель не повторяет события, сохранение/загрузка не ломает дело;
 ##   • истечение времени — поражение.
 
-const AUTHORED: Array = ["level_02", "level_03", "level_04", "level_05", "level_06", "level_07", "level_08", "level_09", "level_10"]
+
+
+
+## Все авторские дела кампании, кроме первого (у него свой набор тестов).
+var AUTHORED: Array:
+	get:
+		return Db.levels().filter(func(l: Dictionary) -> bool: return str(l.get("case", "gen")) != "gen" and l["id"] != "level_01").map(func(l: Dictionary) -> String: return str(l["id"]))
 
 
 func _start_level(level_id: String, seed_value: int = 7) -> void:

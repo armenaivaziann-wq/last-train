@@ -442,7 +442,8 @@ func murder_goal() -> String:
 
 
 func _to_carriage(cid: String) -> String:
-	return {"passenger": "пассажирский вагон", "vestibule": "тамбур", "restaurant": "вагон-ресторан"}.get(cid, layout.carriage_name(cid))
+	return {"passenger": "пассажирский вагон", "vestibule": "тамбур", "restaurant": "вагон-ресторан",
+		"sleeper": "спальный вагон", "baggage": "багажный вагон"}.get(cid, layout.carriage_name(cid))
 
 
 func _on_clock(minute: float) -> void:

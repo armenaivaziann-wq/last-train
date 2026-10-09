@@ -1,0 +1,334 @@
+{
+ "id": "baggage",
+ "name": "Багажный вагон",
+ "size": [
+  656,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   656,
+   60
+  ],
+  [
+   0,
+   192,
+   656,
+   16
+  ],
+  [
+   26,
+   76,
+   30,
+   20
+  ],
+  [
+   66,
+   82,
+   20,
+   12
+  ],
+  [
+   136,
+   68,
+   28,
+   32
+  ],
+  [
+   172,
+   82,
+   28,
+   18
+  ],
+  [
+   218,
+   68,
+   28,
+   32
+  ],
+  [
+   316,
+   82,
+   28,
+   18
+  ],
+  [
+   352,
+   68,
+   28,
+   32
+  ],
+  [
+   424,
+   76,
+   34,
+   28
+  ],
+  [
+   512,
+   62,
+   20,
+   42
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   648,
+   0,
+   8,
+   140
+  ],
+  [
+   648,
+   188,
+   8,
+   20
+  ]
+ ],
+ "spots": {
+  "bg_desk": {
+   "pos": [
+    40,
+    112
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "bg_mail": {
+   "pos": [
+    84,
+    118
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bg_crates1": {
+   "pos": [
+    168,
+    120
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bg_crates2": {
+   "pos": [
+    300,
+    112
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bg_cage": {
+   "pos": [
+    440,
+    124
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bg_coffin": {
+   "pos": [
+    548,
+    112
+   ],
+   "facing": "left",
+   "pose": "stand"
+  },
+  "bg_corner": {
+   "pos": [
+    618,
+    110
+   ],
+   "facing": "left",
+   "pose": "stand"
+  },
+  "bg_aisle": {
+   "pos": [
+    300,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bg_door": {
+   "pos": [
+    30,
+    166
+   ],
+   "facing": "right",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "mail_desk",
+   "pos": [
+    40,
+    96
+   ]
+  },
+  {
+   "sprite": "mail_sack",
+   "pos": [
+    76,
+    92
+   ]
+  },
+  {
+   "sprite": "mail_sack",
+   "pos": [
+    92,
+    100
+   ]
+  },
+  {
+   "sprite": "crate_stack",
+   "pos": [
+    150,
+    100
+   ]
+  },
+  {
+   "sprite": "crate",
+   "pos": [
+    186,
+    100
+   ]
+  },
+  {
+   "sprite": "crate_stack",
+   "pos": [
+    232,
+    100
+   ]
+  },
+  {
+   "sprite": "crate",
+   "pos": [
+    330,
+    100
+   ]
+  },
+  {
+   "sprite": "crate_stack",
+   "pos": [
+    366,
+    100
+   ]
+  },
+  {
+   "sprite": "cage",
+   "pos": [
+    440,
+    104
+   ]
+  },
+  {
+   "sprite": "coffin",
+   "pos": [
+    522,
+    104
+   ]
+  },
+  {
+   "sprite": "cctv",
+   "pos": [
+    20,
+    12
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_bg_manifest",
+   "pos": [
+    40,
+    82
+   ],
+   "label": "Накладные",
+   "sprite": null,
+   "radius": 30
+  }
+ ],
+ "luggage_slots": {
+  "bg_floor": [
+   600,
+   140
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam6",
+   "name": "Багажный вагон",
+   "rect": [
+    0,
+    40,
+    656,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": false
+  },
+  {
+   "id": "right",
+   "pos": [
+    652,
+    164
+   ],
+   "locked": true
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   120,
+   14
+  ],
+  [
+   330,
+   14
+  ],
+  [
+   560,
+   14
+  ]
+ ],
+ "window_lights": [
+  [
+   103,
+   60
+  ],
+  [
+   283,
+   60
+  ],
+  [
+   463,
+   60
+  ]
+ ],
+ "door_messages": {
+  "right": "Хвост поезда. Дальше — только рельсы."
+ }
+}

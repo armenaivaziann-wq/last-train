@@ -132,6 +132,12 @@ func apply(t: float) -> void:
 		var n: NPCController = game.npcs[id]
 		var dark: bool = _in_zone(game.layout.carriage_at(n.global_position.x), t)
 		n.set_silhouette(dark)
+	# Полупрозрачность (призрак проходит сквозь стены): "translucent": [{npc, from, to}].
+	for h: Dictionary in game.case_data.get("translucent", []):
+		var tn: NPCController = game.npcs.get(str(h["npc"]))
+		if tn:
+			var on: bool = t >= Db.parse_time(str(h["from"])) and t < Db.parse_time(str(h["to"]))
+			tn.sprite.modulate = Color(0.75, 0.85, 1.0, 0.38) if on else (Color(0.82, 1.0, 0.78) if tn.condition == "sick" else Color.WHITE)
 	game.player.sprite.self_modulate = Color(0.08, 0.07, 0.14) if _in_zone(game.layout.carriage_at(game.player.global_position.x), t) else Color.WHITE
 	# «Живая» тень: идёт по маршруту хозяина с опережением и задерживается у двери.
 	var sg: Dictionary = game.case_data.get("shadow_ghost", {})

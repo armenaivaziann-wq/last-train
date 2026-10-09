@@ -1,31 +1,192 @@
 {
  "deadline_minutes": 20,
  "stars": {
-  "three": {"max_minutes": 12, "min_key_clues": 3, "max_mistakes": 0},
-  "two": {"max_minutes": 16, "max_mistakes": 1}
+  "three": {
+   "max_minutes": 12,
+   "min_key_clues": 3,
+   "max_mistakes": 0
+  },
+  "two": {
+   "max_minutes": 16,
+   "max_mistakes": 1
+  }
  },
- "star_reward": {"coins": 40, "crystals": 5},
+ "star_reward": {
+  "coins": 40,
+  "crystals": 5
+ },
  "levels": [
-  {"id": "level_01", "number": 1, "title": "Человек в чёрном", "villain": "black_cloak", "case": "case_01",
-   "from": "Туманная", "to": "Долина", "pos": [70, 300], "tutorial": true},
-  {"id": "level_02", "number": 2, "title": "Отравленный вагон", "villain": "shapeshifter", "case": "level_02",
-   "from": "Долина", "to": "Каменный мост", "pos": [150, 250]},
-  {"id": "level_03", "number": 3, "title": "Неправильное отражение", "villain": "mirror", "case": "level_03",
-   "from": "Каменный мост", "to": "Озёрная", "pos": [230, 300]},
-  {"id": "level_04", "number": 4, "title": "Чемодан, который дышит", "villain": "mimic", "case": "level_04",
-   "from": "Озёрная", "to": "Сосновый бор", "pos": [300, 235]},
-  {"id": "level_05", "number": 5, "title": "Живые тени", "villain": "shadow", "case": "level_05",
-   "from": "Сосновый бор", "to": "Старая шахта", "pos": [360, 175]},
-  {"id": "level_06", "number": 6, "title": "Голос за дверью", "villain": "voice", "case": "level_06",
-   "from": "Старая шахта", "to": "Эхо", "pos": [440, 215]},
-  {"id": "level_07", "number": 7, "title": "Поезд спит", "villain": "sleeper", "case": "level_07",
-   "from": "Эхо", "to": "Лунный разъезд", "pos": [500, 270]},
-  {"id": "level_08", "number": 8, "title": "Два проводника", "villain": "conductor_double", "case": "level_08",
-   "from": "Лунный разъезд", "to": "Снежный перевал", "pos": [560, 200]},
-  {"id": "level_09", "number": 9, "title": "Кукловод", "villain": "puppeteer", "case": "level_09",
-   "from": "Снежный перевал", "to": "Огни", "pos": [520, 120]},
-  {"id": "level_10", "number": 10, "title": "Пассажир ноль", "villain": "passenger_zero", "case": "level_10",
-   "from": "Огни", "to": "Конечная", "pos": [420, 80], "final": true}
+  {
+   "id": "level_01",
+   "number": 1,
+   "title": "Человек в чёрном",
+   "villain": "black_cloak",
+   "case": "case_01",
+   "from": "Туманная",
+   "to": "Долина",
+   "pos": [
+    70,
+    300
+   ],
+   "tutorial": true,
+   "chapter": 1
+  },
+  {
+   "id": "level_02",
+   "number": 2,
+   "title": "Отравленный вагон",
+   "villain": "shapeshifter",
+   "case": "level_02",
+   "from": "Долина",
+   "to": "Каменный мост",
+   "pos": [
+    150,
+    250
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_03",
+   "number": 3,
+   "title": "Неправильное отражение",
+   "villain": "mirror",
+   "case": "level_03",
+   "from": "Каменный мост",
+   "to": "Озёрная",
+   "pos": [
+    230,
+    300
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_04",
+   "number": 4,
+   "title": "Чемодан, который дышит",
+   "villain": "mimic",
+   "case": "level_04",
+   "from": "Озёрная",
+   "to": "Сосновый бор",
+   "pos": [
+    300,
+    235
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_05",
+   "number": 5,
+   "title": "Живые тени",
+   "villain": "shadow",
+   "case": "level_05",
+   "from": "Сосновый бор",
+   "to": "Старая шахта",
+   "pos": [
+    360,
+    175
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_06",
+   "number": 6,
+   "title": "Голос за дверью",
+   "villain": "voice",
+   "case": "level_06",
+   "from": "Старая шахта",
+   "to": "Эхо",
+   "pos": [
+    440,
+    215
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_07",
+   "number": 7,
+   "title": "Поезд спит",
+   "villain": "sleeper",
+   "case": "level_07",
+   "from": "Эхо",
+   "to": "Лунный разъезд",
+   "pos": [
+    500,
+    270
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_08",
+   "number": 8,
+   "title": "Два проводника",
+   "villain": "conductor_double",
+   "case": "level_08",
+   "from": "Лунный разъезд",
+   "to": "Снежный перевал",
+   "pos": [
+    560,
+    200
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_09",
+   "number": 9,
+   "title": "Кукловод",
+   "villain": "puppeteer",
+   "case": "level_09",
+   "from": "Снежный перевал",
+   "to": "Огни",
+   "pos": [
+    520,
+    120
+   ],
+   "chapter": 1
+  },
+  {
+   "id": "level_10",
+   "number": 10,
+   "title": "Пассажир ноль",
+   "villain": "passenger_zero",
+   "case": "level_10",
+   "from": "Огни",
+   "to": "Конечная",
+   "pos": [
+    420,
+    80
+   ],
+   "final": true,
+   "chapter": 1
+  },
+  {
+   "id": "level_11",
+   "number": 11,
+   "title": "Холодное купе",
+   "villain": "ghost",
+   "case": "level_11",
+   "from": "Конечная",
+   "to": "Северный пост",
+   "pos": [
+    90,
+    280
+   ],
+   "chapter": 2
+  }
  ],
- "daily": {"rewards": {"coins": 150, "crystals": 6}}
+ "daily": {
+  "rewards": {
+   "coins": 150,
+   "crystals": 6
+  }
+ },
+ "chapters": [
+  {
+   "number": 1,
+   "title": "Туманный маршрут"
+  },
+  {
+   "number": 2,
+   "title": "Северная ветка"
+  }
+ ]
 }

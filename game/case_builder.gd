@@ -41,6 +41,20 @@ static func extend(base: Dictionary, lvl: Dictionary) -> Dictionary:
 					out["dialogues"][npc] = cur
 			_:
 				out[key] = (v as Variant).duplicate(true) if v is Dictionary or v is Array else v
+	# Состав дела ("cast"): в поезде едут только эти пассажиры (расписания — из файла дела).
+	if lvl.has("cast"):
+		var cast: Array = lvl["cast"]
+		for npc: String in out["schedules"].keys():
+			if not npc in cast:
+				out["schedules"].erase(npc)
+		for c: String in cast:
+			if not out["schedules"].has(c):
+				push_error("Дело %s: нет расписания для %s" % [lvl.get("id", "?"), c])
+		if not lvl.has("suspects"):
+			out["suspects"] = out["suspects"].filter(func(s: String) -> bool: return s in cast)
+		var cars: Array = out["carriages"]
+		out["luggage_world"] = out.get("luggage_world", []).filter(func(lw: Dictionary) -> bool:
+			return lw["owner"] in cast and str(lw["slot"]).get_slice(":", 0) in cars)
 	for k in ["clues", "objects", "deductions", "key_clues", "truth", "camera_clues", "extra_items", "events"]:
 		if not out.has(k):
 			out[k] = {} if k in ["clues", "objects"] else []

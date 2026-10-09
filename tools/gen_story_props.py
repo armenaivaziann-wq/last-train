@@ -150,6 +150,39 @@ def powder():
     return c
 
 
+def frost():
+    rng = noise_rng(55)
+    c = Canvas(22, 18)
+    for _ in range(40):
+        x, y = rng.randint(1, 20), rng.randint(1, 16)
+        c.blend(x, y, (220, 240, 255, 200))
+    for cx, cy in ((7, 7), (15, 10)):
+        for d in range(1, 5):
+            for dx, dy in ((d, 0), (-d, 0), (0, d), (0, -d), (d - 1, d - 1), (1 - d, d - 1)):
+                c.blend(cx + dx, cy + dy, (235, 248, 255, 230 - d * 30))
+    return c
+
+
+def knot():
+    c = Canvas(10, 10)
+    c.line(1, 8, 8, 1, "#7fd18a")
+    c.line(1, 1, 8, 8, "#5a3a8a")
+    c.ellipse(4.5, 4.5, 2, 2, "#6a4c2c")
+    c.set(0, 9, "#7fd18a")
+    c.set(9, 9, "#5a3a8a")
+    c.outline()
+    return c
+
+
+def fur():
+    rng = noise_rng(77)
+    c = Canvas(14, 10)
+    for _ in range(22):
+        x, y = rng.randint(1, 11), rng.randint(2, 8)
+        c.line(x, y, x + rng.randint(1, 3), y - rng.randint(0, 2), rng.choice(("#8a8a8a", "#6a6a6a", "#5a4a3a")))
+    return c
+
+
 def main():
     glass().save("crime/glass.png")
     cart().save("props/drink_cart.png")
@@ -164,6 +197,9 @@ def main():
     tag().save("crime/tag.png")
     drag_marks().save("crime/drag_marks.png")
     powder().save("crime/powder.png")
+    frost().save("crime/frost.png")
+    knot().save("crime/knot.png")
+    fur().save("crime/fur.png")
 
 
 if __name__ == "__main__":
