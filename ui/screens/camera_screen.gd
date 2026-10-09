@@ -254,6 +254,8 @@ func _apply_time() -> void:
 			var car: String = inv.layout.carriage_at(inv.timeline.position_at(id, _t).x)
 			if cs.villain_world and cs.villain_world._in_zone(car, _t):
 				silhouettes += 1
+			elif inv.data.get("translucent", []).any(func(h: Dictionary) -> bool: return h["npc"] == id and _t >= Db.parse_time(str(h["from"])) and _t < Db.parse_time(str(h["to"]))):
+				names.append("полупрозрачная фигура")
 			else:
 				names.append(Db.char_name(inv.hooks.appearance(id, _t)))
 		if silhouettes > 0:

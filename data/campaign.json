@@ -171,6 +171,48 @@
     280
    ],
    "chapter": 2
+  },
+  {
+   "id": "level_12",
+   "number": 12,
+   "title": "Бледный господин",
+   "villain": "vampire",
+   "case": "level_12",
+   "from": "Северный пост",
+   "to": "Ледяное озеро",
+   "pos": [
+    220,
+    220
+   ],
+   "chapter": 2
+  },
+  {
+   "id": "level_13",
+   "number": 13,
+   "title": "Полнолуние",
+   "villain": "werewolf",
+   "case": "level_13",
+   "from": "Ледяное озеро",
+   "to": "Волчья падь",
+   "pos": [
+    350,
+    280
+   ],
+   "chapter": 2
+  },
+  {
+   "id": "level_14",
+   "number": 14,
+   "title": "Ведьмин узел",
+   "villain": "witch",
+   "case": "level_14",
+   "from": "Волчья падь",
+   "to": "Болотная",
+   "pos": [
+    480,
+    220
+   ],
+   "chapter": 2
   }
  ],
  "daily": {

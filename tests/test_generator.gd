@@ -112,8 +112,11 @@ func test_all_generated_levels_are_fair() -> void:
 
 
 func test_daily_cases_are_fair() -> void:
-	for v in ["black_cloak", "shadow", "mimic"]:
-		_check_case(Db.resolve_case("gen:" + v, 777), "daily " + v)
+	# Дело дня берёт злодея из открытых уровней — проверяем каждого злодея кампании.
+	for l: Dictionary in Db.levels():
+		var v: String = str(l["villain"])
+		for s in [777, 4242]:
+			_check_case(Db.resolve_case("gen:" + v, s), "daily %s/%d" % [v, s])
 
 
 func test_variants_differ_by_seed() -> void:
