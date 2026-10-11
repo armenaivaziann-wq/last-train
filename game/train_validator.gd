@@ -141,9 +141,23 @@ static func problems(case_data: Dictionary) -> Array[String]:
 		if cam_ids.has(cam["id"]):
 			out.append("повтор камеры %s" % cam["id"])
 		cam_ids[cam["id"]] = true
+	var filmed: Array = case_data.get("filmed", [])
 	for cc: Dictionary in case_data.get("camera_clues", []):
 		if not cam_ids.has(cc["camera"]):
 			out.append("запись %s на камере %s, которой нет в составе" % [cc["id"], cc["camera"]])
+			continue
+		var cam_car: String = ""
+		for cam in tl.cameras:
+			if cam["id"] == cc["camera"]:
+				cam_car = str(cam["carriage"])
+		if not filmed.is_empty() and not cam_car in filmed:
+			out.append("запись %s в вагоне без камер (%s)" % [cc["id"], cam_car])
+		# Повреждённый отрезок не должен целиком закрывать запись-улику.
+		var w0: float = Db.parse_time(str(cc["windows"][0][0]))
+		var w1: float = Db.parse_time(str(cc["windows"][0][1]))
+		for dr: Dictionary in case_data.get("damaged_records", []):
+			if dr["camera"] == cc["camera"] and Db.parse_time(str(dr["from"])) <= w0 and Db.parse_time(str(dr["to"])) >= w1:
+				out.append("запись %s целиком в повреждённом отрезке" % cc["id"])
 	return out
 
 

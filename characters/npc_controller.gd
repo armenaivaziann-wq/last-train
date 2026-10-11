@@ -118,7 +118,7 @@ func apply(s: Dictionary) -> void:
 ## Видимое состояние пассажира (болен — бледный и кашляет, спит, испуган, пропал).
 func set_condition(state: String) -> void:
 	condition = state
-	var missing: bool = state == "missing"
+	var missing: bool = state == "missing" or state == "dead"
 	if not dead:
 		visible = not missing
 		interactable.enabled = not missing

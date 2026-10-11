@@ -40,7 +40,13 @@ var presented: Array = []
 ## Верно ли названы мотив и способ в последнем обвинении (если дело их спрашивает).
 var verdict_ok: bool = true
 var hint_system: HintSystem
-var opened: Array = []           # открытые игроком объекты и багаж
+var opened: Array = []
+## Доска передвижений: подозреваемый → {номер пятиминутки: вагон}, расставляет игрок.
+var board: Dictionary = {}
+const BOARD_FROM: float = 90.0   # 01:30
+const BOARD_SLOT: float = 5.0
+const BOARD_SLOTS: int = 6       # до 02:00
+var story_dead: Dictionary = {}   # подозреваемый → минута, когда выбыл по сюжету (второе преступление)           # открытые игроком объекты и багаж
 var _hint_levels: Dictionary = {}   # цель подсказки → уже выданный уровень
 
 var clock: float = 0.0
@@ -237,6 +243,13 @@ func _fire_story(e: Dictionary) -> void:
 			"item":
 				if not fx["id"] in story.spawned:
 					story.spawned.append(fx["id"])
+			"kill":
+				# Второе преступление: подозреваемый выбывает, на месте — новая улика.
+				set_state(str(fx["npc"]), "dead")
+				story_dead[str(fx["npc"])] = clock
+				var iid: String = str(fx.get("item", {}).get("id", ""))
+				if iid != "" and not iid in story.spawned:
+					story.spawned.append(iid)
 			"remove_item":
 				story.spawned.erase(fx["id"])
 				if not story.spawned.has("-" + str(fx["id"])):
@@ -257,6 +270,8 @@ func state_of(npc: String) -> String:
 
 ## Человек спрятан (заперт, пропал) по сюжету — на записях камер его нет: "hidden": [{npc, from, to}].
 func hidden_at(npc: String, t: float) -> bool:
+	if story_dead.has(npc) and t >= float(story_dead[npc]):
+		return true
 	for h: Dictionary in data.get("hidden", []):
 		if h["npc"] == npc and t >= Db.parse_time(str(h["from"])) and t < Db.parse_time(str(h["to"])):
 			return true
@@ -639,6 +654,68 @@ func check_deadline_warnings() -> int:
 
 
 # --- сохранение ---------------------------------------------------------------------------
+# --- доска передвижений ------------------------------------------------------------------
+func board_set(npc: String, slot: int, carriage: String) -> void:
+	if not board.has(npc):
+		board[npc] = {}
+	if carriage == "":
+		board[npc].erase(str(slot))
+	else:
+		board[npc][str(slot)] = carriage
+
+
+## Проверка доски. Для каждого найденного показания-алиби ("alibi": {npc, from, to, carriage})
+## смотрим пятиминутки, которые игрок заполнил в этом промежутке: если игрок поставил человека
+## в другой вагон и это совпадает с тем, что было на самом деле, — алиби развалилось:
+## выдаётся вывод, опровергающий показание. Неверная расстановка ничего не раскрывает.
+## Возвращает {conflicts: {npc: текст}, empty: [npc], gained: [id выводов]}.
+func check_board() -> Dictionary:
+	var out: Dictionary = {"conflicts": {}, "empty": [], "gained": [], "unproven": {}}
+	for id in evidence.found:
+		var al: Dictionary = evidence.clue(id).get("alibi", {})
+		if al.is_empty():
+			continue
+		var npc: String = str(al["npc"])
+		var f: float = Db.parse_time(str(al["from"]))
+		var to: float = Db.parse_time(str(al["to"]))
+		var cells: Dictionary = board.get(npc, {})
+		var any_set: bool = false
+		for k in BOARD_SLOTS:
+			var s0: float = BOARD_FROM + k * BOARD_SLOT
+			var s1: float = s0 + BOARD_SLOT
+			if s1 <= f or s0 >= to:
+				continue
+			if not cells.has(str(k)):
+				continue
+			any_set = true
+			var placed: String = str(cells[str(k)])
+			if placed == str(al["carriage"]):
+				continue
+			# Был ли человек в поставленном вагоне в эту пятиминутку (хоть раз за промежуток)?
+			var truth: bool = false
+			var tt: float = maxf(s0, f)
+			while tt < minf(s1, to):
+				if layout.carriage_at(timeline.position_at(npc, tt).x) == placed:
+					truth = true
+					break
+				tt += 0.1
+			if truth:
+				out["conflicts"][npc] = "%s: по показаниям — %s с %s до %s, а по вашей доске в %s — %s." % [
+					Db.char_name(npc), layout.carriage_name(str(al["carriage"])).to_lower(), str(al["from"]).substr(0, 5), str(al["to"]).substr(0, 5),
+					Db.format_time(s0), layout.carriage_name(placed).to_lower()]
+				for x: Dictionary in data.get("deductions", []):
+					if id in x.get("refutes", []) and not evidence.has(str(x["result"])):
+						if evidence.add(str(x["result"]), clock):
+							out["gained"].append(str(x["result"]))
+							for r: String in x.get("refutes", []):
+								evidence.statuses[r] = "refuted"
+			else:
+				out["unproven"][npc] = "%s: расстановка расходится с показаниями, но подтвердить её пока нечем." % Db.char_name(npc)
+		if not any_set:
+			out["empty"].append(npc)
+	return out
+
+
 # --- что осмотрено ------------------------------------------------------------------------
 ## Объект или багаж открыт игроком (id объекта или "luggage_<владелец>").
 func mark_opened(id: String) -> void:
@@ -680,7 +757,7 @@ func snapshot() -> Dictionary:
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
 		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
-		"hint_levels": _hint_levels, "opened": opened}
+		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board}
 
 
 func restore(s: Dictionary) -> void:
@@ -697,6 +774,8 @@ func restore(s: Dictionary) -> void:
 	hints_used = int(s.get("hints_used", 0))
 	_hint_levels = s.get("hint_levels", {}).duplicate()
 	opened = s.get("opened", []).duplicate()
+	story_dead = s.get("story_dead", {}).duplicate()
+	board = s.get("board", {}).duplicate(true)
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):

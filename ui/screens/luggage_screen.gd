@@ -101,6 +101,8 @@ func _show_detail() -> void:
 			lens.toggle_mode = true
 			lens.set_pressed_no_signal(_lens_on)
 			_detail.add_child(lens)
+			if h.get("hidden", false) and not _lens_on:
+				return  # деталь видна только под лупой
 			var b := Ui.button(str(h["label"]) + ("  — рассмотреть" if _lens_on else "  — слишком мелко"), "magnifier",
 				"CyanButton" if _lens_on else "GhostButton", func() -> void: _inspect(h), 56)
 			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

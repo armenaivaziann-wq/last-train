@@ -67,7 +67,7 @@
    "markers": "none",
    "topic_reasons": false,
    "hints": 1,
-   "search_needs": 2,
+   "search_needs": 1,
    "explain": "short",
    "proof": {
     "min_grounds": 3,

@@ -34,7 +34,8 @@ func plan(investigation: InvestigationManager) -> void:
 				t = float(inv.murders.murders[i]["t"][str(tr.get("stage", "tunnel_in"))])
 			else:
 				continue
-		var e := {"id": str(ev["id"]), "t": t, "clue": str(tr.get("clue", "")), "effects": ev.get("effects", [])}
+		var e := {"id": str(ev["id"]), "t": t, "clue": str(tr.get("clue", "")), "effects": ev.get("effects", []),
+			"unless_key": int(tr.get("unless_key", -1))}
 		events.append(e)
 		if t >= 0.0:
 			_plan_world(e)
@@ -78,6 +79,9 @@ func due(clock: float) -> Array:
 	for e: Dictionary in events:
 		if e["t"] >= 0.0 and clock >= e["t"] and not e["id"] in done:
 			done.append(e["id"])
+			# «Если игрок тянет»: событие не случается, когда найдено достаточно ключевых улик.
+			if int(e.get("unless_key", -1)) >= 0 and inv.evidence.key_found_count() >= int(e["unless_key"]):
+				continue
 			out.append(e)
 	return out
 
@@ -102,6 +106,8 @@ func item_def(item_id: String) -> Dictionary:
 		for fx: Dictionary in e["effects"]:
 			if fx["type"] == "item" and fx["id"] == item_id:
 				return fx
+			if fx["type"] == "kill" and fx.get("item", {}).get("id", "") == item_id:
+				return fx["item"]
 	return {}
 
 

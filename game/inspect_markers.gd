@@ -61,7 +61,15 @@ func _refresh() -> void:
 			"none":
 				shown = false
 		s.visible = shown
-		if state == "new":
+		# Лёгкая сложность: объекты с ключевыми уликами подсвечены ярче и крупнее.
+		var key_left: bool = inv.profile.get("key_highlight", false) and inv.clues_of(it.interact_id).any(func(c: String) -> bool:
+			return inv.evidence.is_key(c) and not inv.evidence.has(c))
+		if key_left and state != "done":
+			s.visible = it.enabled and it.is_visible_in_tree() and not game.camera_system.playback
+			s.self_modulate = Color("#ff9a3a")
+			s.scale = Vector2(1.5, 1.5)
+			s.set_meta("alpha", 1.0)
+		elif state == "new":
 			s.self_modulate = Color("#ffd86b")
 			s.scale = Vector2.ONE
 			s.set_meta("alpha", 1.0)

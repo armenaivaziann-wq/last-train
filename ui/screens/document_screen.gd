@@ -144,6 +144,8 @@ func _rebuild_details() -> void:
 			hb.add_child(vb)
 			box.add_child(hb)
 			_details.add_child(box)
+		elif h.get("hidden", false) and not _lens_on:
+			continue  # волос, царапина, капля воска — без лупы деталь просто не видна
 		else:
 			var b := Ui.button(str(h["label"]) + ("  — рассмотреть" if _lens_on else "  — слишком мелко"), "magnifier", "GhostButton", func() -> void: _inspect(h), 56)
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT

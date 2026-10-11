@@ -73,7 +73,8 @@ func build(args: Dictionary) -> void:
 	_topics = Ui.vbox(8)
 	right.add_child(Ui.scroll(_topics))
 	var actions := Ui.hbox(8)
-	_present_btn = Ui.button("Предъявить улику", "journal", "CyanButton", _toggle_present, 52)
+	var pc: float = Db.action_cost(game.investigation.profile, "present")
+	_present_btn = Ui.button("Предъявить улику" + ("  · %s мин" % str(pc) if pc > 0.0 else ""), "journal", "CyanButton", _toggle_present, 52)
 	_present_btn.toggle_mode = true
 	_present_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(_present_btn)
@@ -95,8 +96,11 @@ func _rebuild_topics() -> void:
 		_build_present_list()
 		return
 	_ask_label.text = "Спросить:"
+	var qc: float = Db.action_cost(inv.profile, "question")
 	for t: Dictionary in inv.dialogue.topics(_id, inv.evidence, inv.dialogue_ctx(_id)):
-		var b := Ui.button(str(t["q"]), "check" if t["asked"] else "question", "ListButton" if t["asked"] else "ChipButton", func() -> void: _ask(t["id"]), 52)
+		# Новый вопрос стоит минут до станции — цена на кнопке; повторный — бесплатно.
+		var cap: String = str(t["q"]) + ("" if t["asked"] or qc <= 0.0 else "  · %s мин" % str(qc))
+		var b := Ui.button(cap, "check" if t["asked"] else "question", "ListButton" if t["asked"] else "ChipButton", func() -> void: _ask(t["id"]), 52)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		b.add_theme_font_size_override("font_size", 19)
@@ -124,9 +128,12 @@ func _topic_reason(t: Dictionary) -> String:
 
 func _ask(topic_id: String) -> void:
 	var inv: InvestigationManager = game.investigation
+	var first: bool = not inv.dialogue.was_asked(_id, topic_id)
 	var t: Dictionary = inv.dialogue.ask(_id, topic_id, inv.evidence, inv.dialogue_ctx(_id))
 	if t.is_empty():
 		return
+	if first:
+		inv.spend_time(Db.action_cost(inv.profile, "question"))
 	game.player.play_action("suspicion", 0.5)
 	_say(t["a"], t.get("gives", []))
 
@@ -160,6 +167,8 @@ func _build_present_list() -> void:
 
 func _present(clue_id: String) -> void:
 	var inv: InvestigationManager = game.investigation
+	if not (_id + "|" + clue_id) in inv.presented:
+		inv.spend_time(Db.action_cost(inv.profile, "present"))
 	var r: Dictionary = inv.present(_id, clue_id)
 	game.player.play_action("arrest" if r.get("known", false) else "suspicion", 0.5)
 	_present_mode = false

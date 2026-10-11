@@ -25,6 +25,8 @@ var _t: float = 0.0
 var _status: Label
 var _cctv_mat: ShaderMaterial
 var _anim_t: float = 0.0
+## Просмотр записи стоит минут до станции: каждая камера — один раз за открытие экрана.
+var _paid: Dictionary = {}
 
 
 func build(_args: Dictionary) -> void:
@@ -140,7 +142,8 @@ func _thumb_item(cam: Dictionary) -> Control:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var view: Dictionary = _make_view(cam["rect"], THUMB)
 	v.add_child(view["container"])
-	var l := Ui.label("К%s · %s" % [id.substr(3), cam["name"]], "", 15)
+	var cost: float = Db.action_cost(inv.profile, "camera_view")
+	var l := Ui.label("К%s · %s%s" % [id.substr(3), cam["name"], ("  · %s мин" % str(cost)) if cost > 0.0 else ""], "", 15)
 	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	l.custom_minimum_size.x = THUMB.x
 	v.add_child(l)
@@ -156,6 +159,10 @@ func _thumb_item(cam: Dictionary) -> Control:
 
 func _select(id: String) -> void:
 	_selected = id
+	if not _paid.has(id):
+		_paid[id] = true
+		inv.spend_time(Db.action_cost(inv.profile, "camera_view"))
+		_timeline.t_to = inv.clock
 	for k: String in _thumbs:
 		_thumbs[k]["button"].set_pressed_no_signal(k == id)
 	if not _big.is_empty():

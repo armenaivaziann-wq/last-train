@@ -344,7 +344,26 @@ func _compare() -> void:
 
 
 # --- Хронология --------------------------------------------------------------------------
+var _board_mode: bool = false
+var _board_report: Dictionary = {}
+
+
 func _build_timeline() -> void:
+	var mode := Ui.hbox(8)
+	var b1 := Ui.button("Хронология улик", "clock", "PurpleButton" if not _board_mode else "ChipButton", func() -> void:
+		_board_mode = false
+		_switch("timeline"), 48)
+	var b2 := Ui.button("Доска передвижений", "map", "PurpleButton" if _board_mode else "ChipButton", func() -> void:
+		_board_mode = true
+		_switch("timeline"), 48)
+	mode.add_child(b1)
+	mode.add_child(b2)
+	var wrap := Ui.vbox(8)
+	wrap.add_child(mode)
+	if _board_mode:
+		wrap.add_child(_build_board())
+		_content.add_child(wrap)
+		return
 	var items: Array = []
 	for id in inv.evidence.found:
 		var c: Dictionary = inv.evidence.clue(id)
@@ -370,7 +389,74 @@ func _build_timeline() -> void:
 	var now := Ui.panel("HighlightPanel")
 	now.add_child(Ui.label("Сейчас %s · прибытие в %s в %s" % [Db.format_time(inv.clock), game.case_data["station_to"], game.case_data["arrival"]], "GoldLabel", 20))
 	list.add_child(now)
-	_content.add_child(Ui.scroll(list))
+	var sc := Ui.scroll(list)
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	wrap.add_child(sc)
+	_content.add_child(wrap)
+
+
+## Доска передвижений: строки — подозреваемые, столбцы — пятиминутки 01:30–02:00, в клетке —
+## вагон, где, по мнению игрока, был человек. «Проверить» сверяет доску с алиби из показаний.
+func _build_board() -> Control:
+	var v := Ui.vbox(6)
+	v.add_child(Ui.label("Расставьте подозреваемых по вагонам по показаниям, записям и уликам. Проверка найдёт, чьё алиби не сходится.", "DimLabel", 16, true))
+	var grid := GridContainer.new()
+	grid.columns = InvestigationManager.BOARD_SLOTS + 1
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 4)
+	grid.add_child(Ui.label("", "", 14))
+	for k in InvestigationManager.BOARD_SLOTS:
+		grid.add_child(Ui.label(Db.format_time(InvestigationManager.BOARD_FROM + k * InvestigationManager.BOARD_SLOT), "NumberLabel", 16))
+	var cars: Array = inv.layout.carriage_ids
+	for npc: String in inv.suspects.suspects:
+		if inv.state_of(npc) == "dead":
+			continue
+		var nl := Ui.label(Db.char_name(npc), "GoldLabel" if _board_report.get("conflicts", {}).has(npc) else "", 16)
+		nl.custom_minimum_size.x = 170
+		if _board_report.get("conflicts", {}).has(npc):
+			nl.add_theme_color_override("font_color", UiTheme.DANGER)
+		elif npc in _board_report.get("empty", []):
+			nl.add_theme_color_override("font_color", UiTheme.GOLD)
+		grid.add_child(nl)
+		for k in InvestigationManager.BOARD_SLOTS:
+			var opt := OptionButton.new()
+			opt.add_item("?")
+			opt.set_item_metadata(0, "")
+			var cur: String = str(inv.board.get(npc, {}).get(str(k), ""))
+			for i in cars.size():
+				opt.add_item(inv.layout.carriage_name(cars[i]).left(9))
+				opt.set_item_metadata(i + 1, cars[i])
+				if cars[i] == cur:
+					opt.select(i + 1)
+			opt.custom_minimum_size = Vector2(118, 40)
+			opt.focus_mode = Control.FOCUS_NONE
+			opt.fit_to_longest_item = false
+			var slot: int = k
+			opt.item_selected.connect(func(idx: int) -> void: inv.board_set(npc, slot, str(opt.get_item_metadata(idx))))
+			grid.add_child(opt)
+	var sc := Ui.scroll(grid)
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(sc)
+	var cost: float = Db.action_cost(inv.profile, "timeline_check")
+	var row := Ui.hbox(10)
+	row.add_child(Ui.button("Проверить доску" + ("  · %s мин" % str(cost) if cost > 0.0 else ""), "verify", "PrimaryButton", _check_board, 52))
+	v.add_child(row)
+	for npc: String in _board_report.get("conflicts", {}):
+		v.add_child(Ui.label("Противоречие! " + str(_board_report["conflicts"][npc]), "", 16, true))
+	for npc: String in _board_report.get("unproven", {}):
+		v.add_child(Ui.label(str(_board_report["unproven"][npc]), "DimLabel", 15, true))
+	for npc in _board_report.get("empty", []):
+		v.add_child(Ui.label("%s: есть показание об алиби, но промежуток на доске пуст." % Db.char_name(str(npc)), "SmallLabel", 15, true))
+	for id in _board_report.get("gained", []):
+		v.add_child(Ui.label("Новый вывод: «%s»" % inv.evidence.clue(str(id))["title"], "GoldLabel", 17, true))
+	return v
+
+
+func _check_board() -> void:
+	inv.spend_time(Db.action_cost(inv.profile, "timeline_check"))
+	_board_report = inv.check_board()
+	AudioManager.play_sfx("wrong" if _board_report["conflicts"].is_empty() else "success", -8.0)
+	_switch("timeline")
 
 
 # --- Диалоги -----------------------------------------------------------------------------

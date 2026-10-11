@@ -583,6 +583,10 @@ func _on_story_event(e: Dictionary) -> void:
 				hud.show_direction(pos, str(fx.get("label", "Голос!")), 6.0)
 			"item":
 				spawn_item(fx)
+			"kill":
+				spawn_item(fx["item"])
+				AudioManager.play_sfx("female_scream", -4.0, 0.8)
+				hud.show_banner(str(fx.get("title", "Новое преступление")), str(fx.get("text", "")), 4.0)
 			"remove_item":
 				remove_item(str(fx["id"]))
 	update_goal()
