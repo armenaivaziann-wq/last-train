@@ -104,25 +104,53 @@ def mirror(f, menace):
 
 # --- 4. Мимик: чемодан на коротких ножках с зубастой крышкой ----------------------------------
 def mimic(f, menace):
+    """Мимик: высокая худая фигура без лица — только зубастая улыбка поперёк; слишком длинные
+    руки; фиолетовый фрак графа висит на ней, как на вешалке. Menace — улыбка раскрывается,
+    руки тянутся вперёд."""
     c = Canvas(FW, FH)
-    c.rect(10, 33, 3, 4, "#5e3a26")
-    c.rect(19, 33, 3, 4, "#5e3a26")
-    open_ = 5 if menace else 1 + f
-    c.rrect(5, 20, 22, 14, 2, "#8a5a3c")
-    c.rect(5, 29, 22, 2, "#5e3a26")
-    c.rect(7, 21, 4, 3, "#d9a441")
-    c.rect(5, 19 - open_, 22, open_ + 1, "#5a1a3a")
-    for x in range(6, 26, 3):
-        c.poly([(x, 19 - open_), (x + 2, 19 - open_), (x + 1, 21 - open_)], "#ffffff")
-        c.poly([(x, 20), (x + 2, 20), (x + 1, 18)], "#ffffff")
-    c.rrect(5, 8 - open_, 22, 12, 2, "#8a5a3c")
-    c.rect(12, 5 - open_, 8, 3, "#5e3a26")
-    c.rect(10, 12 - open_, 3, 3, "#fff1a8")
-    c.rect(19, 12 - open_, 3, 3, "#fff1a8")
-    c.set(11, 13 - open_, OUTLINE)
-    c.set(20, 13 - open_, OUTLINE)
-    c.rect(26, 24, 4, 3, "#f4ead8")
-    c.outline(OUTLINE)
+    skin, skin_d = "#d8d4d0", "#a8a4a4"
+    frak, frak_d = "#4a2a6a", "#2e1a46"
+    mouth = "#5a1424"
+    # тонкие длинные ноги
+    c.rect(13, 30, 2, 7, "#2a1e2a")
+    c.rect(17, 30, 2, 7, "#2a1e2a")
+    c.rect(12, 36, 4, 2, "#140c18")
+    c.rect(17, 36, 4, 2, "#140c18")
+    # фрак висит мешком: широкие плечи-вешалка, узкое тело внутри
+    c.poly([(8, 13), (24, 13), (22, 31), (10, 31)], frak)
+    c.poly([(8, 13), (12, 13), (12, 31), (10, 31)], frak_d)
+    c.poly([(14, 14), (18, 14), (16, 26)], "#e8e0ec")
+    c.rect(15, 14, 2, 3, "#7a1424")
+    c.rect(7, 12, 18, 2, frak_d)
+    # слишком длинные руки
+    if menace:
+        sway = f
+        c.line(8, 15, 1, 24 + sway, skin_d)
+        c.line(9, 15, 2, 24 + sway, skin)
+        c.line(24, 15, 31, 24 + sway, skin_d)
+        c.line(23, 15, 30, 24 + sway, skin)
+        for x, y in ((0, 25 + sway), (2, 26 + sway), (30, 25 + sway), (31, 26 + sway)):
+            c.set(x, y, skin)
+    else:
+        c.line(8, 15, 6, 34, skin_d)
+        c.line(9, 15, 7, 34, skin)
+        c.line(24, 15, 26, 34, skin_d)
+        c.line(23, 15, 25, 34, skin)
+        c.rect(5, 34, 3, 2, skin)
+        c.rect(24, 34, 3, 2, skin)
+    # гладкая голова без глаз и носа
+    hy = 1 if not menace else 0
+    c.rrect(10, hy, 12, 12, 5, skin)
+    c.rect(11, hy + 2, 2, 6, "#e8e4e0")
+    # улыбка поперёк всего лица
+    open_ = (1 + f) if not menace else 3 + f
+    c.rect(10, hy + 7, 12, open_, mouth)
+    for x in range(10, 22, 2):
+        c.set(x, hy + 7, "#f4f0e8")
+        c.set(x + 1, hy + 6 + open_, "#f4f0e8")
+    c.set(9, hy + 6, mouth)
+    c.set(22, hy + 6, mouth)
+    c.outline("#4a4062")
     return c
 
 

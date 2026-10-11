@@ -110,33 +110,26 @@ def shadow(f):
 
 
 def mimic(f):
-    """Мимик: чемодан с глазками, зубастой крышкой и языком."""
+    """Мимик: безликое существо — бледный овал с улыбкой поперёк, длинные руки, фрак на вешалке."""
     c = Canvas(FW, FH)
     b = [0, -1, 0, 1][f]
-    open_ = [3, 5, 7, 5][f]
-    c.ellipse(24, 45, 16, 3, (20, 10, 40, 100), blend=True)
-    # нижняя часть
-    c.rrect(6, 24 + b, 36, 18, 3, "#8a5a3c")
-    c.rect(7, 25 + b, 34, 2, "#a8744c")
-    c.rect(6, 38 + b, 36, 2, "#5e3a26")
-    c.rect(10, 34 + b, 4, 6, "#d9a441")
-    c.rect(34, 34 + b, 4, 6, "#d9a441")
-    # пасть
-    c.rect(8, 24 - open_ + b, 32, open_ + 1, "#5a1a3a")
-    c.ellipse(26, 25 + b, 7, 3, "#ff6a9a")
-    for x in range(9, 39, 4):
-        c.poly([(x, 24 - open_ + b), (x + 3, 24 - open_ + b), (x + 1.5, 27 - open_ + b)], "#ffffff")
-        c.poly([(x, 24 + b), (x + 3, 24 + b), (x + 1.5, 21 + b)], "#ffffff")
-    # крышка
-    c.rrect(6, 8 - open_ + b, 36, 16, 3, "#8a5a3c")
-    c.rect(7, 9 - open_ + b, 34, 2, "#a8744c")
-    c.rect(18, 4 - open_ + b, 12, 5, "#5e3a26")
-    c.rect(20, 6 - open_ + b, 8, 3, (0, 0, 0, 0))
-    eyes(c, 17, 31, 15 - open_ + b, col="#fff1a8", pupil="#3a1a5a", r=3.4, blink=(f == 2))
-    c.rect(22, 20 - open_ + b, 4, 3, "#d9a441")
-    # бирка
-    c.rect(38, 28 + b, 6, 4, "#f4ead8")
-    c.set(37, 27 + b, "#5e3a26")
+    c.ellipse(24, 45, 14, 3, (20, 10, 40, 100), blend=True)
+    skin, frak = "#d8d4d0", "#4a2a6a"
+    c.poly([(12, 20 + b), (36, 20 + b), (33, 42 + b), (15, 42 + b)], frak)
+    c.poly([(21, 21 + b), (27, 21 + b), (24, 34 + b)], "#e8e0ec")
+    c.rect(11, 19 + b, 26, 3, "#2e1a46")
+    sway = [0, 1, 2, 1][f]
+    c.line(12, 22 + b, 4, 40 + sway, skin)
+    c.line(13, 22 + b, 5, 40 + sway, "#a8a4a4")
+    c.line(36, 22 + b, 44, 40 - sway, skin)
+    c.line(35, 22 + b, 43, 40 - sway, "#a8a4a4")
+    c.rrect(15, 2 + b, 18, 18, 8, skin)
+    c.rect(17, 5 + b, 3, 8, "#ece8e4")
+    open_ = [2, 3, 4, 3][f]
+    c.rect(15, 11 + b, 18, open_, "#5a1424")
+    for x in range(15, 33, 2):
+        c.set(x, 11 + b, "#f4f0e8")
+        c.set(x + 1, 10 + open_ + b, "#f4f0e8")
     return c.outline()
 
 

@@ -4,7 +4,7 @@ extends Node2D
 ## живому или времени записи камеры (поэтому записи совпадают с тем, что видел игрок).
 ##   • облик перевёртыша на его спрайте;
 ##   • отражения в зеркалах вагонов (у зеркальника отражения нет);
-##   • лишний чемодан мимика, переползающий между местами в туннелях;
+##   • эхо мимика: на записях его поза отстаёт от соседа;
 ##   • неправильная тень теневика.
 
 const MIRROR_REACH_X: float = 26.0
@@ -12,8 +12,6 @@ const MIRROR_REACH_X: float = 26.0
 var game: Game
 var hooks: VillainHooks
 var _mirrors: Array = []   # [{pos: Vector2 (центр стекла), sprite: Sprite2D}]
-var _bag: Sprite2D
-var _bag_it: Interactable
 var _lamps: Array[Vector2] = []
 var _windows: Array = []    # [{pos, carriage, sprite}]
 var _dark: Dictionary = {}  # вагон → ColorRect затемнения
@@ -37,16 +35,6 @@ func setup(g: Game) -> void:
 				s.visible = false
 				add_child(s)
 				_mirrors.append({"pos": center, "sprite": s})
-	if hooks.villain == "mimic":
-		_bag = Sprite2D.new()
-		_bag.texture = Db.texture("props/suitcase_brown.png")
-		g.entities.add_child(_bag)
-		_bag_it = Interactable.new()
-		_bag_it.interact_id = "obj_mimic_bag"
-		_bag_it.label = "Осмотреть чемодан"
-		_bag_it.kind = Interactable.Kind.OBJECT
-		_bag_it.radius = 22.0
-		_bag.add_child(_bag_it)
 	if hooks.villain == "shadow" and not g.case_data.has("shadow_ghost"):
 		var npc: NPCController = g.npcs.get(hooks.culprit)
 		if npc:
@@ -159,11 +147,6 @@ func apply(t: float) -> void:
 	if hooks.villain == "shapeshifter" or not game.case_data.get("camera_disguises", []).is_empty():
 		for id: String in game.npcs:
 			game.npcs[id].set_look(hooks.appearance(id, t))
-	if _bag:
-		var at: Array = hooks.mimic_at(t)
-		if not at.is_empty():
-			_bag.position = Vector2(game.layout.offsets[at[0]] + float(at[1][0]), float(at[1][1]))
-			_bag.offset = Vector2(0, -_bag.texture.get_height() / 2.0)
 
 
 func _process(_delta: float) -> void:

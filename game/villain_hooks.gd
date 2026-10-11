@@ -5,7 +5,7 @@ extends RefCounted
 ## совпадает с записями камер. Способности понятны через наблюдение и не наказывают случайно.
 ##   shapeshifter — в каждом туннеле меняет облик на другого пассажира;
 ##   mirror       — в зеркалах вагонов нет его отражения; заходит к зеркалу во время игры;
-##   mimic        — лишний чемодан без бирки переползает на новое место в каждом туннеле;
+##   mimic        — повторяет чужие фразы и движения с задержкой (эхо на записях и в репликах);
 ##   shadow       — тень падает не туда и дёргается при мигании ламп;
 ##   voice        — ложные вызовы о помощи чужим голосом из пустых купе.
 
@@ -13,7 +13,6 @@ var inv: InvestigationManager
 var villain: String = ""
 var culprit: String = ""
 var disguises: Array = []      # [[минута, персонаж]] — облик перевёртыша с момента
-var mimic_path: Array = []     # [[минута, вагон, Vector2 локально]]
 var calls: Array = []          # ложные вызовы
 
 
@@ -141,35 +140,24 @@ func has_reflection(npc: String) -> bool:
 
 
 # --- Мимик --------------------------------------------------------------------------------
-const MIMIC_SPOTS: Array = [["passenger", [618, 150]], ["passenger", [250, 150]], ["restaurant", [600, 150]],
-	["passenger", [480, 150]], ["restaurant", [150, 150]], ["vestibule", [44, 120]]]
-
-
-func _plan_mimic(rng: RandomNumberGenerator) -> void:
-	var order: Array = range(MIMIC_SPOTS.size())
-	for i in range(order.size() - 1, 0, -1):
-		var j: int = rng.randi_range(0, i)
-		var tmp: int = order[i]
-		order[i] = order[j]
-		order[j] = tmp
-	mimic_path = [[-INF, MIMIC_SPOTS[order[0]][0], MIMIC_SPOTS[order[0]][1]]]
-	var k: int = 1
-	for t: float in _tunnels():
-		var s: Array = MIMIC_SPOTS[order[k % order.size()]]
-		mimic_path.append([t + MurderDirector.TO_KILL, s[0], s[1]])
-		k += 1
-	inv.data["objects"]["obj_mimic_bag"] = {"title": "Чемодан без бирки", "kind": "item",
-		"text": "Потёртый чемодан. Бирка без рейса и без владельца, на ручке — свежие царапины. Вчера на этом месте его не было.",
-		"on_open": "g_tag", "hotspots": []}
-
-
-## Где лишний чемодан в момент t: [вагон, локальная позиция].
-func mimic_at(t: float) -> Array:
-	var cur: Array = []
-	for e: Array in mimic_path:
-		if t >= float(e[0]):
-			cur = [e[1], e[2]]
-	return cur
+## Мимик копирует людей: повторяет чужие фразы и движения с задержкой. На записи камеры
+## его поза на секунду отстаёт от соседа (см. VillainWorld.camera_view), в репликах он
+## повторяет последнюю фразу того, кто рядом (Game._update_barks).
+func _plan_mimic(_rng: RandomNumberGenerator) -> void:
+	var t: float = inv.history_start + 3.0
+	while t < inv.start_time - 0.5:
+		var pos: Vector2 = inv.timeline.position_at(culprit, t)
+		var near: String = ""
+		for id in inv.timeline.npc_ids():
+			if id != culprit and inv.timeline.position_at(id, t).distance_to(pos) < 90.0:
+				near = id
+				break
+		if near != "":
+			_camera_clue("h_echo", culprit, t, "Запись: движения с задержкой",
+				"Камера {cam}: %s повторяет каждое движение соседа — %s — ровно через секунду, как эхо." % [Db.char_name(culprit), Db.char_name(near)], true, 0.3, 0.6)
+			if inv.data["clues"].has("h_echo"):
+				return
+		t += 0.5
 
 
 # --- Голос за дверью ----------------------------------------------------------------------

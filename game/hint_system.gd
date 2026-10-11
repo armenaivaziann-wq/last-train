@@ -137,7 +137,7 @@ func _object_in_world(oid: String) -> bool:
 		for it2: Dictionary in Db.layout(cid).get("interactables", []):
 			if it2["id"] == oid:
 				return true
-	return oid == "obj_mimic_bag" and inv.hooks.villain == "mimic"
+	return false
 
 
 func _object_place(oid: String) -> String:

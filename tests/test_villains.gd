@@ -110,16 +110,20 @@ func test_mirror_has_no_reflection() -> void:
 	check(game.villain_world._mirrors[0]["sprite"].visible, "отражение детектива видно")
 
 
-func test_mimic_bag_moves_and_gives_clue() -> void:
+func test_mimic_echoes_people() -> void:
 	await _start("level_04")
-	var h: VillainHooks = _inv().hooks
-	var before: Array = h.mimic_at(_inv().clock)
-	var m: Dictionary = _inv().murders.murders[0]
-	var after: Array = h.mimic_at(m["t"]["kill"] + 0.1)
-	check(str(before) != str(after), "в туннеле чемодан переполз")
-	game.open_object("obj_mimic_bag")
-	await wait_frames(2)
-	check(_inv().evidence.has("g_tag"), "бирка без рейса — улика")
+	var d: Dictionary = _inv().data
+	check(d["clues"].has("g_echo") and d["clues"].has("g_wax") and d["clues"].has("x_g_mimic"), "мимик: эхо, серый воск и вывод вместо чемодана")
+	check(not d["objects"].has("obj_mimic_bag"), "чемодана-мимика больше нет")
+	check(str(d["clues"]["g_wax"]["text"]).contains("воск"), "улика — серый воск на ткани")
+	var c: String = d["culprit"]
+	var other: String = d["suspects"].filter(func(s: String) -> bool: return s != c and game.npcs.has(s))[0]
+	var m: NPCController = game.npcs[c]
+	m.global_position = game.npcs[other].global_position + Vector2(24, 0)
+	game._mimic_echo(other, "Скорее бы станция...")
+	await wait_seconds(1.7)
+	var echoed: bool = game.hud.overlay._barks.any(func(b: Dictionary) -> bool: return b["node"] == m)
+	check(echoed, "мимик повторяет фразу соседа с задержкой")
 
 
 func test_voice_false_call() -> void:

@@ -556,7 +556,22 @@ func _update_barks(delta: float) -> void:
 	if investigation.escalated_at >= 0.0 and esc.get("npc") == who:
 		lines = esc.get("barks", lines)
 	if not lines.is_empty():
-		hud.overlay.show_bark(npcs[who], str(lines[_bark_rng.randi_range(0, lines.size() - 1)]))
+		var line: String = str(lines[_bark_rng.randi_range(0, lines.size() - 1)])
+		hud.overlay.show_bark(npcs[who], line)
+		_mimic_echo(who, line)
+
+
+## Мимик повторяет последнюю фразу соседа — слово в слово и с задержкой.
+func _mimic_echo(who: String, line: String) -> void:
+	var culprit: String = str(case_data.get("culprit", ""))
+	if str(case_data.get("monster", "")) != "mimic" or who == culprit or not npcs.has(culprit):
+		return
+	var m: NPCController = npcs[culprit]
+	if not m.visible or m.detained or m.global_position.distance_to(npcs[who].global_position) > 220.0:
+		return
+	await get_tree().create_timer(1.4).timeout
+	if is_instance_valid(m) and m.visible and not ui.has_modal():
+		hud.overlay.show_bark(m, line)
 
 
 func _update_markers() -> void:
