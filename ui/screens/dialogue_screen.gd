@@ -103,6 +103,23 @@ func _rebuild_topics() -> void:
 		if t["asked"]:
 			b.modulate = Color(1, 1, 1, 0.7)
 		_topics.add_child(b)
+		# Почему открылась тема: игрок видит связь «улика → новый вопрос».
+		var why: String = _topic_reason(t)
+		if why != "" and not t["asked"]:
+			var lbl := Ui.label("   ↳ " + why, "DimLabel", 15, true)
+			_topics.add_child(lbl)
+
+
+func _topic_reason(t: Dictionary) -> String:
+	var inv: InvestigationManager = game.investigation
+	for id: String in t.get("requires", []) + t.get("requires_any", []):
+		if inv.evidence.has(id):
+			return "новый вопрос: улика «%s»" % str(inv.evidence.clue(id).get("title", id))
+	if not t.get("requires_event", []).is_empty():
+		return "новый вопрос после событий в поезде"
+	if not t.get("requires_state", []).is_empty():
+		return "собеседник теперь может ответить"
+	return ""
 
 
 func _ask(topic_id: String) -> void:

@@ -61,7 +61,9 @@ func _ready() -> void:
 			await _shot(level + "_5_camera")
 			game.ui.close_all()
 			break
-	# Диалог с виновником и журнал
+	# Диалог с виновником (с несколькими найденными уликами — видно, почему открылись темы) и журнал
+	for id: String in d["key_clues"].slice(0, 6):
+		inv.give(id)
 	game.open_dialogue(str(d["culprit"]))
 	await _wait(0.6)
 	await _shot(level + "_6_dialogue")

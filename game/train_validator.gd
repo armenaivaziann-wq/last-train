@@ -145,3 +145,36 @@ static func problems(case_data: Dictionary) -> Array[String]:
 		if not cam_ids.has(cc["camera"]):
 			out.append("запись %s на камере %s, которой нет в составе" % [cc["id"], cc["camera"]])
 	return out
+
+
+## NPC не ходят сквозь стены и мебель: маршруты по хронологии дела проверяются по исходным
+## коллизиям вагонов (без запаса на героя). Рядом с точками расписания (сиденья внутри
+## скамей) пересечение допустимо.
+static func npc_path_problems(case_data: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	var tl := TrainLayout.build(PackedStringArray(case_data["carriages"]))
+	var timeline := CaseTimeline.new(case_data, tl)
+	var rects: Array[Rect2] = []
+	for cid in tl.carriage_ids:
+		for r: Array in Db.layout(cid).get("colliders", []):
+			rects.append(Rect2(tl.offsets[cid] + float(r[0]) + 1.0, float(r[1]) + 1.0, float(r[2]) - 2.0, float(r[3]) - 2.0))
+	var t0: float = Db.parse_time(str(case_data.get("history_start", "01:25")))
+	var t1: float = Db.parse_time(str(case_data["arrival"]))
+	for npc in timeline.npc_ids():
+		var spots: Array[Vector2] = []
+		for e: Array in case_data["schedules"].get(npc, []):
+			if tl.spots.has(str(e[1])):
+				spots.append(tl.spots[str(e[1])]["pos"])
+		var t: float = t0
+		var reported: bool = false
+		while t <= t1 and not reported:
+			var p: Vector2 = timeline.position_at(npc, t)
+			var near: bool = spots.any(func(s: Vector2) -> bool: return s.distance_to(p) < 30.0)
+			if not near:
+				for r in rects:
+					if r.has_point(p):
+						out.append("%s проходит сквозь препятствие около %s (%s)" % [npc, Db.format_time(t), tl.carriage_at(p.x)])
+						reported = true
+						break
+			t += 0.02
+	return out

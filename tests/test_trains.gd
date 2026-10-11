@@ -52,3 +52,9 @@ func test_validator_catches_problems() -> void:
 	c2["carriages"] = [c["carriages"][0], c["carriages"][2]]
 	c2["extra_items"] = []
 	check(TrainValidator.problems(c2).size() > 0, "разорванный состав (без точек расписания тамбура) обнаружен")
+
+
+func test_npc_routes_avoid_furniture() -> void:
+	for pair: Array in _cases():
+		for p: String in TrainValidator.npc_path_problems(pair[1]):
+			check(false, "%s: %s" % [pair[0], p])
