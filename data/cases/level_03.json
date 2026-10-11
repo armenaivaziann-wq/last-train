@@ -13,7 +13,7 @@
  "max_wrong": 2,
  "verifications": 1,
  "reflection_delay": {
-  "passenger": 1.0
+  "p_firstclass": 1.0
  },
  "murders": {
   "first_after": 3.5,
@@ -812,5 +812,10 @@
     "i_l3_watch"
    ]
   }
+ ],
+ "carriages": [
+  "p_firstclass",
+  "vestibule",
+  "restaurant"
  ]
 }

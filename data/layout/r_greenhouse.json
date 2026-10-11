@@ -1,0 +1,636 @@
+{
+ "id": "r_greenhouse",
+ "name": "Вагон-оранжерея",
+ "size": [
+  656,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   656,
+   60
+  ],
+  [
+   0,
+   192,
+   656,
+   16
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   648,
+   0,
+   8,
+   140
+  ],
+  [
+   648,
+   188,
+   8,
+   20
+  ],
+  [
+   72,
+   60,
+   18,
+   56
+  ],
+  [
+   158,
+   60,
+   18,
+   56
+  ],
+  [
+   100,
+   62,
+   48,
+   30
+  ],
+  [
+   180,
+   60,
+   18,
+   56
+  ],
+  [
+   266,
+   60,
+   18,
+   56
+  ],
+  [
+   208,
+   62,
+   48,
+   30
+  ],
+  [
+   288,
+   60,
+   18,
+   56
+  ],
+  [
+   374,
+   60,
+   18,
+   56
+  ],
+  [
+   316,
+   62,
+   48,
+   30
+  ],
+  [
+   396,
+   60,
+   18,
+   56
+  ],
+  [
+   482,
+   60,
+   18,
+   56
+  ],
+  [
+   424,
+   62,
+   48,
+   30
+  ],
+  [
+   16,
+   58,
+   48,
+   26
+  ],
+  [
+   508,
+   60,
+   24,
+   32
+  ],
+  [
+   536,
+   94,
+   16,
+   12
+  ],
+  [
+   570,
+   96,
+   78,
+   22
+  ],
+  [
+   190,
+   176,
+   20,
+   12
+  ],
+  [
+   410,
+   176,
+   20,
+   12
+  ],
+  [
+   62,
+   180,
+   16,
+   10
+  ],
+  [
+   292,
+   180,
+   16,
+   10
+  ],
+  [
+   532,
+   180,
+   16,
+   10
+  ]
+ ],
+ "spots": {
+  "piano": {
+   "pos": [
+    40,
+    104
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rb1_l1": {
+   "pos": [
+    82,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_l2": {
+   "pos": [
+    82,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_r1": {
+   "pos": [
+    166,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb1_r2": {
+   "pos": [
+    166,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb2_l1": {
+   "pos": [
+    190,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_l2": {
+   "pos": [
+    190,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_r1": {
+   "pos": [
+    274,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb2_r2": {
+   "pos": [
+    274,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb3_l1": {
+   "pos": [
+    298,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_l2": {
+   "pos": [
+    298,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_r1": {
+   "pos": [
+    382,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb3_r2": {
+   "pos": [
+    382,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb4_l1": {
+   "pos": [
+    406,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_l2": {
+   "pos": [
+    406,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_r1": {
+   "pos": [
+    490,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rb4_r2": {
+   "pos": [
+    490,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rest_coffee": {
+   "pos": [
+    520,
+    108
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "rest_trash": {
+   "pos": [
+    546,
+    118
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_back": {
+   "pos": [
+    562,
+    88
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_stool1": {
+   "pos": [
+    590,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "bar_stool2": {
+   "pos": [
+    624,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rest_s1_l": {
+   "pos": [
+    182,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s1_r": {
+   "pos": [
+    218,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_s2_l": {
+   "pos": [
+    402,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s2_r": {
+   "pos": [
+    438,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_window": {
+   "pos": [
+    310,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "rest_aisle": {
+   "pos": [
+    300,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "cctv",
+   "pos": [
+    20,
+    12
+   ]
+  },
+  {
+   "sprite": "piano",
+   "pos": [
+    40,
+    86
+   ]
+  },
+  {
+   "sprite": "tea_urn",
+   "pos": [
+    520,
+    94
+   ]
+  },
+  {
+   "sprite": "planter",
+   "pos": [
+    544,
+    104
+   ]
+  },
+  {
+   "sprite": "herb_counter",
+   "pos": [
+    609,
+    120
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    590,
+    134
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    624,
+    134
+   ]
+  },
+  {
+   "sprite": "round_table",
+   "pos": [
+    200,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    182,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    218,
+    190
+   ]
+  },
+  {
+   "sprite": "round_table",
+   "pos": [
+    420,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    402,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    438,
+    190
+   ]
+  },
+  {
+   "sprite": "planter",
+   "pos": [
+    70,
+    190
+   ]
+  },
+  {
+   "sprite": "planter",
+   "pos": [
+    300,
+    190
+   ]
+  },
+  {
+   "sprite": "planter",
+   "pos": [
+    540,
+    190
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_coffee",
+   "pos": [
+    520,
+    92
+   ],
+   "label": "Осмотреть чайный бак",
+   "sprite": null,
+   "radius": 28
+  },
+  {
+   "id": "obj_trash",
+   "pos": [
+    544,
+    100
+   ],
+   "label": "Осмотреть кадку",
+   "sprite": null,
+   "radius": 24
+  },
+  {
+   "id": "obj_r_herbs",
+   "pos": [
+    596,
+    70
+   ],
+   "label": "Травяная стойка",
+   "sprite": null,
+   "radius": 28,
+   "object": {
+    "title": "Травяная стойка",
+    "kind": "item",
+    "text": "Банки с подписями: мята, чабрец, душица. Пустое место на полке — для какой-то банки, которой здесь нет.",
+    "hotspots": []
+   }
+  }
+ ],
+ "luggage_slots": {},
+ "cameras": [
+  {
+   "id": "cam4",
+   "name": "Вагон-оранжерея",
+   "rect": [
+    0,
+    40,
+    656,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": false
+  },
+  {
+   "id": "right",
+   "pos": [
+    652,
+    164
+   ],
+   "locked": true
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   124,
+   20
+  ],
+  [
+   232,
+   20
+  ],
+  [
+   340,
+   20
+  ],
+  [
+   448,
+   20
+  ]
+ ],
+ "window_lights": [
+  [
+   124,
+   60
+  ],
+  [
+   232,
+   60
+  ],
+  [
+   340,
+   60
+  ],
+  [
+   448,
+   60
+  ]
+ ],
+ "role": "restaurant"
+}

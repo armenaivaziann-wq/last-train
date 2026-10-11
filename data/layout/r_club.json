@@ -1,0 +1,583 @@
+{
+ "id": "r_club",
+ "name": "Клубный вагон",
+ "size": [
+  656,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   656,
+   60
+  ],
+  [
+   0,
+   192,
+   656,
+   16
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   648,
+   0,
+   8,
+   140
+  ],
+  [
+   648,
+   188,
+   8,
+   20
+  ],
+  [
+   74,
+   64,
+   16,
+   50
+  ],
+  [
+   160,
+   64,
+   16,
+   50
+  ],
+  [
+   100,
+   66,
+   46,
+   34
+  ],
+  [
+   182,
+   64,
+   16,
+   50
+  ],
+  [
+   268,
+   64,
+   16,
+   50
+  ],
+  [
+   208,
+   66,
+   46,
+   34
+  ],
+  [
+   290,
+   64,
+   16,
+   50
+  ],
+  [
+   376,
+   64,
+   16,
+   50
+  ],
+  [
+   316,
+   66,
+   46,
+   34
+  ],
+  [
+   398,
+   64,
+   16,
+   50
+  ],
+  [
+   484,
+   64,
+   16,
+   50
+  ],
+  [
+   424,
+   66,
+   46,
+   34
+  ],
+  [
+   14,
+   60,
+   52,
+   26
+  ],
+  [
+   508,
+   60,
+   24,
+   32
+  ],
+  [
+   538,
+   96,
+   12,
+   8
+  ],
+  [
+   570,
+   96,
+   78,
+   22
+  ],
+  [
+   172,
+   176,
+   56,
+   12
+  ],
+  [
+   392,
+   176,
+   56,
+   12
+  ]
+ ],
+ "spots": {
+  "piano": {
+   "pos": [
+    40,
+    104
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rb1_l1": {
+   "pos": [
+    82,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_l2": {
+   "pos": [
+    82,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_r1": {
+   "pos": [
+    166,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb1_r2": {
+   "pos": [
+    166,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb2_l1": {
+   "pos": [
+    190,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_l2": {
+   "pos": [
+    190,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_r1": {
+   "pos": [
+    274,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb2_r2": {
+   "pos": [
+    274,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb3_l1": {
+   "pos": [
+    298,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_l2": {
+   "pos": [
+    298,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_r1": {
+   "pos": [
+    382,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb3_r2": {
+   "pos": [
+    382,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb4_l1": {
+   "pos": [
+    406,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_l2": {
+   "pos": [
+    406,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_r1": {
+   "pos": [
+    490,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rb4_r2": {
+   "pos": [
+    490,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rest_coffee": {
+   "pos": [
+    520,
+    108
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "rest_trash": {
+   "pos": [
+    546,
+    118
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_back": {
+   "pos": [
+    562,
+    88
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_stool1": {
+   "pos": [
+    590,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "bar_stool2": {
+   "pos": [
+    624,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rest_s1_l": {
+   "pos": [
+    182,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s1_r": {
+   "pos": [
+    218,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_s2_l": {
+   "pos": [
+    402,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s2_r": {
+   "pos": [
+    438,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_window": {
+   "pos": [
+    310,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "rest_aisle": {
+   "pos": [
+    300,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "cctv",
+   "pos": [
+    20,
+    12
+   ]
+  },
+  {
+   "sprite": "grand_piano",
+   "pos": [
+    40,
+    88
+   ]
+  },
+  {
+   "sprite": "coffee_machine",
+   "pos": [
+    520,
+    94
+   ]
+  },
+  {
+   "sprite": "trash_bin",
+   "pos": [
+    544,
+    104
+   ]
+  },
+  {
+   "sprite": "bar_counter",
+   "pos": [
+    609,
+    120
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    590,
+    134
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    624,
+    134
+   ]
+  },
+  {
+   "sprite": "armchair",
+   "pos": [
+    184,
+    190
+   ]
+  },
+  {
+   "sprite": "armchair",
+   "pos": [
+    216,
+    190
+   ]
+  },
+  {
+   "sprite": "armchair",
+   "pos": [
+    404,
+    190
+   ]
+  },
+  {
+   "sprite": "armchair",
+   "pos": [
+    436,
+    190
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_coffee",
+   "pos": [
+    520,
+    92
+   ],
+   "label": "Осмотреть кофейный автомат",
+   "sprite": null,
+   "radius": 28
+  },
+  {
+   "id": "obj_trash",
+   "pos": [
+    544,
+    100
+   ],
+   "label": "Осмотреть корзину",
+   "sprite": null,
+   "radius": 24
+  },
+  {
+   "id": "obj_r_humidor",
+   "pos": [
+    600,
+    70
+   ],
+   "label": "Ящик для сигар",
+   "sprite": null,
+   "radius": 26,
+   "object": {
+    "title": "Хьюмидор клуба",
+    "kind": "item",
+    "text": "Коробки сигар с именными ярлыками постоянных пассажиров. Ключик — у проводницы.",
+    "hotspots": []
+   }
+  }
+ ],
+ "luggage_slots": {},
+ "cameras": [
+  {
+   "id": "cam4",
+   "name": "Клубный вагон",
+   "rect": [
+    0,
+    40,
+    656,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": false
+  },
+  {
+   "id": "right",
+   "pos": [
+    652,
+    164
+   ],
+   "locked": true
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   123,
+   60
+  ],
+  [
+   231,
+   60
+  ],
+  [
+   339,
+   60
+  ],
+  [
+   447,
+   60
+  ]
+ ],
+ "window_lights": [
+  [
+   124,
+   60
+  ],
+  [
+   232,
+   60
+  ],
+  [
+   340,
+   60
+  ],
+  [
+   448,
+   60
+  ]
+ ],
+ "role": "restaurant"
+}

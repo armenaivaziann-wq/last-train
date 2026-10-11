@@ -1,0 +1,131 @@
+{
+ "id": "v_workshop",
+ "name": "Тамбур-мастерская",
+ "size": [
+  128,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   128,
+   60
+  ],
+  [
+   0,
+   192,
+   128,
+   16
+  ],
+  [
+   8,
+   58,
+   50,
+   26
+  ]
+ ],
+ "spots": {
+  "vest_mid": {
+   "pos": [
+    64,
+    150
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_window": {
+   "pos": [
+    64,
+    76
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_door": {
+   "pos": [
+    114,
+    170
+   ],
+   "facing": "right",
+   "pose": "stand"
+  },
+  "vest_side": {
+   "pos": [
+    14,
+    120
+   ],
+   "facing": "right",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "cctv",
+   "pos": [
+    6,
+    14
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_v_tools",
+   "pos": [
+    32,
+    70
+   ],
+   "label": "Стена инструментов",
+   "sprite": null,
+   "radius": 30,
+   "object": {
+    "title": "Стена инструментов",
+    "kind": "item",
+    "text": "Ключи, отвёртки, кусачки — всё развешано по контурам. Хозяйство механика.",
+    "hotspots": []
+   }
+  }
+ ],
+ "luggage_slots": {
+  "vest_floor": [
+   112,
+   96
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam3",
+   "name": "Тамбур-мастерская",
+   "rect": [
+    -40,
+    40,
+    208,
+    168
+   ]
+  }
+ ],
+ "doors": [],
+ "windows": [],
+ "lamps": [
+  [
+   40,
+   12
+  ],
+  [
+   96,
+   12
+  ]
+ ],
+ "window_lights": [
+  [
+   64,
+   60
+  ]
+ ],
+ "role": "vestibule",
+ "flicker_lamp": [
+  64,
+  12
+ ]
+}

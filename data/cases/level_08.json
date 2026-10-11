@@ -852,5 +852,10 @@
     "x_l8_fake"
    ]
   }
+ ],
+ "carriages": [
+  "passenger",
+  "vestibule",
+  "r_club"
  ]
 }

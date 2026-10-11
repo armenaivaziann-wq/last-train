@@ -49,6 +49,8 @@ func build(train_layout: TrainLayout, ground: String, entities_node: Node2D, glo
 		var path: String = CARRIAGE_SCENES % cid
 		var car: Carriage = (load(path) as PackedScene).instantiate() if ResourceLoader.exists(path) else Carriage.new()
 		car.carriage_id = cid
+		car.is_first = cid == layout.carriage_ids[0]
+		car.is_last = cid == layout.carriage_ids[layout.carriage_ids.size() - 1]
 		car.name = cid.capitalize()
 		car.position = Vector2(layout.offsets[cid], 0)
 		add_child(car)

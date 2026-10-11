@@ -11,6 +11,10 @@ const WALL_PROPS: PackedStringArray = ["mirror", "cctv", "extinguisher"]
 ## Сообщения для запертых дверей (слева/справа).
 @export var left_door_message: String = "Дверь в локомотив заперта."
 @export var right_door_message: String = "Дальше багажный вагон. Он закрыт."
+## Положение в составе: внешние торцы первого и последнего вагона заперты, остальные двери
+## открыты — так один и тот же вагон работает и в середине, и в хвосте поезда.
+var is_first: bool = true
+var is_last: bool = true
 
 var data: Dictionary
 var interactables: Dictionary = {}  # id → Interactable
@@ -76,7 +80,7 @@ func build(entities: Node2D, glow_layer: Node2D) -> void:
 
 	for d: Dictionary in data.get("doors", []):
 		var door := TrainDoor.new()
-		door.locked = bool(d.get("locked", false))
+		door.locked = (d["id"] == "left" and is_first) or (d["id"] == "right" and is_last)
 		door.locked_message = left_door_message if d["id"] == "left" else right_door_message
 		door.locked_message = str(data.get("door_messages", {}).get(d["id"], door.locked_message))
 		door.position = Vector2(float(d["pos"][0]), float(d["pos"][1]))

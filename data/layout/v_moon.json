@@ -1,0 +1,121 @@
+{
+ "id": "v_moon",
+ "name": "Лунный тамбур",
+ "size": [
+  96,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   96,
+   60
+  ],
+  [
+   0,
+   192,
+   96,
+   16
+  ]
+ ],
+ "spots": {
+  "vest_mid": {
+   "pos": [
+    48,
+    150
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_window": {
+   "pos": [
+    48,
+    76
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "vest_door": {
+   "pos": [
+    82,
+    170
+   ],
+   "facing": "right",
+   "pose": "stand"
+  },
+  "vest_side": {
+   "pos": [
+    14,
+    120
+   ],
+   "facing": "right",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "cctv",
+   "pos": [
+    6,
+    14
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_v_window",
+   "pos": [
+    20,
+    72
+   ],
+   "label": "Круглое окно",
+   "sprite": null,
+   "radius": 28,
+   "object": {
+    "title": "Круглое окно",
+    "kind": "item",
+    "text": "Сквозь окно видно небо. Когда поезд выходит из леса, лунный свет падает прямо на пол тамбура.",
+    "hotspots": []
+   }
+  }
+ ],
+ "luggage_slots": {
+  "vest_floor": [
+   80,
+   96
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam3",
+   "name": "Лунный тамбур",
+   "rect": [
+    -40,
+    40,
+    176,
+    168
+   ]
+  }
+ ],
+ "doors": [],
+ "windows": [],
+ "lamps": [
+  [
+   48,
+   12
+  ]
+ ],
+ "window_lights": [
+  [
+   48,
+   60
+  ]
+ ],
+ "role": "vestibule",
+ "flicker_lamp": [
+  48,
+  12
+ ]
+}

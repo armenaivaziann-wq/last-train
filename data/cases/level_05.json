@@ -28,19 +28,19 @@
    {
     "from": "01:48:30",
     "to": "01:49:30",
-    "carriage": "vestibule",
+    "carriage": "v_workshop",
     "pos": [
-     40,
-     118
+     92,
+     120
     ]
    }
   ],
   "linger": [
    {
-    "carriage": "vestibule",
+    "carriage": "v_workshop",
     "pos": [
-     52,
-     150
+     70,
+     152
     ],
     "from": "01:58",
     "to": "02:12",
@@ -110,10 +110,10 @@
  "extra_items": [
   {
    "id": "obj_l5_cable",
-   "carriage": "vestibule",
+   "carriage": "v_workshop",
    "pos": [
-    44,
-    112
+    104,
+    114
    ],
    "sprite": "cable",
    "label": "Осмотреть трос тормоза",
@@ -150,6 +150,19 @@
      "label": "Тень",
      "text": "Тень повторяет одно движение: наклоняется к тросу и делает «чик». На её плече — ремешок фотоаппарата.",
      "clue": "p_l5_shadow_strap"
+    }
+   ]
+  },
+  "obj_v_tools": {
+   "title": "Стена инструментов",
+   "kind": "item",
+   "text": "Ключи, отвёртки, кусачки — всё развешано по нарисованным контурам.",
+   "hotspots": [
+    {
+     "id": "cutters",
+     "label": "Кусачки Джона",
+     "text": "Кусачки висят на своём контуре, чистые, без смазки и стружки. Ими сегодня ничего не резали.",
+     "clue": "p_l5_cutters"
     }
    ]
   }
@@ -407,6 +420,12 @@
    "points_to": [
     "klara"
    ]
+  },
+  "p_l5_cutters": {
+   "type": "physical",
+   "title": "Кусачки Джона чистые",
+   "text": "Кусачки Джона висят на месте в мастерской — без смазки и стружки. Трос резали не ими.",
+   "points_to": []
   }
  },
  "key_clues": [
@@ -473,7 +492,8 @@
    ],
    "b": [
     "s_l5_john_brake",
-    "p_l5_cut"
+    "p_l5_cut",
+    "p_l5_cutters"
    ],
    "refutes": [
     "s_l5_agata_john"
@@ -788,5 +808,10 @@
     "hide"
    ]
   ]
- }
+ },
+ "carriages": [
+  "passenger",
+  "v_workshop",
+  "restaurant"
+ ]
 }

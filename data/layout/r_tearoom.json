@@ -1,0 +1,607 @@
+{
+ "id": "r_tearoom",
+ "name": "Чайный вагон",
+ "size": [
+  656,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   656,
+   60
+  ],
+  [
+   0,
+   192,
+   656,
+   16
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   648,
+   0,
+   8,
+   140
+  ],
+  [
+   648,
+   188,
+   8,
+   20
+  ],
+  [
+   72,
+   62,
+   18,
+   54
+  ],
+  [
+   158,
+   62,
+   18,
+   54
+  ],
+  [
+   100,
+   66,
+   48,
+   30
+  ],
+  [
+   180,
+   62,
+   18,
+   54
+  ],
+  [
+   266,
+   62,
+   18,
+   54
+  ],
+  [
+   208,
+   66,
+   48,
+   30
+  ],
+  [
+   288,
+   62,
+   18,
+   54
+  ],
+  [
+   374,
+   62,
+   18,
+   54
+  ],
+  [
+   316,
+   66,
+   48,
+   30
+  ],
+  [
+   396,
+   62,
+   18,
+   54
+  ],
+  [
+   482,
+   62,
+   18,
+   54
+  ],
+  [
+   424,
+   66,
+   48,
+   30
+  ],
+  [
+   24,
+   62,
+   32,
+   24
+  ],
+  [
+   508,
+   60,
+   24,
+   32
+  ],
+  [
+   538,
+   96,
+   12,
+   8
+  ],
+  [
+   570,
+   96,
+   78,
+   22
+  ],
+  [
+   190,
+   176,
+   20,
+   12
+  ],
+  [
+   410,
+   176,
+   20,
+   12
+  ],
+  [
+   64,
+   182,
+   12,
+   8
+  ],
+  [
+   534,
+   182,
+   12,
+   8
+  ]
+ ],
+ "spots": {
+  "piano": {
+   "pos": [
+    40,
+    104
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rb1_l1": {
+   "pos": [
+    82,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_l2": {
+   "pos": [
+    82,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 94
+  },
+  "rb1_r1": {
+   "pos": [
+    166,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb1_r2": {
+   "pos": [
+    166,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 154
+  },
+  "rb2_l1": {
+   "pos": [
+    190,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_l2": {
+   "pos": [
+    190,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 202
+  },
+  "rb2_r1": {
+   "pos": [
+    274,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb2_r2": {
+   "pos": [
+    274,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 262
+  },
+  "rb3_l1": {
+   "pos": [
+    298,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_l2": {
+   "pos": [
+    298,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 310
+  },
+  "rb3_r1": {
+   "pos": [
+    382,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb3_r2": {
+   "pos": [
+    382,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 370
+  },
+  "rb4_l1": {
+   "pos": [
+    406,
+    84
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_l2": {
+   "pos": [
+    406,
+    110
+   ],
+   "facing": "right",
+   "pose": "sit",
+   "via": 418
+  },
+  "rb4_r1": {
+   "pos": [
+    490,
+    84
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rb4_r2": {
+   "pos": [
+    490,
+    110
+   ],
+   "facing": "left",
+   "pose": "sit",
+   "via": 478
+  },
+  "rest_coffee": {
+   "pos": [
+    520,
+    108
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "rest_trash": {
+   "pos": [
+    546,
+    118
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_back": {
+   "pos": [
+    562,
+    88
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "bar_stool1": {
+   "pos": [
+    590,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "bar_stool2": {
+   "pos": [
+    624,
+    132
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "rest_s1_l": {
+   "pos": [
+    182,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s1_r": {
+   "pos": [
+    218,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_s2_l": {
+   "pos": [
+    402,
+    188
+   ],
+   "facing": "right",
+   "pose": "sit"
+  },
+  "rest_s2_r": {
+   "pos": [
+    438,
+    188
+   ],
+   "facing": "left",
+   "pose": "sit"
+  },
+  "rest_window": {
+   "pos": [
+    310,
+    184
+   ],
+   "facing": "down",
+   "pose": "stand"
+  },
+  "rest_aisle": {
+   "pos": [
+    300,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "cctv",
+   "pos": [
+    20,
+    12
+   ]
+  },
+  {
+   "sprite": "gramophone",
+   "pos": [
+    40,
+    88
+   ]
+  },
+  {
+   "sprite": "big_samovar",
+   "pos": [
+    520,
+    94
+   ]
+  },
+  {
+   "sprite": "tea_bucket",
+   "pos": [
+    544,
+    104
+   ]
+  },
+  {
+   "sprite": "tea_counter",
+   "pos": [
+    609,
+    120
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    590,
+    134
+   ]
+  },
+  {
+   "sprite": "stool",
+   "pos": [
+    624,
+    134
+   ]
+  },
+  {
+   "sprite": "round_table",
+   "pos": [
+    200,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    182,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    218,
+    190
+   ]
+  },
+  {
+   "sprite": "round_table",
+   "pos": [
+    420,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    402,
+    190
+   ]
+  },
+  {
+   "sprite": "chair",
+   "pos": [
+    438,
+    190
+   ]
+  },
+  {
+   "sprite": "plant",
+   "pos": [
+    70,
+    190
+   ]
+  },
+  {
+   "sprite": "plant",
+   "pos": [
+    540,
+    190
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_coffee",
+   "pos": [
+    520,
+    92
+   ],
+   "label": "Осмотреть самовар",
+   "sprite": null,
+   "radius": 28
+  },
+  {
+   "id": "obj_trash",
+   "pos": [
+    544,
+    100
+   ],
+   "label": "Осмотреть ведро",
+   "sprite": null,
+   "radius": 24
+  }
+ ],
+ "luggage_slots": {},
+ "cameras": [
+  {
+   "id": "cam4",
+   "name": "Чайный вагон",
+   "rect": [
+    0,
+    40,
+    656,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": false
+  },
+  {
+   "id": "right",
+   "pos": [
+    652,
+    164
+   ],
+   "locked": true
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   124,
+   20
+  ],
+  [
+   232,
+   20
+  ],
+  [
+   340,
+   20
+  ],
+  [
+   448,
+   20
+  ]
+ ],
+ "window_lights": [
+  [
+   124,
+   60
+  ],
+  [
+   232,
+   60
+  ],
+  [
+   340,
+   60
+  ],
+  [
+   448,
+   60
+  ]
+ ],
+ "role": "restaurant"
+}

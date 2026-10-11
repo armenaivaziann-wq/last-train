@@ -52,14 +52,64 @@ func has_case(case_id: String) -> bool:
 ## собранное генератором из шаблона злодея ("gen:<уровень или злодей>"). Всегда копия.
 func resolve_case(case_ref: String, seed_value: int) -> Dictionary:
 	if case_ref.begins_with("gen:"):
-		return CaseGenerator.generate(case_ref.substr(4), seed_value)
+		return _carriage_objects(CaseGenerator.generate(case_ref.substr(4), seed_value))
 	var d: Dictionary = case_data(case_ref).duplicate(true)
 	# Авторское дело кампании: своя история поверх общего поезда.
 	if d.has("extends"):
 		d = CaseBuilder.extend(case_data(str(d["extends"])), d)
+	_bind_roles(d)
 	CaseVariants.apply(d, seed_value)
 	if d.has("excursions") or d.has("auto_cameras"):
 		CaseBuilder.finish(d)
+	return _carriage_objects(d)
+
+
+## Роли вагонов: данные дела могут ссылаться на роль ("passenger", "vestibule", "restaurant"),
+## а в составе её исполняет вагон-вариант (например, "p_firstclass" вместо "passenger").
+## Ссылки на вагон (поле "carriage", места багажа "роль:место", ключи "reflection_delay")
+## переводятся на реальный вагон состава.
+func _bind_roles(d: Dictionary) -> void:
+	var map: Dictionary = {}
+	var cars: Array = d.get("carriages", [])
+	for cid in cars:
+		var role: String = str(layout(str(cid)).get("role", ""))
+		if role != "" and role != str(cid) and not role in cars:
+			map[role] = str(cid)
+	if map.is_empty():
+		return
+	_rebind(d, map)
+	if d.has("reflection_delay"):
+		var rd: Dictionary = {}
+		for k: String in d["reflection_delay"]:
+			rd[map.get(k, k)] = d["reflection_delay"][k]
+		d["reflection_delay"] = rd
+
+
+func _rebind(v: Variant, map: Dictionary) -> void:
+	if v is Dictionary:
+		var dict: Dictionary = v
+		for k: String in dict:
+			var x: Variant = dict[k]
+			if k == "carriage" and x is String and map.has(x):
+				dict[k] = map[x]
+			elif k == "slot" and x is String and map.has(str(x).get_slice(":", 0)):
+				dict[k] = map[str(x).get_slice(":", 0)] + ":" + str(x).get_slice(":", 1)
+			else:
+				_rebind(x, map)
+	elif v is Array:
+		for x in v:
+			_rebind(x, map)
+
+
+## Объекты вагонов, у которых нет описания в деле, получают описание по умолчанию из
+## разметки вагона ("object" у интерактивного объекта) — у каждого вагона своя атмосфера.
+func _carriage_objects(d: Dictionary) -> Dictionary:
+	if not d.has("objects"):
+		d["objects"] = {}
+	for cid in d.get("carriages", []):
+		for it: Dictionary in layout(str(cid)).get("interactables", []):
+			if it.has("object") and not d["objects"].has(it["id"]):
+				d["objects"][it["id"]] = (it["object"] as Dictionary).duplicate(true)
 	return d
 
 

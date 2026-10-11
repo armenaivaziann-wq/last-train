@@ -1,0 +1,227 @@
+{
+ "id": "archive",
+ "name": "Архивный вагон",
+ "size": [
+  400,
+  208
+ ],
+ "corridor_y": 166,
+ "colliders": [
+  [
+   0,
+   0,
+   400,
+   60
+  ],
+  [
+   0,
+   192,
+   400,
+   16
+  ],
+  [
+   44,
+   60,
+   32,
+   28
+  ],
+  [
+   140,
+   60,
+   32,
+   28
+  ],
+  [
+   250,
+   64,
+   60,
+   26
+  ],
+  [
+   0,
+   0,
+   8,
+   140
+  ],
+  [
+   0,
+   188,
+   8,
+   20
+  ],
+  [
+   392,
+   0,
+   8,
+   140
+  ],
+  [
+   392,
+   188,
+   8,
+   20
+  ]
+ ],
+ "spots": {
+  "ar_desk": {
+   "pos": [
+    280,
+    104
+   ],
+   "facing": "up",
+   "pose": "sit"
+  },
+  "ar_shelf1": {
+   "pos": [
+    58,
+    104
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "ar_shelf2": {
+   "pos": [
+    200,
+    100
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "ar_board": {
+   "pos": [
+    354,
+    96
+   ],
+   "facing": "up",
+   "pose": "stand"
+  },
+  "ar_corner": {
+   "pos": [
+    380,
+    130
+   ],
+   "facing": "left",
+   "pose": "stand"
+  },
+  "ar_aisle": {
+   "pos": [
+    200,
+    166
+   ],
+   "facing": "up",
+   "pose": "stand"
+  }
+ },
+ "props": [
+  {
+   "sprite": "file_cabinet",
+   "pos": [
+    60,
+    90
+   ]
+  },
+  {
+   "sprite": "file_cabinet",
+   "pos": [
+    156,
+    90
+   ]
+  },
+  {
+   "sprite": "cctv",
+   "pos": [
+    380,
+    12
+   ]
+  }
+ ],
+ "interactables": [
+  {
+   "id": "obj_ar_cabinet",
+   "pos": [
+    60,
+    96
+   ],
+   "label": "Картотека",
+   "sprite": null,
+   "radius": 30,
+   "object": {
+    "title": "Картотека рейсов",
+    "kind": "item",
+    "text": "Ящики с карточками рейсов по годам. Один ящик — «1926» — выдвинут.",
+    "hotspots": []
+   }
+  },
+  {
+   "id": "obj_ar_board",
+   "pos": [
+    354,
+    84
+   ],
+   "label": "Доска с фотографиями",
+   "sprite": null,
+   "radius": 30,
+   "object": {
+    "title": "Доска с фотографиями",
+    "kind": "item",
+    "text": "Снимки пассажиров разных лет, соединённые красной нитью. Кто-то искал одно и то же лицо.",
+    "hotspots": []
+   }
+  }
+ ],
+ "luggage_slots": {
+  "ar_floor": [
+   120,
+   130
+  ]
+ },
+ "cameras": [
+  {
+   "id": "cam8",
+   "name": "Архивный вагон",
+   "rect": [
+    0,
+    40,
+    400,
+    168
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "left",
+   "pos": [
+    4,
+    164
+   ],
+   "locked": false
+  },
+  {
+   "id": "right",
+   "pos": [
+    396,
+    164
+   ],
+   "locked": false
+  }
+ ],
+ "windows": [],
+ "lamps": [
+  [
+   60,
+   14
+  ],
+  [
+   200,
+   14
+  ],
+  [
+   340,
+   14
+  ]
+ ],
+ "window_lights": [],
+ "door_messages": {
+  "right": "Хвост поезда. За дверью — только туман."
+ }
+}
