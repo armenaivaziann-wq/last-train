@@ -40,7 +40,12 @@ func build(args: Dictionary) -> void:
 	_goal_box = Ui.panel("HighlightPanel")
 	var gh := Ui.hbox(12)
 	gh.add_child(Ui.icon("flag", 40))
-	var gl := Ui.label(str(_brief.get("goal", "")), "", 20, true)
+	var goal_text: String = str(_brief.get("goal", ""))
+	if game and str(game.investigation.profile.get("goals", "guided")) != "guided":
+		# Сложные дела: только задача, без подсказки, где и что искать.
+		goal_text = goal_text.get_slice(".", 0) + ". Как — решайте сами: подсказок в пути не будет."
+		goal_text += "\nУровень сложности: %s." % str(game.investigation.profile.get("name", ""))
+	var gl := Ui.label(goal_text, "", 20, true)
 	gl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	gh.add_child(gl)
 	_goal_box.add_child(gh)

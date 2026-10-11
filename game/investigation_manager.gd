@@ -59,6 +59,8 @@ var ended: bool = false
 var replay: bool = false
 ## Уровень кампании ("level_01"..., "daily" или "") и seed попытки (вариант дела, убийства).
 var level_id: String = ""
+## Профиль сложности (data/difficulty.json): цели, маркеры, подсказки, обыск, доказательства.
+var profile: Dictionary = {}
 var case_seed: int = 0
 ## Время ведётся одними часами дела: дедлайн, расписание пассажиров и убийства не расходятся.
 var deadline_minutes: float = 20.0
@@ -68,6 +70,7 @@ var _warned: Array = []
 func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_data: Dictionary = {}, level: String = "") -> void:
 	case_id = id
 	level_id = level
+	profile = Db.difficulty(level if level != "" else "level_01")
 	case_seed = seed_value if seed_value >= 0 else randi() % 1000000
 	# Копия: сценарии убийств дописывают в данные улики и объекты с конкретным временем.
 	data = case_data if not case_data.is_empty() else Db.resolve_case(id, case_seed)
@@ -344,7 +347,13 @@ func max_mistakes() -> int:
 ## Задержать подозреваемого. clue_ids — улики-основания (до 3), monster_guess — тип монстра.
 ## Следующая подсказка: для той же цели уровень растёт (намёк → связь → место).
 ## Каждая выданная подсказка учитывается в рейтинге.
+func hints_left() -> int:
+	return maxi(0, int(profile.get("hints", 99)) - hints_used)
+
+
 func take_hint() -> Dictionary:
+	if hints_left() <= 0:
+		return {}
 	var first: Dictionary = hint_system.hint(1)
 	var target: String = str(first["target"])
 	var lvl: int = mini(3, int(_hint_levels.get(target, 0)) + 1)
@@ -369,9 +378,25 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive
 	if ended:
 		return result
 	if result["correct"]:
-		result["strong"] = int(result["key"]) >= int(data.get("min_key_clues", 2))
-		suspects.set_flag(suspect, "detained")
+		var lack: String = proof_missing(suspect, clue_ids)
+		if lack == "":
+			result["strong"] = int(result["key"]) >= int(data.get("min_key_clues", 2))
+			suspects.set_flag(suspect, "detained")
+			accused.emit(result)
+			return result
+		# Виновник верный, но доказательств не хватает: задержание срывается.
+		result["correct"] = false
+		result["insufficient"] = true
+		result["reaction"] = "У вас ничего на меня нет, инспектор."
+		result["why"] = lack
+		mistakes += 1
+		clock = minf(clock + WRONG_TIME_PENALTY, arrival_time)
+		result["case_failed"] = mistakes >= max_mistakes()
 		accused.emit(result)
+		if result["case_failed"]:
+			finish("mistakes")
+		elif clock >= arrival_time:
+			finish("timeout")
 		return result
 	mistakes += 1
 	suspects.set_flag(suspect, "wrongly_accused")
@@ -388,9 +413,36 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive
 	return result
 
 
+## Чего не хватает, чтобы задержание устояло (по профилю сложности). Пусто — достаточно.
+## Не раскрывает, верен ли выбор подозреваемого: формулировки те же, что для любого.
+func proof_missing(suspect: String, clue_ids: Array) -> String:
+	var pr: Dictionary = profile.get("proof", {})
+	var grounds: Array = clue_ids.filter(func(id: Variant) -> bool:
+		return evidence.has(str(id)) and suspect in evidence.clue(str(id)).get("points_to", []))
+	var need: int = int(pr.get("min_grounds", 1))
+	if grounds.size() < need:
+		return "Задержание сорвалось: нужно не меньше %d оснований, прямо указывающих на подозреваемого (сейчас %d)." % [need, grounds.size()]
+	if pr.get("need_deduction", false) and not grounds.any(func(id: Variant) -> bool: return evidence.clue(str(id)).get("type") == "contradiction"):
+		return "Задержание сорвалось: среди оснований нет ни одного вывода. Улики нужно связать между собой в журнале."
+	if pr.get("need_verdict", false) and not data.get("verdict", {}).is_empty() and not verdict_ok:
+		return "Задержание сорвалось: мотив или способ указаны неверно — обвинение развалилось бы в суде."
+	return ""
+
+
+## Можно ли обыскать багаж пассажира: в сложных делах нужны основания против него.
+func search_missing(owner: String) -> int:
+	var need: int = int(profile.get("search_needs", 0))
+	if data.get("luggage", {}).get(owner, {}).get("voluntary", false):
+		return 0  # свидетель сам показывает вещи
+	var have: int = evidence.found.filter(func(id: String) -> bool: return owner in evidence.clue(id).get("points_to", [])).size()
+	return maxi(0, need - have)
+
+
 ## Почему обвинение ошибочно — без раскрытия виновника: какие основания не касаются
 ## обвинённого и опровергнуто ли то, из-за чего его подозревали.
 func explain_wrong(suspect: String, clue_ids: Array) -> String:
+	if str(profile.get("explain", "full")) == "short":
+		return "Обвинение не подтвердилось. Перепроверьте алиби и противоречия."
 	var f: bool = str(Db.character(suspect).get("gender", "m")) == "f"
 	var him: String = "неё" if f else "него"
 	var parts: PackedStringArray = []

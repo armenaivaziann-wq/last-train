@@ -81,6 +81,8 @@ func _source(id: String) -> Dictionary:
 				return {"kind": "doc", "subject": "мелкие детали в документах — " + _name(npc),
 					"place": "документы: %s, деталь «%s» (включите лупу)" % [_name(npc), h["label"]]}
 	for npc: String in d.get("luggage", {}):
+		if inv.search_missing(npc) > 0:
+			continue
 		for it: Dictionary in d["luggage"][npc].get("items", []):
 			if it.get("on_open", "") == id or it.get("hotspot", {}).get("clue", "") == id:
 				return {"kind": "luggage", "subject": "багаж — " + _name(npc),

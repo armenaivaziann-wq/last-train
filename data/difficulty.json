@@ -1,0 +1,97 @@
+{
+ "_about": "Профили сложности кампании. goals: guided — подробные цели по шагам, vague — только главный вопрос дела, none — только дедлайн. markers: all — искры над всеми неосмотренными объектами, near — только рядом с героем, none — нет. hints — сколько подсказок можно взять. search_needs — сколько найденных улик против пассажира нужно, чтобы он разрешил обыскать багаж. proof — что нужно для задержания: min_grounds (оснований, указывающих на виновника), need_deduction (среди оснований — вывод), need_verdict (верные мотив и способ). Иначе задержание срывается «за недостатком доказательств» и считается ошибкой. wrong_link_cost — сколько игровых минут стоит неверное сопоставление улик в журнале (против перебора).",
+ "profiles": {
+  "1": {
+   "name": "Стажёр",
+   "goals": "guided",
+   "markers": "all",
+   "topic_reasons": true,
+   "hints": 99,
+   "search_needs": 0,
+   "explain": "full",
+   "proof": {
+    "min_grounds": 1,
+    "need_deduction": false,
+    "need_verdict": false
+   },
+   "wrong_link_cost": 0.0
+  },
+  "2": {
+   "name": "Сыщик",
+   "goals": "vague",
+   "markers": "all",
+   "topic_reasons": true,
+   "hints": 5,
+   "search_needs": 0,
+   "explain": "full",
+   "proof": {
+    "min_grounds": 2,
+    "need_deduction": false,
+    "need_verdict": false
+   },
+   "wrong_link_cost": 0.25
+  },
+  "3": {
+   "name": "Инспектор",
+   "goals": "vague",
+   "markers": "near",
+   "topic_reasons": false,
+   "hints": 3,
+   "search_needs": 1,
+   "explain": "full",
+   "proof": {
+    "min_grounds": 2,
+    "need_deduction": true,
+    "need_verdict": false
+   },
+   "wrong_link_cost": 0.5
+  },
+  "4": {
+   "name": "Старший инспектор",
+   "goals": "none",
+   "markers": "near",
+   "topic_reasons": false,
+   "hints": 2,
+   "search_needs": 1,
+   "explain": "short",
+   "proof": {
+    "min_grounds": 3,
+    "need_deduction": true,
+    "need_verdict": false
+   },
+   "wrong_link_cost": 0.75
+  },
+  "5": {
+   "name": "Легенда сыска",
+   "goals": "none",
+   "markers": "none",
+   "topic_reasons": false,
+   "hints": 1,
+   "search_needs": 2,
+   "explain": "short",
+   "proof": {
+    "min_grounds": 3,
+    "need_deduction": true,
+    "need_verdict": true
+   },
+   "wrong_link_cost": 1.0
+  }
+ },
+ "levels": {
+  "level_01": 1,
+  "level_02": 1,
+  "level_03": 2,
+  "level_04": 2,
+  "level_05": 3,
+  "level_06": 3,
+  "level_07": 4,
+  "level_08": 4,
+  "level_09": 5,
+  "level_10": 5,
+  "level_11": 3,
+  "level_12": 4,
+  "level_13": 5,
+  "level_14": 5,
+  "daily": 3
+ }
+}

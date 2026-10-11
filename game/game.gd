@@ -337,6 +337,13 @@ func open_object(object_id: String) -> void:
 
 
 func open_luggage(owner: String) -> void:
+	var missing: int = investigation.search_missing(owner)
+	if missing > 0:
+		AudioManager.play_sfx("door_locked", -8.0)
+		var f: bool = str(Db.character(owner).get("gender", "m")) == "f"
+		Events.notify("%s не %s обыскивать вещи без оснований. Нужно ещё улик против %s: %d." % [
+			Db.char_name(owner), "разрешает" , "неё" if f else "него", missing], "lock")
+		return
 	ui.open("luggage_screen", {"id": owner})
 
 
@@ -406,6 +413,13 @@ func update_goal() -> void:
 	for id: String in npcs:
 		if investigation.suspects.flag(id, "met"):
 			met = true
+	var mode: String = str(investigation.profile.get("goals", "guided"))
+	if mode != "guided":
+		# Сложные дела: цель не ведёт за руку — только главный вопрос дела или дедлайн.
+		var station: String = str(case_data.get("station_to", ""))
+		var q: String = str(case_data.get("brief", {}).get("goal", "")).get_slice(".", 0)
+		hud.set_goal(("Цель: " + q[0].to_lower() + q.substr(1)) if mode == "vague" and q != "" else "Цель: раскройте дело до ст. " + station)
+		return
 	var goal: String = murder_goal()
 	if goal == "":
 		goal = story_goal()
@@ -638,9 +652,9 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String, motive: int
 		await arrest.play_arrest(suspect)
 		investigation.finish("solved", result)
 	elif not investigation.ended:
-		await arrest.play_wrong(suspect, str(result.get("reaction", "")))
+		await arrest.play_wrong(suspect, str(result.get("reaction", "")), result.get("insufficient", false))
 		if not investigation.ended:
-			hud.show_banner("Почему это ошибка", str(result.get("why", "")), 6.0)
+			hud.show_banner("Недостаточно доказательств" if result.get("insufficient", false) else "Почему это ошибка", str(result.get("why", "")), 6.0)
 
 
 func _on_finished(result: Dictionary) -> void:

@@ -111,7 +111,7 @@ func play_arrest(suspect: String) -> void:
 	_end()
 
 
-func play_wrong(suspect: String, reaction: String) -> void:
+func play_wrong(suspect: String, reaction: String, insufficient: bool = false) -> void:
 	var npc: NPCController = game.npcs.get(suspect)
 	if npc == null:
 		return
@@ -127,6 +127,11 @@ func play_wrong(suspect: String, reaction: String) -> void:
 	npc.set_detained(false)
 	var left: int = game.investigation.max_mistakes() - game.investigation.mistakes
 	var f: bool = str(Db.character(suspect).get("gender", "m")) == "f"
+	if insufficient:
+		Events.notify("Задержание сорвалось: %s %s за недостатком доказательств. −%d мин. Осталось права на ошибку: %d" % [
+			Db.char_name(suspect), "отпущена" if f else "отпущен", int(InvestigationManager.WRONG_TIME_PENALTY), left], "guard")
+		_end()
+		return
 	Events.notify("Ошибка! %s %s. −%d репутации, −%d мин. Осталось права на ошибку: %d" % [
 		Db.char_name(suspect), "невиновна" if f else "невиновен", InvestigationManager.WRONG_REPUTATION,
 		int(InvestigationManager.WRONG_TIME_PENALTY), left], "guard")

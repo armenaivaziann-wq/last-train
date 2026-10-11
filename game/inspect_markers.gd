@@ -6,6 +6,7 @@ extends Node2D
 ## объектов без улик, пока их не осмотрели.
 
 const BOB: float = 1.5
+const NEAR_RADIUS: float = 110.0
 
 var game: Game
 var _marks: Dictionary = {}   # Interactable → Sprite2D
@@ -53,6 +54,12 @@ func _refresh() -> void:
 			_marks[it] = s
 		var state: String = inv.inspect_state(it.interact_id)
 		var shown: bool = it.enabled and it.is_visible_in_tree() and state != "done" and not game.camera_system.playback
+		# Сложность: «near» — искра видна только рядом с героем, «none» — подсветки нет.
+		match str(inv.profile.get("markers", "all")):
+			"near":
+				shown = shown and it.global_position.distance_to(game.player.global_position) < NEAR_RADIUS
+			"none":
+				shown = false
 		s.visible = shown
 		if state == "new":
 			s.self_modulate = Color("#ffd86b")

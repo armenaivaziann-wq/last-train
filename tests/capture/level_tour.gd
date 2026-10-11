@@ -74,6 +74,10 @@ func _ready() -> void:
 	game.open_journal("clues")
 	await _wait(0.5)
 	await _shot(level + "_7_journal")
+	game.ui.close_all()
+	game.open_journal("verdict:" + str(d["culprit"]))
+	await _wait(0.5)
+	await _shot(level + "_8_verdict")
 	get_tree().quit()
 
 

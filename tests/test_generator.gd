@@ -153,10 +153,15 @@ func test_generated_level_plays() -> void:
 		check_eq(inv.level_id, lid, "%s запущен" % lid)
 		inv.advance(2.0)
 		check(not inv.ended, "%s идёт" % lid)
-		var key: Array = inv.data["key_clues"].filter(func(id: String) -> bool: return inv.murder_scenario_of_clue(id) == "").slice(0, 3)
+		var c: String = inv.data["culprit"]
+		var against: Array = inv.data["key_clues"].filter(func(id: String) -> bool:
+			return inv.murder_scenario_of_clue(id) == "" and c in inv.data["clues"][id].get("points_to", []))
+		var deds: Array = against.filter(func(id: String) -> bool: return inv.data["clues"][id]["type"] == "contradiction")
+		var key: Array = deds.slice(0, 1) + against.filter(func(id: String) -> bool: return not id in deds.slice(0, 1)).slice(0, 2)
 		for id in key:
 			inv.give(id)
-		var r: Dictionary = inv.accuse(inv.data["culprit"], key, inv.data["monster"])
+		var vd: Dictionary = inv.data.get("verdict", {})
+		var r: Dictionary = inv.accuse(c, key, inv.data["monster"], int(vd.get("motive", -1)), int(vd.get("method", -1)))
 		check(r["correct"], "%s: виновника можно задержать" % lid)
 		game.queue_free()
 		game = null

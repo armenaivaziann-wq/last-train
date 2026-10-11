@@ -105,7 +105,7 @@ func _rebuild_topics() -> void:
 		_topics.add_child(b)
 		# Почему открылась тема: игрок видит связь «улика → новый вопрос».
 		var why: String = _topic_reason(t)
-		if why != "" and not t["asked"]:
+		if why != "" and not t["asked"] and inv.profile.get("topic_reasons", true):
 			var lbl := Ui.label("   ↳ " + why, "DimLabel", 15, true)
 			_topics.add_child(lbl)
 

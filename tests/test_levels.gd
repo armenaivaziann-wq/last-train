@@ -57,6 +57,8 @@ func _sweep() -> bool:
 		for h: Dictionary in doc.get("hotspots", []):
 			inv.give(str(h["clue"]))
 	for npc: String in d.get("luggage", {}):
+		if inv.search_missing(npc) > 0:
+			continue  # без оснований пассажир не даёт обыскать вещи
 		for it: Dictionary in d["luggage"][npc].get("items", []):
 			if it.has("requires_upgrade"):
 				continue
@@ -165,7 +167,8 @@ func _play(level_id: String, seed_value: int) -> void:
 	inv.clock = inv.start_time + 10.0  # решатель шёл до конца; обвинение — посреди дела
 	# Верное обвинение с верным мотивом и способом.
 	var vd: Dictionary = d["verdict"]
-	var r: Dictionary = inv.accuse(d["culprit"], against.slice(0, 3), "", int(vd["motive"]), int(vd["method"]))
+	var grounds: Array = deductions.slice(0, 1) + against.filter(func(id: String) -> bool: return not id in deductions.slice(0, 1)).slice(0, 2)
+	var r: Dictionary = inv.accuse(d["culprit"], grounds, "", int(vd["motive"]), int(vd["method"]))
 	check(r["correct"] and r.get("strong", false) and inv.verdict_ok, level_id + ": верное обвинение с мотивом и способом")
 	game.queue_free()
 	game = null
@@ -188,12 +191,15 @@ func test_levels_timeout() -> void:
 		var res: Array = []
 		# Подсказки: три ступени для одной цели, тексты есть, рейтинг снижается.
 		var levels: Array = []
-		for i in 3:
+		var allowed: int = mini(3, int(_inv().profile["hints"]))
+		for i in allowed:
 			var h: Dictionary = _inv().take_hint()
 			check(str(h.get("text", "")).length() > 10, "%s: подсказка %d с текстом" % [level_id, i + 1])
-			levels.append(int(h["level"]))
-		check_eq(levels, [1, 2, 3], level_id + ": подсказки становятся точнее")
-		check(_inv().compute_stars(true) <= 1, level_id + ": 3 подсказки снижают рейтинг")
+			levels.append(int(h.get("level", 0)))
+		check_eq(levels, [1, 2, 3].slice(0, allowed), level_id + ": подсказки становятся точнее")
+		if int(_inv().profile["hints"]) <= 3:
+			check(_inv().take_hint().is_empty(), level_id + ": лимит подсказок соблюдается")
+		check(_inv().compute_stars(true) <= 2, level_id + ": подсказки снижают рейтинг")
 		_inv().finished.connect(func(x: Dictionary) -> void: res.append(x))
 		_inv().advance(21.0)
 		check(res.size() == 1 and res[0]["outcome"] == "timeout" and int(res[0]["stars"]) == 0, level_id + ": время вышло — поражение")
@@ -289,3 +295,59 @@ func test_levels_resume_after_exit() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_resume.json"))
 	SaveManager.enabled = false
 	SaveManager.save_path = SaveManager.SAVE_PATH
+
+
+## Сложность растёт: цели, подсветка, подсказки, требования к доказательствам и обыску.
+func test_difficulty_grows() -> void:
+	var order: Array = ["guided", "vague", "none"]
+	var markers: Array = ["all", "near", "none"]
+	for chapter in [range(1, 11), range(11, 15)]:
+		var prev: Dictionary = {}
+		for n in chapter:
+			var p: Dictionary = Db.difficulty("level_%02d" % n)
+			if not prev.is_empty():
+				check(order.find(p["goals"]) >= order.find(prev["goals"]), "уровень %d: цели не подробнее предыдущего" % n)
+				check(markers.find(p["markers"]) >= markers.find(prev["markers"]), "уровень %d: подсветки не больше" % n)
+				check(int(p["hints"]) <= int(prev["hints"]), "уровень %d: подсказок не больше" % n)
+				check(int(p["proof"]["min_grounds"]) >= int(prev["proof"]["min_grounds"]), "уровень %d: доказательств не меньше" % n)
+				check(int(p["level"]) >= int(prev["level"]), "уровень %d: сложность не ниже" % n)
+			prev = p
+	check_eq(str(Db.difficulty("level_01")["goals"]), "guided", "первое дело — обучение с целями")
+	check_eq(str(Db.difficulty("level_10")["goals"]), "none", "финал — без целей")
+
+
+func test_proof_and_search_rules_on_hard_level() -> void:
+	await _start_level("level_06", 7)
+	var inv: InvestigationManager = _inv()
+	var d: Dictionary = inv.data
+	var c: String = d["culprit"]
+	check(inv.search_missing(c) > 0, "без оснований багаж виновника не обыскать")
+	game.open_luggage(c)
+	await wait_frames(2)
+	check(not game.ui.has_modal(), "окно багажа не открылось")
+	var against: Array = d["key_clues"].filter(func(id: String) -> bool: return c in d["clues"][id].get("points_to", []))
+	var facts: Array = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] != "contradiction")
+	var deds: Array = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] == "contradiction")
+	inv.give_all(against)
+	check_eq(inv.search_missing(c), 0, "с основаниями обыск разрешён")
+	var vd: Dictionary = d["verdict"]
+	var r1: Dictionary = inv.accuse(c, facts.slice(0, 3), "", int(vd["motive"]), int(vd["method"]))
+	check(r1.get("insufficient", false) and inv.mistakes == 1 and not inv.ended, "без вывода задержание срывается и считается ошибкой")
+	check(str(r1["why"]).contains("вывод"), "объяснено, чего не хватает")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	await _start_level("level_09", 7)
+	inv = _inv()
+	d = inv.data
+	c = d["culprit"]
+	against = d["key_clues"].filter(func(id: String) -> bool: return c in d["clues"][id].get("points_to", []))
+	facts = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] != "contradiction")
+	deds = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] == "contradiction")
+	vd = d["verdict"]
+	inv.give_all(against)
+	var r2: Dictionary = inv.accuse(c, deds.slice(0, 1) + facts.slice(0, 2), "", (int(vd["motive"]) + 1) % 4, int(vd["method"]))
+	check(r2.get("insufficient", false), "неверный мотив на высокой сложности — задержание срывается")
+	game.queue_free()
+	game = null
+	await wait_frames(2)

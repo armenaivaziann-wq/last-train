@@ -113,6 +113,21 @@ func _carriage_objects(d: Dictionary) -> Dictionary:
 	return d
 
 
+# --- сложность ------------------------------------------------------------------------------
+var _difficulty: Dictionary = {}
+
+
+## Профиль сложности уровня (data/difficulty.json). Неизвестный уровень — средний профиль.
+func difficulty(level_id: String) -> Dictionary:
+	if _difficulty.is_empty():
+		_difficulty = load_json("difficulty.json")
+	var d: Dictionary = _difficulty
+	var n: String = str(int(d.get("levels", {}).get(level_id, 3)))
+	var p: Dictionary = d["profiles"].get(n, d["profiles"]["3"]).duplicate(true)
+	p["level"] = int(n)
+	return p
+
+
 # --- кампания -------------------------------------------------------------------------------
 func levels() -> Array:
 	return campaign.get("levels", [])

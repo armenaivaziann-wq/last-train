@@ -28,6 +28,7 @@ var _monster_guess: String = ""
 var _motive: int = -1
 var _method: int = -1
 var _hint_label: Label
+var _hint_btn: Button
 var _verify_result: Dictionary = {}
 
 
@@ -46,7 +47,9 @@ func build(args: Dictionary) -> void:
 	_time_pill = tp[1]
 	head.add_child(tp[0])
 	head.move_child(tp[0], 2)
-	var hint_btn := Ui.button("Подсказка", "question", "PurpleButton", _show_hint, 52)
+	var hint_btn := Ui.button(_hint_caption(), "question", "PurpleButton", _show_hint, 52)
+	hint_btn.disabled = inv.hints_left() <= 0
+	_hint_btn = hint_btn
 	hint_btn.tooltip_text = "Подсказки помогают думать, но снижают итоговый рейтинг"
 	head.add_child(hint_btn)
 	head.move_child(hint_btn, 3)
@@ -325,7 +328,13 @@ func _compare() -> void:
 	var res: String = inv.deduce(_selected[0], _selected[1])
 	if res == "":
 		AudioManager.play_sfx("wrong", -8.0)
-		Events.notify("Эти улики никак не связаны между собой.", "question")
+		var cost: float = float(inv.profile.get("wrong_link_cost", 0.0))
+		if cost > 0.0:
+			# Перебор пар наугад стоит времени — связь нужно найти логикой.
+			inv.advance(cost)
+			Events.notify("Эти улики никак не связаны. Ложный след отнял %s мин." % str(snappedf(cost, 0.01)), "question")
+		else:
+			Events.notify("Эти улики никак не связаны между собой.", "question")
 	elif res == "known":
 		Events.notify("Этот вывод уже есть в журнале.", "journal")
 	else:
@@ -417,6 +426,14 @@ func _build_verdict() -> void:
 	var left := Ui.vbox(6)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.add_child(Ui.label("2. Основания (до 3 улик): %d/3" % _verdict_clues.size(), "SubHeaderLabel", 22))
+	# Правила задержания этого уровня — заранее, чтобы провал не был сюрпризом.
+	var pr: Dictionary = inv.profile.get("proof", {})
+	var rules: PackedStringArray = ["не меньше %d оснований против подозреваемого" % int(pr.get("min_grounds", 1))]
+	if pr.get("need_deduction", false):
+		rules.append("среди них — хотя бы один вывод")
+	if pr.get("need_verdict", false) and not inv.data.get("verdict", {}).is_empty():
+		rules.append("верные мотив и способ")
+	left.add_child(Ui.label("Для задержания нужно: " + ", ".join(rules) + ".", "DimLabel", 16, true))
 	var list := Ui.vbox(6)
 	var ordered: Array[String] = []
 	for id in inv.evidence.found:
@@ -500,8 +517,18 @@ func _choice(title: String, options: Array, current: int, on_pick: Callable) -> 
 	return v
 
 
+func _hint_caption() -> String:
+	return "Подсказка" if int(inv.profile.get("hints", 99)) >= 99 else "Подсказки: %d" % inv.hints_left()
+
+
 func _show_hint() -> void:
 	var h: Dictionary = inv.take_hint()
+	_hint_btn.text = _hint_caption()
+	_hint_btn.disabled = inv.hints_left() <= 0
+	if h.is_empty():
+		_hint_label.text = "Подсказки на это дело закончились. Дальше — только ваша логика."
+		_hint_label.visible = true
+		return
 	_hint_label.text = "Подсказка %d/3 (взято: %d, рейтинг снижается): %s" % [int(h["level"]), inv.hints_used, h["text"]]
 	_hint_label.visible = true
 	AudioManager.play_sfx("magnifier", -6.0)
