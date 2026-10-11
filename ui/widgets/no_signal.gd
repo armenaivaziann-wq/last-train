@@ -20,12 +20,13 @@ func _ready() -> void:
 	_label.add_theme_constant_override("outline_size", 8)
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_label)
+	resized.connect(func() -> void: _label.add_theme_font_size_override("font_size", 28 if size.x > 300 else 13))
 
 
 func show_text(t: String) -> void:
 	text = t
 	_label.text = t
-	_label.add_theme_font_size_override("font_size", 26 if size.x > 300 else 13)
+	_label.add_theme_font_size_override("font_size", 28 if size.x > 300 else 13)
 
 
 func _process(delta: float) -> void:

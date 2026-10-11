@@ -289,7 +289,7 @@ func _apply_time() -> void:
 					names.append(lbl)
 		if silhouettes > 0:
 			names.append("силуэт" if silhouettes == 1 else "силуэты (%d)" % silhouettes)
-		_status.text = "В кадре: " + ", ".join(names)
+		_status.text = "В кадре: " + ", ".join(names) if not names.is_empty() else "В кадре никого. Но что-то движется само?"
 
 
 func _process(delta: float) -> void:

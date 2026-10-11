@@ -359,6 +359,7 @@ func _build_timeline() -> void:
 	mode.add_child(b1)
 	mode.add_child(b2)
 	var wrap := Ui.vbox(8)
+	wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	wrap.add_child(mode)
 	if _board_mode:
 		wrap.add_child(_build_board())
@@ -436,6 +437,8 @@ func _build_board() -> Control:
 			grid.add_child(opt)
 	var sc := Ui.scroll(grid)
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.custom_minimum_size.y = 300
+	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(sc)
 	var cost: float = Db.action_cost(inv.profile, "timeline_check")
 	var row := Ui.hbox(10)
