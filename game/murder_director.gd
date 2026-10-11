@@ -211,26 +211,34 @@ func _inject(m: Dictionary, data: Dictionary) -> void:
 		"hotspots": [{"id": "sleeve", "label": "Рукав одежды", "text": "На рукаве — %s." % fibers, "clue": pre + "_fibers"}]}
 	data["objects"]["obj_%s_steps" % pre] = {"title": "Следы обуви", "kind": "item",
 		"text": "Свежие следы в темноте вели от тела %s." % escape_place, "on_open": pre + "_steps", "hotspots": []}
-	# Запись камеры: убийца у жертвы в момент убийства.
+	# Запись камеры: в туннеле камера вагона слепнет (помехи), поэтому на записи видно только,
+	# кто был в вагоне ДО туннеля, — круг подозреваемых, а не готовый ответ.
 	var cam_id: String = ""
 	var area: float = INF
 	for cam in _layout.cameras:
 		var r: Rect2 = cam["rect"]
-		if r.has_point(_timeline.position_at(murderer, m["t"]["kill"])) and r.get_area() < area:
+		if r.has_point(m["scene_pos"]) and r.get_area() < area:
 			area = r.get_area()
 			cam_id = str(cam["id"])
 	m["camera"] = cam_id
 	if cam_id != "":
 		var rect: Rect2 = _layout.camera(cam_id)["rect"]
-		for iv: Array in _timeline.presence(murderer, rect, m["t"]["kill"] - 0.12, m["t"]["kill"] + MURDERER_STAY, 1.0 / 240.0):
-			if iv[1] - iv[0] > 0.02:
-				data["camera_clues"].append({"id": "c_" + pre, "camera": cam_id, "npc": murderer,
-					"windows": [[Db.format_time(iv[0] + 0.004, true), Db.format_time(iv[1] - 0.004, true)]]})
-				clues["c_" + pre] = {"type": "camera", "title": "К%s: у тела %s" % [cam_id.substr(3), vname],
-					"text": "Камера %s: в темноте у %s стоял человек %s." % [cam_id.substr(3), _g(v, "погибшего", "погибшей"), look],
-					"time": tt, "points_to": [murderer]}
-				keys.append("c_" + pre)
-				break
+		var before: float = float(m["t"]["tunnel_in"]) - 0.05
+		var present: Array = []
+		for id: String in _timeline.npc_ids():
+			if id != m["victim"] and id != "detective" and rect.has_point(_timeline.position_at(id, before)) and not murders.any(func(o: Dictionary) -> bool: return o["victim"] == id):
+				present.append(id)
+		if not present.is_empty():
+			var names: PackedStringArray = []
+			for id in present:
+				names.append(Db.char_name(id))
+			data["camera_clues"].append({"id": "c_" + pre, "camera": cam_id, "npc": "",
+				"windows": [[Db.format_time(float(m["t"]["tunnel_in"]) - 0.4, true), Db.format_time(float(m["t"]["tunnel_in"]) - 0.02, true)]]})
+			clues["c_" + pre] = {"type": "camera", "title": "К%s: перед туннелем рядом с %s" % [cam_id.substr(3), vname],
+				"text": "Камера %s, %s: перед самым туннелем в кадре были %s и %s. Дальше — помехи: в туннеле камера ослепла." % [
+					cam_id.substr(3), Db.format_time(float(m["t"]["tunnel_in"])), vname, ", ".join(names)],
+				"time": Db.format_time(float(m["t"]["tunnel_in"])), "points_to": present.filter(func(id: String) -> bool: return id in data.get("suspects", []))}
+			keys.append("c_" + pre)
 	# Свидетели: личные реплики, открываются после обнаружения места.
 	for w: String in m["witnesses"]:
 		var wid: String = "%s_w_%s" % [pre, w]

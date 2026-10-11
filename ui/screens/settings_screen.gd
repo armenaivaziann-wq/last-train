@@ -39,6 +39,27 @@ func build(_args: Dictionary) -> void:
 	vr.add_child(Ui.icon("vibration", 36))
 	vr.add_child(vib)
 	v.add_child(vr)
+	# Сложность: меняется в меню (в начатом деле правила уже действуют).
+	var dr := Ui.hbox(10)
+	dr.add_child(Ui.icon("badge", 36))
+	var dl := Ui.label("Сложность", "", 22)
+	dl.custom_minimum_size.x = 170
+	dr.add_child(dl)
+	var cur: String = str(SaveManager.setting("difficulty"))
+	for m: Array in [["easy", "Лёгкий"], ["normal", "Нормальный"], ["detective", "Детектив"]]:
+		var mode: String = m[0]
+		var b := Ui.button(m[1], "", "PurpleButton" if mode == cur else "ChipButton", func() -> void:
+			SaveManager.set_setting("difficulty", mode)
+			AudioManager.play_sfx("click")
+			close(), 50)
+		b.disabled = game != null
+		dr.add_child(b)
+	v.add_child(dr)
+	v.add_child(Ui.label({"easy": "Подсветка ключевых улик, камеры без слепых зон, подсказки бесплатные, действия стоят вдвое меньше времени.",
+		"normal": "Слепые зоны камер, повреждённые записи, ложные следы, время на допросы и записи.",
+		"detective": "Без подсказок и подсветки, ошибка обвинения стоит вдвое больше времени."}.get(cur, ""), "SmallLabel", 16, true))
+	if game != null:
+		v.add_child(Ui.label("Сложность меняется в главном меню — для следующего дела.", "DimLabel", 15, true))
 	if game == null:
 		var reset := Ui.button("Сбросить весь прогресс", "close", "DangerButton", _reset, 54)
 		v.add_child(reset)

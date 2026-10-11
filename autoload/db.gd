@@ -125,7 +125,20 @@ func difficulty(level_id: String) -> Dictionary:
 	var n: String = str(int(d.get("levels", {}).get(level_id, 3)))
 	var p: Dictionary = d["profiles"].get(n, d["profiles"]["3"]).duplicate(true)
 	p["level"] = int(n)
+	# Общая настройка игрока (Лёгкий / Нормальный / Детектив) поверх профиля уровня.
+	var mode: String = str(SaveManager.setting("difficulty")) if SaveManager.profile.has("settings") else "normal"
+	if not d.get("modes", {}).has(mode):
+		mode = "normal"
+	for k: String in d["modes"][mode]:
+		p[k] = d["modes"][mode][k]
+	p["mode"] = mode
+	p["costs"] = d.get("time_costs", {})
 	return p
+
+
+## Стоимость действия в игровых минутах с учётом режима сложности.
+func action_cost(profile: Dictionary, action: String) -> float:
+	return snappedf(float(profile.get("costs", {}).get(action, 0.0)) * float(profile.get("time_cost_mult", 1.0)), 0.05)
 
 
 # --- кампания -------------------------------------------------------------------------------

@@ -43,30 +43,32 @@ func test_timeout_once_and_no_negative_time() -> void:
 	check(game.ui.top() != null and game.ui.top().name == "result_screen", "экран итога")
 
 
+## Оценка доски обвинения: 3 улики → «всё верно» (3★), 1 → «кто и монстр» (2★), 0 → «только кто» (1★).
 func _solve(elapsed: float, mistakes: int, key: Array) -> Dictionary:
 	for id in key:
 		_inv().give(id)
 	_inv().mistakes = mistakes
 	_inv().clock = _inv().start_time + elapsed
-	return _inv().finish("solved", {"key": key.size(), "strong": true})
+	var score: int = 3 if key.size() >= 3 else (2 if key.size() >= 1 else 1)
+	return _inv().finish("solved", {"key": key.size(), "strong": true, "score": score})
 
 
 func test_three_stars() -> void:
 	await _start_level("level_01")
 	var r: Dictionary = _solve(11.0, 0, ["d_robert_stub", "p_torn_page", "d_receipt"])
-	check_eq(int(r["stars"]), 3, "≤12 мин, 3 ключевые, без ошибок — 3 звезды")
+	check_eq(int(r["stars"]), 3, "всё верно на доске — 3 звезды")
 
 
 func test_two_stars() -> void:
 	await _start_level("level_01")
 	var r: Dictionary = _solve(15.0, 1, ["d_robert_stub"])
-	check_eq(int(r["stars"]), 2, "≤16 мин и 1 ошибка — 2 звезды")
+	check_eq(int(r["stars"]), 2, "верны кто и монстр — 2 звезды")
 
 
 func test_one_star() -> void:
 	await _start_level("level_01")
-	var r: Dictionary = _solve(18.0, 0, ["d_robert_stub", "p_torn_page", "d_receipt"])
-	check_eq(int(r["stars"]), 1, "после 16 мин — 1 звезда")
+	var r: Dictionary = _solve(18.0, 0, [])
+	check_eq(int(r["stars"]), 1, "верен только кто — 1 звезда")
 
 
 func test_unlock_next_and_no_duplicate_rewards() -> void:

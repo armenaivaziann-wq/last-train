@@ -88,8 +88,10 @@ func build(args: Dictionary) -> void:
 			note = ""
 		if note != "":
 			right.add_child(Ui.label(note, "SmallLabel", 17, true))
-		if not _result.get("verdict_ok", true):
-			right.add_child(Ui.label("Мотив или способ названы неверно — не больше двух звёзд.", "GoldLabel", 17, true))
+		if _result.has("court"):
+			right.add_child(Ui.label(str(_result["court"]), "GoldLabel", 18, true))
+		elif not _result.get("verdict_ok", true):
+			right.add_child(Ui.label("Способ назван неверно — суд не получил полной картины.", "GoldLabel", 17, true))
 		if int(_result.get("hints_used", 0)) > 0:
 			right.add_child(Ui.label("Подсказки снизили рейтинг.", "SmallLabel", 16, true))
 		right.add_child(_star_rules())
@@ -130,7 +132,7 @@ func build(args: Dictionary) -> void:
 
 
 func _star_rules() -> Control:
-	var l := Ui.label("★★★ — за 12 мин, 3+ ключевых улики, без ошибок, верные мотив и способ · ★★ — за 16 мин, не больше 1 ошибки · ★ — до дедлайна. Подсказки: −1★ (1–2), −2★ (3+)", "SmallLabel", 15, true)
+	var l := Ui.label("★★★ — верно КТО, КАК, КАКОЙ МОНСТР и три доказанные улики · ★★ — верно КТО и КАКОЙ МОНСТР · ★ — верно только КТО. Подсказки: −1★ (1–2), −2★ (3+), кроме лёгкой сложности", "SmallLabel", 15, true)
 	return l
 
 

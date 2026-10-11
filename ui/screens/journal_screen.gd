@@ -399,20 +399,24 @@ func _build_dialogues() -> void:
 	_content.add_child(Ui.scroll(list))
 
 
-# --- Итог дела ---------------------------------------------------------------------------
+# --- Итог дела: доска обвинения ----------------------------------------------------------
+## Игрок сам заполняет доску: 1) КТО, 2) КАК, 3) КАКОЙ МОНСТР, 4) три ключевые улики.
+## Ключевой считается только улика, связанная выводом («Сопоставить»), — разрозненные
+## улики без вывода в доказательство не идут. Оценка: всё верно — ★★★; «кто» и «монстр» —
+## ★★; только «кто» — ★ («суд такое не примет»); неверный «кто» — ошибка, вторая — побег.
 func _build_verdict() -> void:
-	var v := Ui.vbox(10)
-	v.add_child(Ui.label("1. Кого задержать?", "SubHeaderLabel", 22))
+	var v := Ui.vbox(8)
+	v.add_child(Ui.label("1. КТО это сделал?", "SubHeaderLabel", 21))
 	var who := Ui.hbox(8)
 	for id: String in inv.suspects.suspects:
 		var b := Button.new()
 		b.theme_type_variation = "PurpleButton" if id == _verdict_suspect else "ListButton"
 		b.icon = Db.portrait(id)
 		b.expand_icon = true
-		b.custom_minimum_size = Vector2(96, 96)
+		b.custom_minimum_size = Vector2(84, 84)
 		b.tooltip_text = Db.char_name(id)
 		b.focus_mode = Control.FOCUS_NONE
-		b.disabled = inv.suspects.flag(id, "wrongly_accused") or inv.murders.dead_at(id, inv.clock)
+		b.disabled = inv.suspects.flag(id, "wrongly_accused") or inv.murders.dead_at(id, inv.clock) or inv.state_of(id) == "dead"
 		b.pressed.connect(func() -> void:
 			_verdict_suspect = id
 			_verify_result.clear()
@@ -420,24 +424,18 @@ func _build_verdict() -> void:
 		who.add_child(b)
 	v.add_child(who)
 	if _verdict_suspect != "":
-		v.add_child(Ui.label("Подозреваемый: " + Db.char_name(_verdict_suspect), "GoldLabel", 21))
+		v.add_child(Ui.label("Подозреваемый: " + Db.char_name(_verdict_suspect), "GoldLabel", 20))
 	var row := Ui.hbox(18)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var left := Ui.vbox(6)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_child(Ui.label("2. Основания (до 3 улик): %d/3" % _verdict_clues.size(), "SubHeaderLabel", 22))
-	# Правила задержания этого уровня — заранее, чтобы провал не был сюрпризом.
-	var pr: Dictionary = inv.profile.get("proof", {})
-	var rules: PackedStringArray = ["не меньше %d оснований против подозреваемого" % int(pr.get("min_grounds", 1))]
-	if pr.get("need_deduction", false):
-		rules.append("среди них — хотя бы один вывод")
-	if pr.get("need_verdict", false) and not inv.data.get("verdict", {}).is_empty():
-		rules.append("верные мотив и способ")
-	left.add_child(Ui.label("Для задержания нужно: " + ", ".join(rules) + ".", "DimLabel", 16, true))
+	var proven: int = inv.proven_against(_verdict_suspect, _verdict_clues).size() if _verdict_suspect != "" else 0
+	left.add_child(Ui.label("4. ТРИ КЛЮЧЕВЫЕ УЛИКИ: %d/3 (доказано: %d)" % [_verdict_clues.size(), proven], "SubHeaderLabel", 21))
+	left.add_child(Ui.label("Ключевой считается только улика, связанная выводом в журнале («Сопоставить»). Разрозненные улики суд не примет.", "DimLabel", 15, true))
 	var list := Ui.vbox(6)
 	var ordered: Array[String] = []
 	for id in inv.evidence.found:
-		if inv.evidence.links.get(id, "") == _verdict_suspect and _verdict_suspect != "":
+		if inv.is_proven(id):
 			ordered.append(id)
 	for id in inv.evidence.found:
 		if not id in ordered:
@@ -445,13 +443,17 @@ func _build_verdict() -> void:
 	for id in ordered:
 		var c: Dictionary = inv.evidence.clue(id)
 		var cb := CheckBox.new()
-		cb.text = str(c["title"])
-		cb.icon = Db.icon(Ui.clue_icon(str(c["type"])))
+		var linked: bool = inv.is_proven(id)
+		cb.text = str(c["title"]) + ("" if linked else "   · не связана выводом")
+		cb.icon = Db.icon("link" if linked else Ui.clue_icon(str(c["type"])))
 		cb.expand_icon = false
 		cb.add_theme_constant_override("icon_max_width", 26)
 		cb.button_pressed = id in _verdict_clues
+		cb.disabled = not linked
 		cb.focus_mode = Control.FOCUS_NONE
 		cb.toggled.connect(func(on: bool) -> void: _toggle_verdict_clue(id, on))
+		if not linked:
+			cb.modulate = Color(1, 1, 1, 0.55)
 		if _verify_result.has(id):
 			cb.text += "   — " + ("касается подозреваемого" if _verify_result[id] else "не связана с ним")
 			cb.add_theme_color_override("font_color", UiTheme.SUCCESS if _verify_result[id] else UiTheme.DANGER)
@@ -460,13 +462,12 @@ func _build_verdict() -> void:
 		list.add_child(Ui.label("Сначала найдите улики.", "DimLabel"))
 	left.add_child(Ui.scroll(list))
 	row.add_child(left)
-	var right := Ui.vbox(10)
-	right.custom_minimum_size.x = 380
+	var right := Ui.vbox(8)
+	right.custom_minimum_size.x = 400
 	var vd: Dictionary = game.case_data.get("verdict", {})
 	if not vd.is_empty():
-		right.add_child(_choice("3. Мотив", vd.get("motives", []), _motive, func(i: int) -> void: _motive = i))
-		right.add_child(_choice("4. Способ", vd.get("methods", []), _method, func(i: int) -> void: _method = i))
-	right.add_child(Ui.label("Кто он на самом деле?", "SubHeaderLabel", 20))
+		right.add_child(_choice("2. КАК он это сделал?", vd.get("methods", []), _method, func(i: int) -> void: _method = i))
+	right.add_child(Ui.label("3. КАКОЙ ЭТО МОНСТР?", "SubHeaderLabel", 20))
 	var opt := OptionButton.new()
 	opt.add_item("Не знаю")
 	opt.set_item_metadata(0, "")
@@ -479,22 +480,23 @@ func _build_verdict() -> void:
 		if mid == _monster_guess:
 			opt.select(i)
 		i += 1
-	opt.custom_minimum_size = Vector2(0, 54)
+	opt.custom_minimum_size = Vector2(0, 52)
 	opt.focus_mode = Control.FOCUS_NONE
 	opt.item_selected.connect(func(idx: int) -> void: _monster_guess = str(opt.get_item_metadata(idx)))
 	right.add_child(opt)
-	right.add_child(Ui.label("Верно названный тип злодея даёт кристаллы.", "SmallLabel", 16, true))
+	right.add_child(Ui.label("★★★ — верно всё и три доказанные улики · ★★ — верны «кто» и «монстр» · ★ — верен только «кто».", "SmallLabel", 15, true))
 	right.add_child(Ui.spacer(false, true))
-	var arrest := Ui.button("Задержать", "siren", "DangerButton", _confirm_arrest, 66)
-	arrest.disabled = _verdict_suspect == "" or _verdict_clues.is_empty()
+	var arrest := Ui.button("Задержать", "siren", "DangerButton", _confirm_arrest, 62)
+	arrest.disabled = _verdict_suspect == ""
 	right.add_child(arrest)
-	var verify := Ui.button("Запросить проверку (%d)" % inv.verifications_left, "verify", "CyanButton", _verify, 60)
+	var vc: float = Db.action_cost(inv.profile, "verify")
+	var verify := Ui.button("Проверить улики · %s мин (%d)" % [str(vc), inv.verifications_left], "verify", "CyanButton", _verify, 56)
 	verify.disabled = _verdict_suspect == "" or _verdict_clues.is_empty() or inv.verifications_left <= 0
-	verify.tooltip_text = "Проводница сверит, касаются ли выбранные улики подозреваемого. Стоит %.1f мин." % InvestigationManager.VERIFY_TIME_COST
+	verify.tooltip_text = "Проводница сверит, касаются ли выбранные улики подозреваемого."
 	right.add_child(verify)
-	right.add_child(Ui.button("Продолжить расследование", "back", "GhostButton", close, 56))
+	right.add_child(Ui.button("Продолжить расследование", "back", "GhostButton", close, 52))
 	var left_m: int = inv.max_mistakes() - inv.mistakes
-	right.add_child(Ui.label("Права на ошибку: %d. Ошибка: −%d репутации, −%d мин." % [left_m, InvestigationManager.WRONG_REPUTATION, int(InvestigationManager.WRONG_TIME_PENALTY)], "SmallLabel", 16, true))
+	right.add_child(Ui.label("Права на ошибку: %d. Ошибка: −%d репутации, −%s мин. После второй ошибки монстр сбежит." % [left_m, InvestigationManager.WRONG_REPUTATION, str(snappedf(inv.wrong_penalty(), 0.1))], "SmallLabel", 15, true))
 	row.add_child(right)
 	v.add_child(row)
 	_content.add_child(v)

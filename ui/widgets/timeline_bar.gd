@@ -12,6 +12,8 @@ var value: float = 0.0
 var markers: Array = []
 ## Минуты найденных «камерных» улик.
 var bookmarks: Array = []
+## Провалы записи [{from, to, kind}] — заштрихованы красным (туннель, повреждение).
+var bands: Array = []
 var _dragging: bool = false
 
 
@@ -40,6 +42,15 @@ func _draw() -> void:
 		if major:
 			draw_string(UiTheme.font, Vector2(x - 20, size.y - 1), Db.format_time(m), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiTheme.TEXT_DIM)
 		m += 1.0
+	for bd: Dictionary in bands:
+		var bx0: float = _x_for(float(bd["from"]))
+		var bx1: float = _x_for(float(bd["to"]))
+		var br := Rect2(bx0, r.position.y + 2, maxf(2.0, bx1 - bx0), r.size.y - 4)
+		draw_rect(br, Color(UiTheme.DANGER, 0.35))
+		var hx: float = bx0
+		while hx < bx1:
+			draw_line(Vector2(hx, br.end.y), Vector2(minf(hx + 6.0, bx1), br.position.y), Color(UiTheme.DANGER, 0.7), 1.5)
+			hx += 6.0
 	for mk: Dictionary in markers:
 		var x2: float = _x_for(float(mk["t"]))
 		draw_rect(Rect2(x2 - 1.5, r.position.y + 16, 3, r.size.y - 22), Color(mk["color"], 0.9))

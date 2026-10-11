@@ -25,7 +25,7 @@ func setup(train_layout: TrainLayout, inv: InvestigationManager, npc_nodes: Dict
 
 
 func cameras() -> Array[Dictionary]:
-	return layout.cameras
+	return investigation.filmed_cameras()
 
 
 func begin_playback() -> void:
@@ -43,6 +43,8 @@ func end_playback() -> void:
 	for id: String in npcs:
 		var npc: NPCController = npcs[id]
 		npc.visible = not npc.dead and npc.condition != "missing"
+	if villain_world:
+		villain_world.camera_view_end()
 
 
 func set_time(t: float) -> void:
@@ -60,6 +62,7 @@ func set_time(t: float) -> void:
 	for scene: CrimeScene in crime_scenes.values():
 		scene.show_at(playback_time)
 	if villain_world:
+		villain_world.camera_view(playback_time)
 		villain_world.apply(playback_time)
 	var tr: Array = player.track_at(playback_time)
 	if tr.is_empty() or playback_time < investigation.start_time:
@@ -87,9 +90,11 @@ func motion_markers(cam_id: String) -> Array:
 	return out
 
 
-## Кто виден на камере в момент t.
+## Кто виден на камере в момент t (в провале записи — никто).
 func visible_on(cam_id: String, t: float) -> Array[String]:
 	var out: Array[String] = []
+	if not investigation.camera_gap(cam_id, t).is_empty():
+		return out
 	var cam: Dictionary = layout.camera(cam_id)
 	for id in investigation.timeline.npc_ids():
 		if investigation.hidden_at(id, t):

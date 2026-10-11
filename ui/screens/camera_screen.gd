@@ -145,7 +145,12 @@ func _thumb_item(cam: Dictionary) -> Control:
 	l.custom_minimum_size.x = THUMB.x
 	v.add_child(l)
 	b.add_child(v)
-	_thumbs[id] = {"button": b}
+	var ns := NoSignal.new()
+	ns.position = Vector2(6, 6)
+	ns.size = THUMB
+	ns.visible = false
+	b.add_child(ns)
+	_thumbs[id] = {"button": b, "noise": ns}
 	return b
 
 
@@ -170,8 +175,11 @@ func _select(id: String) -> void:
 	top.add_child(Ui.label("К%s · %s" % [id.substr(3), cam["name"]], "", 18))
 	overlay.add_child(top)
 	frame.add_child(overlay)
+	var noise := NoSignal.new()
+	noise.visible = false
+	frame.add_child(noise)
 	_big_box.add_child(frame)
-	_big = {"frame": frame, "view": view, "rect": cam["rect"], "rec": rec}
+	_big = {"frame": frame, "view": view, "rect": cam["rect"], "rec": rec, "noise": noise}
 	_fit_big()
 	_refresh_markers()
 	_apply_time()
@@ -213,6 +221,7 @@ func _refresh_markers() -> void:
 		if inv.evidence.has(str(cc["id"])):
 			books.append(Db.parse_time(str(cc["windows"][0][0])))
 	_timeline.bookmarks = books
+	_timeline.bands = inv.camera_gaps(_selected).filter(func(g: Dictionary) -> bool: return float(g["from"]) < inv.clock)
 	_timeline.queue_redraw()
 
 
@@ -243,6 +252,17 @@ func _apply_time() -> void:
 	cs.set_time(_t)
 	_timeline.set_value(_t)
 	_time_label.text = Db.format_time(_t, true)
+	for k: String in _thumbs:
+		var tg: Dictionary = inv.camera_gap(k, _t)
+		_thumbs[k]["noise"].visible = not tg.is_empty()
+		if not tg.is_empty():
+			_thumbs[k]["noise"].show_text("НЕТ СИГНАЛА" if tg["kind"] == "tunnel" else "ПОВРЕЖДЕНО")
+	var gap: Dictionary = inv.camera_gap(_selected, _t)
+	_big["noise"].visible = not gap.is_empty()
+	if not gap.is_empty():
+		_big["noise"].show_text(str(gap["text"]))
+		_status.text = str(gap["text"]) + ". Видно только, кто был в кадре до и после."
+		return
 	var who: Array[String] = cs.visible_on(_selected, _t)
 	if who.is_empty():
 		_status.text = "В кадре никого. Перематывайте шкалу — метки показывают движение."
@@ -257,7 +277,9 @@ func _apply_time() -> void:
 			elif inv.data.get("translucent", []).any(func(h: Dictionary) -> bool: return h["npc"] == id and _t >= Db.parse_time(str(h["from"])) and _t < Db.parse_time(str(h["to"]))):
 				names.append("полупрозрачная фигура")
 			else:
-				names.append(Db.char_name(inv.hooks.appearance(id, _t)))
+				var lbl: String = cs.villain_world.camera_label(id, _t, Db.char_name(inv.hooks.appearance(id, _t))) if cs.villain_world else Db.char_name(id)
+				if lbl != "":
+					names.append(lbl)
 		if silhouettes > 0:
 			names.append("силуэт" if silhouettes == 1 else "силуэты (%d)" % silhouettes)
 		_status.text = "В кадре: " + ", ".join(names)

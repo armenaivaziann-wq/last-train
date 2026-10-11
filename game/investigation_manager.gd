@@ -123,13 +123,15 @@ func elapsed() -> float:
 ## Звёзды за раскрытие (правила — в data/campaign.json):
 ## 3 — за ≤12 мин, ≥3 ключевых улик и без ошибок; 2 — за ≤16 мин и не больше одной ошибки;
 ## 1 — раскрыто до дедлайна; 0 — поражение.
-func compute_stars(solved: bool) -> int:
+func compute_stars(solved: bool, score: int = -1) -> int:
 	if not solved:
 		return 0
-	var base: int = _base_stars()
-	# Неверно названы мотив или способ — максимум 2 звезды.
-	if not verdict_ok:
+	# Оценка доски обвинения (score). Без неё (старые вызовы) — правила по времени.
+	var base: int = score if score > 0 else _base_stars()
+	if score <= 0 and not verdict_ok:
 		base = mini(base, 2)
+	if profile.get("hints_free", false):
+		return maxi(1, base)
 	# Подсказки снижают рейтинг: 1–2 подсказки −1 звезда, 3 и больше −2 (но не ниже 1).
 	if hints_used >= 3:
 		base -= 2
@@ -299,6 +301,8 @@ func camera_clues_at(cam_id: String, t: float, tolerance_min: float = 10.0 / 60.
 	var cam: Dictionary = layout.camera(cam_id)
 	if cam.is_empty():
 		return out
+	if not camera_gap(cam_id, t).is_empty():
+		return out
 	for cc: Dictionary in data.get("camera_clues", []):
 		if cc["camera"] != cam_id:
 			continue
@@ -320,8 +324,54 @@ func camera_clues_at(cam_id: String, t: float, tolerance_min: float = 10.0 / 60.
 	return out
 
 
+## Камеры, которые есть в этом деле: вагоны без камер ("filmed" — список снимаемых вагонов)
+## не дают ни миниатюры, ни записи.
+func filmed_cameras() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var filmed: Array = data.get("filmed", [])
+	for cam in layout.cameras:
+		if filmed.is_empty() or str(cam.get("carriage", "")) in filmed:
+			out.append(cam)
+	return out
+
+
+## Провалы записи камеры в момент t: {} — запись есть; иначе {kind, from, to, text, clue}.
+##   tunnel  — пока поезд в туннеле, камера вагона с убийством показывает помехи;
+##   damaged — повреждённый отрезок из данных дела ("damaged_records").
+func camera_gap(cam_id: String, t: float) -> Dictionary:
+	for g: Dictionary in camera_gaps(cam_id):
+		if t >= float(g["from"]) and t < float(g["to"]):
+			return g
+	return {}
+
+
+func camera_gaps(cam_id: String) -> Array:
+	var out: Array = []
+	var cam: Dictionary = layout.camera(cam_id)
+	if cam.is_empty():
+		return out
+	if profile.get("blind_zones", true):
+		for m: Dictionary in murders.murders:
+			if str(m["victim"]) == "" or str(m.get("camera", "")) == "":
+				continue
+			if (cam["rect"] as Rect2).has_point(m["scene_pos"]):
+				out.append({"kind": "tunnel", "from": float(m["t"]["tunnel_in"]), "to": float(m["t"]["tunnel_out"]),
+					"text": "НЕТ СИГНАЛА — поезд в туннеле"})
+	for d: Dictionary in data.get("damaged_records", []):
+		if str(d["camera"]) == cam_id:
+			out.append({"kind": "damaged", "from": Db.parse_time(str(d["from"])), "to": Db.parse_time(str(d["to"])),
+				"text": "Запись повреждена %s–%s" % [str(d["from"]).substr(0, 5), str(d["to"]).substr(0, 5)], "clue": str(d.get("clue", ""))})
+	return out
+
+
 func mark_camera(cam_id: String, t: float) -> Array[String]:
 	var added: Array[String] = []
+	var gap: Dictionary = camera_gap(cam_id, t)
+	if not gap.is_empty():
+		# В провале записи видно только сам провал — это тоже улика (кто был у щитка?).
+		if str(gap.get("clue", "")) != "" and give(str(gap["clue"])):
+			added.append(str(gap["clue"]))
+		return added
 	for id in camera_clues_at(cam_id, t):
 		if give(id):
 			added.append(id)
@@ -340,8 +390,9 @@ func key_clues_in(clue_ids: Array) -> int:
 	return n
 
 
+## После второй неверной попытки обвинения монстр сбегает (значок даёт ещё одну попытку).
 func max_mistakes() -> int:
-	return int(data.get("max_wrong", 2)) + (1 if ProgressionManager.equipment_level("badge") > 0 else 0)
+	return 2 + (1 if ProgressionManager.equipment_level("badge") > 0 else 0)
 
 
 ## Задержать подозреваемого. clue_ids — улики-основания (до 3), monster_guess — тип монстра.
@@ -368,40 +419,36 @@ func take_hint() -> Dictionary:
 ## Обвинение: подозреваемый, основания (до 3 улик), тип злодея и — если дело спрашивает —
 ## мотив и способ (индексы вариантов из data["verdict"]).
 func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive: int = -1, method: int = -1) -> Dictionary:
+	# Доска обвинения: КТО · КАК · КАКОЙ МОНСТР · 3 ключевые улики (ответы — в data["verdict"]).
 	var vd: Dictionary = data.get("verdict", {})
 	var result: Dictionary = {"suspect": suspect, "correct": suspect == data["culprit"],
 		"key": key_clues_in(clue_ids), "clues": clue_ids, "monster_guess": monster_guess}
-	if not vd.is_empty():
-		result["motive_ok"] = motive == int(vd.get("motive", -2))
-		result["method_ok"] = method == int(vd.get("method", -2))
-		verdict_ok = result["motive_ok"] and result["method_ok"]
+	result["how_ok"] = vd.is_empty() or method == int(vd.get("method", -2))
+	result["motive_ok"] = vd.is_empty() or motive < 0 or motive == int(vd.get("motive", -2))
+	result["method_ok"] = result["how_ok"]
+	result["monster_ok"] = monster_guess == str(data["monster"])
+	result["proof_ok"] = proven_against(suspect, clue_ids).size() >= 3
+	verdict_ok = result["how_ok"]
 	if ended:
 		return result
 	if result["correct"]:
-		var lack: String = proof_missing(suspect, clue_ids)
-		if lack == "":
-			result["strong"] = int(result["key"]) >= int(data.get("min_key_clues", 2))
-			suspects.set_flag(suspect, "detained")
-			accused.emit(result)
-			return result
-		# Виновник верный, но доказательств не хватает: задержание срывается.
-		result["correct"] = false
-		result["insufficient"] = true
-		result["reaction"] = "У вас ничего на меня нет, инспектор."
-		result["why"] = lack
-		mistakes += 1
-		clock = minf(clock + WRONG_TIME_PENALTY, arrival_time)
-		result["case_failed"] = mistakes >= max_mistakes()
+		# Звёзды: всё верно — 3; верны «кто» и «монстр» — 2; только «кто» — 1.
+		var score: int = 1
+		if result["monster_ok"] and result["how_ok"] and result["proof_ok"]:
+			score = 3
+		elif result["monster_ok"]:
+			score = 2
+		result["score"] = score
+		result["strong"] = result["proof_ok"]
+		if score == 1:
+			result["court"] = "Повезло, инспектор, но суд такое не примет."
+		suspects.set_flag(suspect, "detained")
 		accused.emit(result)
-		if result["case_failed"]:
-			finish("mistakes")
-		elif clock >= arrival_time:
-			finish("timeout")
 		return result
 	mistakes += 1
 	suspects.set_flag(suspect, "wrongly_accused")
 	EconomyManager.add("reputation", -WRONG_REPUTATION)
-	clock = minf(clock + WRONG_TIME_PENALTY, arrival_time)
+	clock = minf(clock + wrong_penalty(), arrival_time)
 	result["reaction"] = str(data.get("wrong_reactions", {}).get(suspect, "Я невиновен!"))
 	result["why"] = explain_wrong(suspect, clue_ids)
 	result["case_failed"] = mistakes >= max_mistakes()
@@ -413,20 +460,33 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive
 	return result
 
 
-## Чего не хватает, чтобы задержание устояло (по профилю сложности). Пусто — достаточно.
-## Не раскрывает, верен ли выбор подозреваемого: формулировки те же, что для любого.
-func proof_missing(suspect: String, clue_ids: Array) -> String:
-	var pr: Dictionary = profile.get("proof", {})
-	var grounds: Array = clue_ids.filter(func(id: Variant) -> bool:
-		return evidence.has(str(id)) and suspect in evidence.clue(str(id)).get("points_to", []))
-	var need: int = int(pr.get("min_grounds", 1))
-	if grounds.size() < need:
-		return "Задержание сорвалось: нужно не меньше %d оснований, прямо указывающих на подозреваемого (сейчас %d)." % [need, grounds.size()]
-	if pr.get("need_deduction", false) and not grounds.any(func(id: Variant) -> bool: return evidence.clue(str(id)).get("type") == "contradiction"):
-		return "Задержание сорвалось: среди оснований нет ни одного вывода. Улики нужно связать между собой в журнале."
-	if pr.get("need_verdict", false) and not data.get("verdict", {}).is_empty() and not verdict_ok:
-		return "Задержание сорвалось: мотив или способ указаны неверно — обвинение развалилось бы в суде."
-	return ""
+## Действие стоит игровых минут до станции (допрос, запись, проверка). События, которые
+## наступают за это время, срабатывают как обычно.
+func spend_time(minutes: float) -> void:
+	if minutes > 0.0 and not ended:
+		advance(minutes)
+
+
+## Штраф времени за неверное обвинение (режим «Детектив» — вдвое больше).
+func wrong_penalty() -> float:
+	return WRONG_TIME_PENALTY * float(profile.get("wrong_mult", 1.0))
+
+
+## Доказанные улики против подозреваемого: указывают на него и связаны выводом —
+## это сам вывод из «Сопоставить» или улика, участвовавшая в найденном выводе.
+## Разрозненные улики без вывода ключевыми не считаются.
+func proven_against(suspect: String, clue_ids: Array) -> Array:
+	return clue_ids.filter(func(id: Variant) -> bool:
+		return evidence.has(str(id)) and suspect in evidence.clue(str(id)).get("points_to", []) and is_proven(str(id)))
+
+
+func is_proven(id: String) -> bool:
+	if evidence.clue(id).get("type") == "contradiction":
+		return true
+	for x: Dictionary in data.get("deductions", []):
+		if evidence.has(str(x["result"])) and (id in x["a"] or id in x["b"]):
+			return true
+	return false
 
 
 ## Можно ли обыскать багаж пассажира: в сложных делах нужны основания против него.
@@ -470,7 +530,7 @@ func verify(suspect: String, clue_ids: Array) -> Dictionary:
 	if verifications_left <= 0 or ended:
 		return {}
 	verifications_left -= 1
-	clock = minf(clock + VERIFY_TIME_COST, arrival_time)
+	spend_time(Db.action_cost(profile, "verify"))
 	var out: Dictionary = {}
 	for id in clue_ids:
 		out[str(id)] = suspect in evidence.clue(str(id)).get("points_to", [])
@@ -490,7 +550,9 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay,
 		"elapsed": elapsed(), "key_found": evidence.key_found_count(), "level": level_id,
 		"key_total": _key_total(), "hints_used": hints_used, "verdict_ok": verdict_ok}
-	result["stars"] = compute_stars(outcome == "solved")
+	result["stars"] = compute_stars(outcome == "solved", int(accusation.get("score", -1)))
+	if accusation.has("court"):
+		result["court"] = accusation["court"]
 	var rewards: Dictionary = {"coins": 0, "crystals": 0, "reputation": 0}
 	if outcome == "solved":
 		var key: int = mini(3, int(accusation.get("key", 0)))

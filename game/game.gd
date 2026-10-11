@@ -652,9 +652,9 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String, motive: int
 		await arrest.play_arrest(suspect)
 		investigation.finish("solved", result)
 	elif not investigation.ended:
-		await arrest.play_wrong(suspect, str(result.get("reaction", "")), result.get("insufficient", false))
+		await arrest.play_wrong(suspect, str(result.get("reaction", "")))
 		if not investigation.ended:
-			hud.show_banner("Недостаточно доказательств" if result.get("insufficient", false) else "Почему это ошибка", str(result.get("why", "")), 6.0)
+			hud.show_banner("Почему это ошибка", str(result.get("why", "")), 6.0)
 
 
 func _on_finished(result: Dictionary) -> void:

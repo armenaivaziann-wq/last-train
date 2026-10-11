@@ -58,7 +58,7 @@ func default_profile() -> Dictionary:
 		"archive": [],
 		"stats": {},
 		"quests": {"day": "", "daily": [], "week": "", "weekly": [], "claimed_achievements": [], "claimed_events": []},
-		"settings": {"music": 0.7, "sfx": 0.9, "ambient": 0.7, "vibration": true},
+		"settings": {"music": 0.7, "sfx": 0.9, "ambient": 0.7, "vibration": true, "difficulty": "normal"},
 		"case_progress": {},
 		# Кампания: доступ к сюжетным делам не зависит от монет и репутации.
 		"campaign": {"unlocked": 1, "stars": {}, "best_time": {}, "rewarded_stars": {}, "attempts": {},
@@ -75,7 +75,15 @@ func load_game() -> void:
 		return
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if parsed is Dictionary:
+		_migrate(parsed)
 		_merge(profile, parsed)
+
+
+## Миграции старых сохранений (до слияния со значениями по умолчанию).
+func _migrate(loaded: Dictionary) -> void:
+	# Сложность появилась позже: у игроков со старым прогрессом — Лёгкий, чтобы не сломать им игру.
+	if loaded.has("settings") and loaded["settings"] is Dictionary and not loaded["settings"].has("difficulty"):
+		loaded["settings"]["difficulty"] = "easy"
 
 
 func save_game() -> void:

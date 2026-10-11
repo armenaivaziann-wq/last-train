@@ -114,6 +114,11 @@ func disguise_at(t: float) -> String:
 
 ## Как выглядит персонаж (для карточки и подписи): перевёртыш — чужим лицом.
 func appearance(npc: String, t: float) -> String:
+	# Авторские маскировки ("camera_disguises"): перевёртыш или двойник в чужом облике.
+	if inv:
+		for d: Dictionary in inv.data.get("camera_disguises", []):
+			if d["npc"] == npc and t >= Db.parse_time(str(d["from"])) and t < Db.parse_time(str(d["to"])):
+				return str(d["look"])
 	if villain == "shapeshifter" and npc == culprit:
 		return disguise_at(t)
 	return npc

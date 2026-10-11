@@ -44,7 +44,7 @@ static func build(ids: PackedStringArray) -> TrainLayout:
 			tl.slots["%s:%s" % [cid, slot_id]] = Vector2(float(slot_data[slot_id][0]) + x, float(slot_data[slot_id][1]))
 		for cam: Dictionary in data.get("cameras", []):
 			var r: Array = cam["rect"]
-			tl.cameras.append({"id": cam["id"], "name": cam["name"], "rect": Rect2(float(r[0]) + x, float(r[1]), float(r[2]), float(r[3]))})
+			tl.cameras.append({"id": cam["id"], "name": cam["name"], "carriage": cid, "rect": Rect2(float(r[0]) + x, float(r[1]), float(r[2]), float(r[3]))})
 		x += w
 	tl.width = x
 	return tl

@@ -156,10 +156,9 @@ func apply(t: float) -> void:
 			var on: bool = t >= Db.parse_time(str(l["def"]["from"])) and t < Db.parse_time(str(l["def"]["to"]))
 			l["sprite"].visible = on
 			l["it"].enabled = on
-	if hooks.villain == "shapeshifter":
-		var npc: NPCController = game.npcs.get(hooks.culprit)
-		if npc:
-			npc.set_look(hooks.disguise_at(t))
+	if hooks.villain == "shapeshifter" or not game.case_data.get("camera_disguises", []).is_empty():
+		for id: String in game.npcs:
+			game.npcs[id].set_look(hooks.appearance(id, t))
 	if _bag:
 		var at: Array = hooks.mimic_at(t)
 		if not at.is_empty():
@@ -247,3 +246,141 @@ func _update_mirrors() -> void:
 			var cs: CharacterSprite = best.sprite if best is NPCController else (best as PlayerController).sprite
 			spr.texture = cs.sprite_frames.get_frame_texture(cs.animation, cs.frame)
 			spr.flip_h = not cs.flip_h
+
+
+# --- Искажения на записях камер ------------------------------------------------------------
+## Злодей обманывает камеру по-своему — только на записи, не вживую:
+##   vampire — не виден, двери открываются сами; shadow — пропадает в тёмных участках;
+##   mirror — на записи зеркальное отражение вместо человека; mimic — повторяет позу соседа
+##   с задержкой; voice — голос «висит» в пустом углу кадра; sleeper — рядом с ним все спят;
+##   puppeteer — нити к ближайшим людям; passenger_zero — помехи вместо фигуры;
+##   werewolf — в лунное окно ("beast_window") огромная тень; witch — зелёное свечение.
+var _cam_fx: Array = []   # временные узлы эффектов (нити, значки)
+
+
+func _culprit() -> NPCController:
+	return game.npcs.get(str(game.case_data.get("culprit", "")))
+
+
+func camera_view(t: float) -> void:
+	_clear_fx()
+	var npc: NPCController = _culprit()
+	if npc == null or not npc.visible:
+		return
+	var monster: String = str(game.case_data.get("monster", ""))
+	var car: String = game.layout.carriage_at(npc.global_position.x)
+	match monster:
+		"vampire":
+			npc.sprite.modulate.a = 0.0
+			npc._shadow.visible = false
+		"shadow":
+			if _in_zone(car, t):
+				npc.sprite.modulate.a = 0.0
+				npc._shadow.visible = false
+		"mirror":
+			npc.sprite.flip_h = not npc.sprite.flip_h
+			npc.sprite.modulate = Color(0.7, 0.85, 1.0, 0.8)
+		"mimic":
+			var other: NPCController = _nearest(npc, 260.0)
+			if other:
+				var st: Dictionary = game.investigation.timeline.state_at(other.npc_id, t - 0.03)
+				npc.sprite.play_state("walk" if st["moving"] else "idle", str(st["facing"]))
+		"voice":
+			var x0: float = game.layout.offsets[car]
+			_icon_at(Vector2(x0 + game.layout.widths[car] - (npc.global_position.x - x0), 96.0), "talk")
+		"sleeper":
+			for id: String in game.npcs:
+				var o: NPCController = game.npcs[id]
+				if o != npc and o.visible and o.global_position.distance_to(npc.global_position) < 120.0:
+					_icon_at(o.global_position + Vector2(8, -44), "sleep")
+		"puppeteer":
+			for o: NPCController in _nearest_list(npc, 220.0, 2):
+				var line := Line2D.new()
+				line.width = 1.0
+				line.default_color = Color(0.85, 0.8, 1.0, 0.55)
+				line.add_point(npc.global_position + Vector2(0, -30))
+				line.add_point(o.global_position + Vector2(0, -30))
+				line.z_index = 40
+				game.entities.add_child(line)
+				_cam_fx.append(line)
+		"passenger_zero":
+			npc.sprite.modulate = Color(0.1, 0.1, 0.14, 0.35 + 0.2 * sin(t * 400.0))
+			npc._shadow.visible = false
+		"werewolf":
+			if _beast(t):
+				npc.sprite.modulate = Color(0.35, 0.28, 0.22)
+				npc.sprite.scale = Vector2(1.3, 1.3)
+		"witch":
+			npc.sprite.modulate = Color(0.7, 1.0, 0.75)
+
+
+func _beast(t: float) -> bool:
+	var bw: Array = game.case_data.get("beast_window", [])
+	return bw.size() == 2 and t >= Db.parse_time(str(bw[0])) and t < Db.parse_time(str(bw[1]))
+
+
+## Подпись в списке «В кадре»: "" — человек на записи не виден.
+func camera_label(id: String, t: float, name: String) -> String:
+	if id != str(game.case_data.get("culprit", "")):
+		return name
+	var npc: NPCController = _culprit()
+	match str(game.case_data.get("monster", "")):
+		"vampire":
+			return ""
+		"shadow":
+			return "" if npc and _in_zone(game.layout.carriage_at(npc.global_position.x), t) else name
+		"mirror":
+			return name + " (отражение)"
+		"passenger_zero":
+			return "помехи в форме человека"
+		"werewolf":
+			return "огромная тень" if _beast(t) else name
+	return name
+
+
+func camera_view_end() -> void:
+	_clear_fx()
+	var npc: NPCController = _culprit()
+	if npc:
+		npc.set_condition(npc.condition)
+		npc._shadow.visible = not (npc.npc_id in game.case_data.get("no_shadow", []) or str(game.case_data.get("shadow_ghost", {}).get("npc", "")) == npc.npc_id)
+	apply(game.investigation.clock)
+
+
+func _clear_fx() -> void:
+	for n in _cam_fx:
+		if is_instance_valid(n):
+			n.queue_free()
+	_cam_fx.clear()
+	var npc: NPCController = _culprit()
+	if npc:
+		npc.sprite.scale = Vector2.ONE
+		npc.sprite.modulate = Color(0.82, 1.0, 0.78) if npc.condition == "sick" else Color.WHITE
+
+
+func _icon_at(pos: Vector2, icon: String) -> void:
+	var s := Sprite2D.new()
+	s.texture = Db.texture("ui/bubble.png")
+	s.global_position = pos
+	s.z_index = 40
+	var ic := Sprite2D.new()
+	ic.texture = Db.texture("acts/%s.png" % icon)
+	ic.position = Vector2(0, -1)
+	s.add_child(ic)
+	game.entities.add_child(s)
+	_cam_fx.append(s)
+
+
+func _nearest(npc: NPCController, radius: float) -> NPCController:
+	var l: Array = _nearest_list(npc, radius, 1)
+	return l[0] if not l.is_empty() else null
+
+
+func _nearest_list(npc: NPCController, radius: float, n: int) -> Array:
+	var others: Array = []
+	for id: String in game.npcs:
+		var o: NPCController = game.npcs[id]
+		if o != npc and o.visible and o.global_position.distance_to(npc.global_position) < radius:
+			others.append(o)
+	others.sort_custom(func(a: NPCController, b: NPCController) -> bool: return a.global_position.distance_to(npc.global_position) < b.global_position.distance_to(npc.global_position))
+	return others.slice(0, n)

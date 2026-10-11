@@ -167,8 +167,10 @@ func _play(level_id: String, seed_value: int) -> void:
 	inv.clock = inv.start_time + 10.0  # решатель шёл до конца; обвинение — посреди дела
 	# Верное обвинение с верным мотивом и способом.
 	var vd: Dictionary = d["verdict"]
-	var grounds: Array = deductions.slice(0, 1) + against.filter(func(id: String) -> bool: return not id in deductions.slice(0, 1)).slice(0, 2)
-	var r: Dictionary = inv.accuse(d["culprit"], grounds, "", int(vd["motive"]), int(vd["method"]))
+	var grounds: Array = against.filter(func(id: String) -> bool: return inv.is_proven(id)).slice(0, 3)
+	check(grounds.size() >= 3, "%s: есть 3 доказанные (связанные выводом) улики против виновника" % level_id)
+	var r: Dictionary = inv.accuse(d["culprit"], grounds, str(d["monster"]), int(vd["motive"]), int(vd["method"]))
+	check_eq(int(r.get("score", 0)), 3, level_id + ": всё верно на доске — 3 звезды")
 	check(r["correct"] and r.get("strong", false) and inv.verdict_ok, level_id + ": верное обвинение с мотивом и способом")
 	game.queue_free()
 	game = null
@@ -316,8 +318,8 @@ func test_difficulty_grows() -> void:
 	check_eq(str(Db.difficulty("level_10")["goals"]), "none", "финал — без целей")
 
 
-func test_proof_and_search_rules_on_hard_level() -> void:
-	await _start_level("level_06", 7)
+func test_board_scoring_and_search_rules() -> void:
+	await _start_level("level_09", 7)
 	var inv: InvestigationManager = _inv()
 	var d: Dictionary = inv.data
 	var c: String = d["culprit"]
@@ -327,27 +329,34 @@ func test_proof_and_search_rules_on_hard_level() -> void:
 	check(not game.ui.has_modal(), "окно багажа не открылось")
 	var against: Array = d["key_clues"].filter(func(id: String) -> bool: return c in d["clues"][id].get("points_to", []))
 	var facts: Array = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] != "contradiction")
-	var deds: Array = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] == "contradiction")
-	inv.give_all(against)
+	for id in facts:
+		inv.give(id)
+	check(not inv.is_proven(str(facts[0])), "улика без вывода не считается доказанной")
 	check_eq(inv.search_missing(c), 0, "с основаниями обыск разрешён")
 	var vd: Dictionary = d["verdict"]
-	var r1: Dictionary = inv.accuse(c, facts.slice(0, 3), "", int(vd["motive"]), int(vd["method"]))
-	check(r1.get("insufficient", false) and inv.mistakes == 1 and not inv.ended, "без вывода задержание срывается и считается ошибкой")
-	check(str(r1["why"]).contains("вывод"), "объяснено, чего не хватает")
+	var r1: Dictionary = inv.accuse(c, facts.slice(0, 3), "", -1, -1)
+	check(r1["correct"] and int(r1["score"]) == 1 and str(r1.get("court", "")).contains("суд"), "верен только «кто» — 1 звезда и «суд такое не примет»")
 	game.queue_free()
 	game = null
 	await wait_frames(2)
 	await _start_level("level_09", 7)
 	inv = _inv()
-	d = inv.data
-	c = d["culprit"]
-	against = d["key_clues"].filter(func(id: String) -> bool: return c in d["clues"][id].get("points_to", []))
-	facts = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] != "contradiction")
-	deds = against.filter(func(id: String) -> bool: return d["clues"][id]["type"] == "contradiction")
-	vd = d["verdict"]
 	inv.give_all(against)
-	var r2: Dictionary = inv.accuse(c, deds.slice(0, 1) + facts.slice(0, 2), "", (int(vd["motive"]) + 1) % 4, int(vd["method"]))
-	check(r2.get("insufficient", false), "неверный мотив на высокой сложности — задержание срывается")
+	var r2: Dictionary = inv.accuse(c, [], str(d["monster"]), -1, -1)
+	check_eq(int(r2["score"]), 2, "верны «кто» и «монстр» — 2 звезды")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	await _start_level("level_09", 7)
+	inv = _inv()
+	var wrong: String = d["suspects"].filter(func(s: String) -> bool: return s != c)[0]
+	var t0: float = inv.clock
+	inv.accuse(wrong, [], "", -1, -1)
+	check(inv.mistakes == 1 and not inv.ended, "первая ошибка — штраф, дело идёт")
+	check(inv.clock > t0, "ошибка стоит времени")
+	var wrong2: String = d["suspects"].filter(func(s: String) -> bool: return s != c and s != wrong)[0]
+	inv.accuse(wrong2, [], "", -1, -1)
+	check(inv.ended, "после второй ошибки монстр сбегает")
 	game.queue_free()
 	game = null
 	await wait_frames(2)
