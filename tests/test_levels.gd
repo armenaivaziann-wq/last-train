@@ -222,3 +222,70 @@ func test_levels_wrong_accusation() -> void:
 		game.queue_free()
 		game = null
 		await wait_frames(2)
+
+
+## Продолжение авторского дела после выхода: события, предметы из событий, состояния NPC,
+## осмотренные объекты и время восстанавливаются, события не повторяются.
+func test_levels_resume_after_exit() -> void:
+	SaveManager.enabled = true
+	SaveManager.save_path = "user://test_resume.json"
+	# Дело 2: пузырёк, выброшенный в первом туннеле.
+	await _start_level("level_02", 9)
+	var inv: InvestigationManager = _inv()
+	inv.advance(float(inv.murders.murders[0]["t"]["tunnel_out"]) - inv.clock + 0.1)
+	await wait_frames(2)
+	check(game.world_items.has("obj_l2_vial"), "дело 2: пузырёк появился после туннеля")
+	inv.mark_opened("obj_l2_cart")
+	game.autosave()
+	var clock: float = inv.clock
+	var done: Array = inv.story.done.duplicate()
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	SaveManager.load_game()
+	SaveManager.pending_level = "level_02"
+	SaveManager.pending_case = "level_02"
+	SaveManager.pending_resume = true
+	game = load("res://game/game.tscn").instantiate()
+	add_child(game)
+	await wait_frames(2)
+	game.ui.close_all()
+	inv = _inv()
+	check(game.world_items.has("obj_l2_vial"), "дело 2: пузырёк на месте после загрузки")
+	check(absf(inv.clock - clock) < 0.05, "дело 2: время восстановлено")
+	check_eq(inv.story.done, done, "дело 2: события восстановлены")
+	check("obj_l2_cart" in inv.opened, "дело 2: осмотренные объекты восстановлены")
+	inv.advance(0.2)
+	check_eq(inv.story.done.size(), done.size(), "дело 2: события не повторяются после загрузки")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	# Дело 4: спасённая Вера остаётся спасённой.
+	SaveManager.prepare_level("level_04")
+	SaveManager.pending_seed = 9
+	game = load("res://game/game.tscn").instantiate()
+	add_child(game)
+	await wait_frames(2)
+	game.ui.close_all()
+	check(not game.npcs["vera"].visible, "дело 4: Вера пропала")
+	_inv().give("p_l4_vera_found")
+	await wait_frames(2)
+	check(game.npcs["vera"].visible and _inv().state_of("vera") == "rescued", "дело 4: Вера спасена")
+	game.autosave()
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	SaveManager.load_game()
+	SaveManager.pending_level = "level_04"
+	SaveManager.pending_case = "level_04"
+	SaveManager.pending_resume = true
+	game = load("res://game/game.tscn").instantiate()
+	add_child(game)
+	await wait_frames(2)
+	check(game.npcs["vera"].visible and _inv().state_of("vera") == "rescued", "дело 4: после загрузки Вера на месте")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_resume.json"))
+	SaveManager.enabled = false
+	SaveManager.save_path = SaveManager.SAVE_PATH

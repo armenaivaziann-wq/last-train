@@ -73,6 +73,11 @@ func _update(pos: Vector2) -> void:
 	vector_changed.emit(vector)
 
 
+## Сбросить касание (окно открылось поверх джойстика).
+func release() -> void:
+	_release()
+
+
 func _release() -> void:
 	_touch_index = -1
 	vector = Vector2.ZERO

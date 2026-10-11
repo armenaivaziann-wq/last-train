@@ -220,9 +220,21 @@ func _layout() -> void:
 	_top_left.position = Vector2(ins.x, ins.y)
 	_top_right.reset_size()
 	_top_right.position = Vector2(vs.x - ins.z - _top_right.get_combined_minimum_size().x, ins.y)
+	# Цель — между левой и правой панелями; длинная цель переносится, а не наезжает на таймер.
+	var left_edge: float = _top_left.position.x + _top_left.get_combined_minimum_size().x + 12.0
+	var right_edge: float = _top_right.position.x - 12.0
+	var avail: float = right_edge - left_edge
+	_goal_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_goal_label.custom_minimum_size.x = 0.0
 	_goal_panel.reset_size()
 	var gw: float = _goal_panel.get_combined_minimum_size().x
-	_goal_panel.position = Vector2(round((vs.x - gw) / 2.0), ins.y + 6)
+	if gw > avail:
+		var chrome: float = gw - _goal_label.get_combined_minimum_size().x
+		_goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_goal_label.custom_minimum_size.x = maxf(180.0, avail - chrome)
+		_goal_panel.reset_size()
+		gw = _goal_panel.get_combined_minimum_size().x
+	_goal_panel.position = Vector2(round(clampf((vs.x - gw) / 2.0, left_edge, maxf(left_edge, right_edge - gw))), ins.y + 6)
 	_toasts.position = Vector2(round(vs.x / 2.0 - 260), ins.y + 66)
 	_toasts.size = Vector2(520, 0)
 	joystick.position = Vector2(ins.x - 10, vs.y * 0.45)

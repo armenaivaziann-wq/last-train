@@ -203,6 +203,18 @@ func _process(delta: float) -> void:
 		autosave()
 
 
+## Телефон: приложение свернули, пришёл звонок, закрыли окно — сохраняем дело и ставим паузу,
+## чтобы время до станции не уходило в фоне.
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if investigation == null or investigation.ended or not is_inside_tree():
+			return
+		autosave()
+		var background: bool = what == NOTIFICATION_APPLICATION_PAUSED or (what == NOTIFICATION_APPLICATION_FOCUS_OUT and OS.has_feature("mobile"))
+		if background and ui and not ui.has_modal() and not arrest.running:
+			ui.open("pause_menu")
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if ui.has_modal() or arrest.running or investigation.ended:
 		return
@@ -369,6 +381,8 @@ func _on_ui_stack(has_modal: bool) -> void:
 	if has_modal:
 		investigation.hold("ui")
 		player.touch_vector = Vector2.ZERO
+		# Палец мог остаться на джойстике: отпускание уйдёт в окно, поэтому сбрасываем сразу.
+		hud.joystick.release()
 	else:
 		investigation.release("ui")
 		investigation.release("brief")
