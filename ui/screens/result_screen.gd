@@ -108,7 +108,9 @@ func build(args: Dictionary) -> void:
 		right.add_child(truth)
 	else:
 		right.add_child(Ui.label(str(villain.get("escape_text", "Злодей скрылся.")) if _result.get("outcome") == "timeout"
-			else "Слишком много ошибочных обвинений — охрана остановила расследование.", "", 20, true))
+			else "Вторая ошибка обвинения — монстр понял, что его ищут, и сбежал.", "", 20, true))
+		if _result.get("ticket_spent", false):
+			right.add_child(Ui.label("−1 билет. Осталось: %d из %d. Новый билет — через 30 минут." % [int(_result.get("tickets_left", 0)), Tickets.MAX], "GoldLabel", 18, true))
 		right.add_child(Ui.label("Звёзды за эту попытку не начисляются. Дело можно повторить — улики и события будут другими.", "DimLabel", 18, true))
 		right.add_child(Ui.label("Подсказка: " + str(villain.get("counter", "")), "GoldLabel", 18, true))
 	row.add_child(right)
@@ -150,6 +152,9 @@ func _animate_stars(n: int) -> void:
 
 func _retry() -> void:
 	var lvl: String = str(_result.get("level", ""))
+	if not Tickets.can_start(lvl):
+		ui.open("tickets_screen", {"on_ready": _retry})
+		return
 	if lvl == "daily":
 		SaveManager.prepare_daily()
 	elif lvl != "":
@@ -162,5 +167,8 @@ func _retry() -> void:
 
 
 func _start_level(level_id: String) -> void:
+	if not Tickets.can_start(level_id):
+		ui.open("tickets_screen", {"on_ready": func() -> void: _start_level(level_id)})
+		return
 	SaveManager.prepare_level(level_id)
 	get_tree().change_scene_to_file("res://game/game.tscn")

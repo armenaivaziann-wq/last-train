@@ -60,6 +60,8 @@ func default_profile() -> Dictionary:
 		"quests": {"day": "", "daily": [], "week": "", "weekly": [], "claimed_achievements": [], "claimed_events": []},
 		"settings": {"music": 0.7, "sfx": 0.9, "ambient": 0.7, "vibration": true, "difficulty": "normal"},
 		"case_progress": {},
+		# Билеты (жизни): старые профили получают полные 5 при слиянии с этими значениями.
+		"tickets": {"count": 5, "ts": 0, "full": false},
 		# Кампания: доступ к сюжетным делам не зависит от монет и репутации.
 		"campaign": {"unlocked": 1, "stars": {}, "best_time": {}, "rewarded_stars": {}, "attempts": {},
 			"disguises": {}, "daily": {"day": "", "best_stars": 0}},

@@ -127,6 +127,7 @@ func elapsed() -> float:
 
 
 ## Звёзды за раскрытие (правила — в data/campaign.json):
+## Основное правило — оценка доски обвинения (score: 3/2/1, см. accuse). Без неё (старые вызовы):
 ## 3 — за ≤12 мин, ≥3 ключевых улик и без ошибок; 2 — за ≤16 мин и не больше одной ошибки;
 ## 1 — раскрыто до дедлайна; 0 — поражение.
 func compute_stars(solved: bool, score: int = -1) -> int:
@@ -566,6 +567,10 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 		"elapsed": elapsed(), "key_found": evidence.key_found_count(), "level": level_id,
 		"key_total": _key_total(), "hints_used": hints_used, "verdict_ok": verdict_ok}
 	result["stars"] = compute_stars(outcome == "solved", int(accusation.get("score", -1)))
+	# Монстр ушёл (дедлайн или вторая ошибка) — тратится билет (кроме дела дня и обучения).
+	if outcome != "solved":
+		result["ticket_spent"] = Tickets.spend_for_loss(level_id)
+		result["tickets_left"] = Tickets.count()
 	if accusation.has("court"):
 		result["court"] = accusation["court"]
 	var rewards: Dictionary = {"coins": 0, "crystals": 0, "reputation": 0}

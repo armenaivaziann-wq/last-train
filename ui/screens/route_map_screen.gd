@@ -165,7 +165,7 @@ func _select(l: Dictionary) -> void:
 	vv.add_child(vs2)
 	vrow.add_child(vv)
 	_info.add_child(vrow)
-	_info.add_child(Ui.label("Дедлайн: %d игровых минут. ★★★ — за 12 мин, 3+ ключевых улики, без ошибок." % int(Db.deadline_minutes()), "SmallLabel", 16, true))
+	_info.add_child(Ui.label("Дедлайн: %d игровых минут. ★★★ — верно кто, как, какой монстр и три доказанные улики. Проигрыш стоит билет." % int(Db.deadline_minutes()), "SmallLabel", 16, true))
 	_info.add_child(Ui.button("Повторить дело" if stars > 0 else "Начать дело", "arrow_right", "PrimaryButton", func() -> void: _start(id), 64))
 	_info.add_child(Ui.spacer(false, true))
 	var daily := Ui.panel("HighlightPanel")
@@ -182,6 +182,9 @@ func _select(l: Dictionary) -> void:
 
 
 func _start(level_id: String) -> void:
+	if not Tickets.can_start(level_id):
+		ui.open("tickets_screen", {"on_ready": func() -> void: _start(level_id)})
+		return
 	SaveManager.prepare_level(level_id)
 	AudioManager.play_sfx("announce", -6.0)
 	get_tree().change_scene_to_file("res://game/game.tscn")

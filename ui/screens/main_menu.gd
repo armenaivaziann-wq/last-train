@@ -13,6 +13,7 @@ var _time: float = 0.0
 var _coins: Label
 var _crystals: Label
 var _rep: Label
+var _tickets: Label
 var _buttons: VBoxContainer
 
 
@@ -128,6 +129,10 @@ func _build_top_bar() -> void:
 	_crystals = cr[1]
 	var rp: Array = Ui.pill("reputation", "0")
 	_rep = rp[1]
+	var tk: Array = Ui.pill("ticket", "5")
+	_tickets = tk[1]
+	tk[0].tooltip_text = "Билеты: тратятся, когда монстр уходит. +1 каждые 30 минут."
+	h.add_child(tk[0])
 	h.add_child(c[0])
 	h.add_child(cr[0])
 	h.add_child(rp[0])
@@ -151,10 +156,19 @@ func _build_menu() -> void:
 	add_child(p)
 
 
+func _update_tickets() -> void:
+	if Tickets.full_version():
+		_tickets.text = "∞"
+		return
+	var n: int = Tickets.count()
+	_tickets.text = "%d/%d" % [n, Tickets.MAX] + ("" if n >= Tickets.MAX else "  " + Tickets.format_wait(Tickets.seconds_to_next()).substr(3))
+
+
 func _refresh() -> void:
 	_coins.text = str(EconomyManager.coins())
 	_crystals.text = str(EconomyManager.crystals())
 	_rep.text = str(EconomyManager.reputation())
+	_update_tickets()
 	Ui.clear(_buttons)
 	if SaveManager.has_case_progress():
 		var cp: Dictionary = SaveManager.profile["case_progress"]
@@ -213,7 +227,15 @@ func start_case(case_id: String) -> void:
 	get_tree().change_scene_to_file("res://game/game.tscn")
 
 
+var _ticket_tick: float = 0.0
+
+
 func _process(delta: float) -> void:
+	# Таймер билетов в верхней панели (обновляется раз в секунду).
+	_ticket_tick -= delta
+	if _ticket_tick <= 0.0 and _tickets:
+		_ticket_tick = 1.0
+		_update_tickets()
 	_time += delta
 	for l: Dictionary in _layers:
 		l["offset"] = fmod(l["offset"] + l["speed"] * SCALE * delta * 10.0, l["w"])
