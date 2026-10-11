@@ -28,6 +28,7 @@ var _step_timer: float = 0.0
 var _step_flip: int = 0
 var _track_timer: float = 0.0
 var _lens: Sprite2D
+var flashlight: Flashlight
 
 
 func _ready() -> void:
@@ -50,6 +51,8 @@ func _ready() -> void:
 	sprite.setup(ProgressionManager.outfit())
 	add_child(sprite)
 	sprite.animation_finished.connect(_on_action_finished)
+	flashlight = Flashlight.new()
+	add_child(flashlight)
 
 
 func set_outfit(sheet: String) -> void:
@@ -80,6 +83,7 @@ func read_input() -> Vector2:
 
 
 func _physics_process(delta: float) -> void:
+	flashlight.aim(facing)
 	if _action_time > 0.0:
 		_action_time -= delta
 		if _action_time <= 0.0:

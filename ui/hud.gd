@@ -437,3 +437,4 @@ func set_controls_visible(on: bool) -> void:
 	_bottom_right.visible = on
 	_goal_panel.visible = on
 	overlay.visible = on
+

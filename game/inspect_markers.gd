@@ -54,6 +54,9 @@ func _refresh() -> void:
 			_marks[it] = s
 		var state: String = inv.inspect_state(it.interact_id)
 		var shown: bool = it.enabled and it.is_visible_in_tree() and state != "done" and not game.camera_system.playback
+		# В темноте искры видны только в луче фонаря.
+		if game.is_dark():
+			shown = shown and game.player.flashlight.lights(it.global_position)
 		# Сложность: «near» — искра видна только рядом с героем, «none» — подсветки нет.
 		match str(inv.profile.get("markers", "all")):
 			"near":

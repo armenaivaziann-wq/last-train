@@ -104,12 +104,40 @@ func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_dat
 	hooks.plan(self, case_seed)
 	story = StoryDirector.new()
 	story.plan(self)
+	_plan_nights()
 	hint_system = HintSystem.new(self)
 	for npc: String in data.get("initial_states", {}):
 		npc_state[npc] = str(data["initial_states"][npc])
 
 
 # --- часы ---------------------------------------------------------------------------------
+# --- ночь (свет выбило во всём поезде) ----------------------------------------------------
+## Ночные отрезки: "nights": [{"at": "+6.5", "minutes": 3.0}] или по умолчанию два за дело.
+## На записях камер в эти минуты все — силуэты (тёмные зоны во всех вагонах).
+var nights: Array = []   # [[от, до]]
+
+
+func _plan_nights() -> void:
+	nights.clear()
+	var defs: Array = data.get("nights", [{"at": "+6.5", "minutes": 3.0}, {"at": "+13.5", "minutes": 2.5}])
+	for n: Dictionary in defs:
+		var t0: float = start_time + float(str(n["at"]).trim_prefix("+"))
+		var t1: float = minf(t0 + float(n.get("minutes", 2.0)), arrival_time - 0.5)
+		if t1 > t0:
+			nights.append([t0, t1])
+			if not data.has("dark_zones"):
+				data["dark_zones"] = []
+			for cid in layout.carriage_ids:
+				data["dark_zones"].append({"carriage": cid, "from": CaseBuilder.fmt(t0), "to": CaseBuilder.fmt(t1), "night": true})
+
+
+func night_at(t: float) -> bool:
+	for n: Array in nights:
+		if t >= float(n[0]) and t < float(n[1]):
+			return true
+	return false
+
+
 func hold(reason: String) -> void:
 	_holds[reason] = true
 

@@ -51,7 +51,7 @@ func default_profile() -> Dictionary:
 		"version": VERSION,
 		"economy": {"coins": 150, "crystals": 15, "reputation": 0},
 		"carriages": ["passenger", "restaurant"],
-		"equipment": {"magnifier": 1, "notebook": 1, "cameras": 1, "flashlight": 0, "recorder": 0, "badge": 0},
+		"equipment": {"magnifier": 1, "notebook": 1, "cameras": 1, "flashlight": 1, "recorder": 0, "badge": 0},
 		"cosmetics": {"owned": ["detective", "lens_silver"], "outfit": "detective", "lens": "lens_silver"},
 		"bestiary": {},
 		"met": [],
@@ -86,6 +86,9 @@ func _migrate(loaded: Dictionary) -> void:
 	# Сложность появилась позже: у игроков со старым прогрессом — Лёгкий, чтобы не сломать им игру.
 	if loaded.has("settings") and loaded["settings"] is Dictionary and not loaded["settings"].has("difficulty"):
 		loaded["settings"]["difficulty"] = "easy"
+	# Ночи без света: базовый фонарик теперь есть у всех (раньше покупался).
+	if loaded.has("equipment") and loaded["equipment"] is Dictionary and int(loaded["equipment"].get("flashlight", 0)) < 1:
+		loaded["equipment"]["flashlight"] = 1
 
 
 func save_game() -> void:

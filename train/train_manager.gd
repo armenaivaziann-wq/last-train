@@ -35,6 +35,10 @@ var _flicker_t: float = 0.0
 var modulate_node: CanvasModulate
 var _flicker_left: float = 0.0
 var _blackout_left: float = 0.0
+## Ночь: во всём поезде выбило свет (несколько игровых минут). Лампы гаснут, вагоны тёмные —
+## видно только то, что в луче фонарика.
+var _night: float = 0.0
+var _night_target: float = 0.0
 
 
 func build(train_layout: TrainLayout, ground: String, entities_node: Node2D, glow_node: Node2D) -> void:
@@ -161,10 +165,24 @@ func in_tunnel() -> bool:
 	return _tunnel > 0.5
 
 
+func set_night(on: bool) -> void:
+	_night_target = 1.0 if on else 0.0
+
+
+func in_night() -> bool:
+	return _night > 0.5
+
+
+## Темно: туннель или ночь без света.
+func is_dark() -> bool:
+	return in_tunnel() or in_night()
+
+
 func _process(delta: float) -> void:
 	var step: float = GROUND_SPEED * speed_factor * delta
 	_scroll += step
 	_tunnel = move_toward(_tunnel, _tunnel_target, delta * 2.0)
+	_night = move_toward(_night, _night_target, delta * 1.2)
 	_rain = move_toward(_rain, _rain_target, delta * 0.5)
 	_station = move_toward(_station, _station_target, delta * 0.4)
 	_rain_time += delta
@@ -194,13 +212,14 @@ func _update_lights(delta: float) -> void:
 			var flick: float = 1.0
 			if _tunnel > 0.3:
 				flick = 0.75 + 0.25 * sin(_flicker_t * 13.0 + i * 1.7) * sin(_flicker_t * 3.1 + i)
-			g.modulate.a = 0.55 * flick * (0.8 + 0.4 * _tunnel)
+			g.modulate.a = 0.55 * flick * (0.8 + 0.4 * _tunnel) * (1.0 - _night)
 		for i in car.window_glows.size():
 			var w: Sprite2D = car.window_glows[i]
 			var trees: float = 0.85 + 0.15 * sin(_scroll * 0.05 + i * 2.3)
 			w.modulate.a = 0.45 * trees * (1.0 - _tunnel) * (1.0 - 0.4 * _rain) + 0.25 * _station
 	if modulate_node:
 		var col: Color = Color(1.0, 0.97, 1.0).lerp(Color(0.4, 0.36, 0.58), _tunnel)
+		col = col.lerp(Color(0.1, 0.09, 0.18), _night)
 		if _flicker_left > 0.0:
 			_flicker_left -= delta
 			if fmod(_flicker_t * 9.0, 1.0) < 0.35:

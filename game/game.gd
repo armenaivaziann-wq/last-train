@@ -187,6 +187,7 @@ func _apply_npcs(t: float) -> void:
 
 func _process(delta: float) -> void:
 	if not camera_system.playback:
+		_sync_night()
 		_apply_npcs(investigation.clock)
 		villain_world.apply(investigation.clock)
 		player.clock_minute = investigation.clock
@@ -231,8 +232,38 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # --- взаимодействие ----------------------------------------------------------------------
-func in_dark() -> bool:
-	return train.in_tunnel() and ProgressionManager.equipment_level("flashlight") == 0
+## Темно: туннель или ночь без света во всём поезде.
+func is_dark() -> bool:
+	return train.is_dark()
+
+
+## Нельзя осмотреть цель: темно, а фонарь выключен или цель не в луче.
+func in_dark(target: Interactable = null) -> bool:
+	if not is_dark():
+		return false
+	if not player.flashlight.on:
+		return true
+	return target != null and not player.flashlight.lights(target.interact_position())
+
+
+## Ночь: свет во всём поезде выбило на несколько минут (по плану дела).
+var _was_night: bool = false
+
+
+func _sync_night() -> void:
+	var night: bool = investigation.night_at(investigation.clock)
+	train.set_night(night)
+	if night != _was_night:
+		_was_night = night
+		if night:
+			AudioManager.play_sfx("lights_flicker", -2.0)
+			hud.show_banner("Свет погас", "Во всём поезде выбило щиток. Фонарь включился — светите туда, куда смотрите.", 3.5)
+		else:
+			Events.notify("Свет вернулся.", "flashlight")
+	# Фонарь включается сам, как только темнеет, и гаснет при свете — без лишней кнопки на экране.
+	var want: bool = is_dark() and ProgressionManager.equipment_level("flashlight") >= 1
+	if player.flashlight.on != want:
+		player.flashlight.set_on(want)
 
 
 func interact() -> void:
@@ -241,8 +272,8 @@ func interact() -> void:
 	var t: Interactable = player.target
 	if t == null:
 		return
-	if t.needs_light and in_dark():
-		Events.notify("Слишком темно — в туннеле нужен фонарик.", "flashlight")
+	if t.needs_light and in_dark(t):
+		Events.notify("Слишком темно — повернитесь, чтобы луч фонаря упал на это." if player.flashlight.on else "Слишком темно — нужен фонарик.", "flashlight")
 		return
 	match t.kind:
 		Interactable.Kind.NPC:
@@ -271,8 +302,8 @@ func use_magnifier() -> void:
 		return
 	player.play_action("inspect", 0.7)
 	AudioManager.play_sfx("magnifier")
-	if train.in_tunnel() and ProgressionManager.equipment_level("flashlight") < 2:
-		Events.notify("В темноте лупа бесполезна. Нужен мощный фонарик.", "flashlight")
+	if is_dark() and (not player.flashlight.on or ProgressionManager.equipment_level("flashlight") < 2):
+		Events.notify("В темноте лупа бесполезна. Нужен мощный фонарик — и включённый луч.", "flashlight")
 		return
 	var radius: float = MAGNIFIER_RADIUS * (1.6 if ProgressionManager.equipment_level("magnifier") >= 2 else 1.0)
 	var found: int = 0

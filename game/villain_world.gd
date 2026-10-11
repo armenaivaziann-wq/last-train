@@ -104,7 +104,10 @@ func _shadow_sprite() -> Sprite2D:
 
 
 func _in_zone(cid: String, t: float) -> bool:
+	var live: bool = not game.camera_system.playback
 	for z: Dictionary in game.case_data.get("dark_zones", []):
+		if live and z.get("night", false):
+			continue
 		if z["carriage"] == cid and t >= Db.parse_time(str(z["from"])) and t < Db.parse_time(str(z["to"])):
 			return true
 	return false
