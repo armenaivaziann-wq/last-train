@@ -40,6 +40,7 @@ var presented: Array = []
 ## Верно ли названы мотив и способ в последнем обвинении (если дело их спрашивает).
 var verdict_ok: bool = true
 var hint_system: HintSystem
+var opened: Array = []           # открытые игроком объекты и багаж
 var _hint_levels: Dictionary = {}   # цель подсказки → уже выданный уровень
 
 var clock: float = 0.0
@@ -377,6 +378,7 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive
 	EconomyManager.add("reputation", -WRONG_REPUTATION)
 	clock = minf(clock + WRONG_TIME_PENALTY, arrival_time)
 	result["reaction"] = str(data.get("wrong_reactions", {}).get(suspect, "Я невиновен!"))
+	result["why"] = explain_wrong(suspect, clue_ids)
 	result["case_failed"] = mistakes >= max_mistakes()
 	accused.emit(result)
 	if result["case_failed"]:
@@ -384,6 +386,30 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String = "", motive
 	elif clock >= arrival_time:
 		finish("timeout")
 	return result
+
+
+## Почему обвинение ошибочно — без раскрытия виновника: какие основания не касаются
+## обвинённого и опровергнуто ли то, из-за чего его подозревали.
+func explain_wrong(suspect: String, clue_ids: Array) -> String:
+	var f: bool = str(Db.character(suspect).get("gender", "m")) == "f"
+	var him: String = "неё" if f else "него"
+	var parts: PackedStringArray = []
+	var weak: PackedStringArray = []
+	for id in clue_ids:
+		if not suspect in evidence.clue(str(id)).get("points_to", []):
+			weak.append("«%s»" % evidence.clue(str(id)).get("title", id))
+	if not weak.is_empty():
+		parts.append("Эти основания не указывают на %s: %s." % [him, ", ".join(weak)])
+	for x: Dictionary in data.get("deductions", []):
+		for r: String in x.get("refutes", []):
+			if suspect in data["clues"].get(r, {}).get("points_to", []) and evidence.has(r):
+				if evidence.has(x["result"]):
+					parts.append("Подозрение «%s» уже опровергнуто: «%s»." % [evidence.clue(r)["title"], evidence.clue(x["result"])["title"]])
+				else:
+					parts.append("Подозрение «%s» стоит проверить: сопоставьте его с записями камер и уликами." % evidence.clue(r)["title"])
+	if parts.is_empty():
+		parts.append("Ни одна найденная улика не связывает %s с преступлением напрямую. Ищите противоречия в показаниях." % ("её" if f else "его"))
+	return " ".join(parts)
 
 
 ## Дополнительная проверка: для каждой выбранной улики — касается ли она подозреваемого.
@@ -499,13 +525,48 @@ func check_deadline_warnings() -> int:
 
 
 # --- сохранение ---------------------------------------------------------------------------
+# --- что осмотрено ------------------------------------------------------------------------
+## Объект или багаж открыт игроком (id объекта или "luggage_<владелец>").
+func mark_opened(id: String) -> void:
+	if not id in opened:
+		opened.append(id)
+
+
+## Улики, которые можно получить из объекта мира или багажа.
+func clues_of(id: String) -> Array:
+	var out: Array = []
+	if id.begins_with("luggage_"):
+		for it: Dictionary in data.get("luggage", {}).get(id.substr(8), {}).get("items", []):
+			if it.has("requires_upgrade") and ProgressionManager.equipment_level(str(it["requires_upgrade"])) < 1:
+				continue
+			if it.has("on_open"):
+				out.append(str(it["on_open"]))
+			if it.has("hotspot"):
+				out.append(str(it["hotspot"]["clue"]))
+		return out
+	var o: Dictionary = data.get("objects", {}).get(id, {})
+	if o.has("on_open"):
+		out.append(str(o["on_open"]))
+	for h: Dictionary in o.get("hotspots", []):
+		out.append(str(h["clue"]))
+	return out
+
+
+## Состояние для маркера: "new" — не открыт, "partial" — открыт, но улики остались, "done".
+func inspect_state(id: String) -> String:
+	var rest: Array = clues_of(id).filter(func(c: String) -> bool: return not evidence.has(c))
+	if not id in opened:
+		return "done" if rest.is_empty() and not clues_of(id).is_empty() else "new"
+	return "done" if rest.is_empty() else "partial"
+
+
 func snapshot() -> Dictionary:
 	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
 		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
 		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
-		"hint_levels": _hint_levels}
+		"hint_levels": _hint_levels, "opened": opened}
 
 
 func restore(s: Dictionary) -> void:
@@ -521,6 +582,7 @@ func restore(s: Dictionary) -> void:
 	npc_state = s.get("npc_state", npc_state).duplicate()
 	hints_used = int(s.get("hints_used", 0))
 	_hint_levels = s.get("hint_levels", {}).duplicate()
+	opened = s.get("opened", []).duplicate()
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):

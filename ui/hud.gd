@@ -368,6 +368,10 @@ func show_banner(title: String, subtitle: String, duration: float = 4.0) -> void
 	v.add_child(t)
 	var s := Ui.label(subtitle, "", 21)
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if subtitle.length() > 60:
+		# длинное пояснение — переносом в пределах экрана (и на телефоне)
+		s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		s.custom_minimum_size.x = minf(760.0, get_viewport_rect().size.x - 80.0)
 	v.add_child(s)
 	_banner.add_child(v)
 	_banner.visible = true

@@ -126,8 +126,10 @@ func play_wrong(suspect: String, reaction: String) -> void:
 	await _wait(1.8)
 	npc.set_detained(false)
 	var left: int = game.investigation.max_mistakes() - game.investigation.mistakes
-	Events.notify("Ошибка! %s невиновен(-на). −%d репутации, −%d мин. Осталось права на ошибку: %d" % [
-		Db.char_name(suspect), InvestigationManager.WRONG_REPUTATION, int(InvestigationManager.WRONG_TIME_PENALTY), left], "guard")
+	var f: bool = str(Db.character(suspect).get("gender", "m")) == "f"
+	Events.notify("Ошибка! %s %s. −%d репутации, −%d мин. Осталось права на ошибку: %d" % [
+		Db.char_name(suspect), "невиновна" if f else "невиновен", InvestigationManager.WRONG_REPUTATION,
+		int(InvestigationManager.WRONG_TIME_PENALTY), left], "guard")
 	_end()
 
 

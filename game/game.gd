@@ -67,6 +67,9 @@ func _ready() -> void:
 	villain_world = VillainWorld.new()
 	entities.add_child(villain_world)
 	villain_world.setup(self)
+	var markers := InspectMarkers.new()
+	glow_layer.add_child(markers)
+	markers.setup(self)
 	camera_system.villain_world = villain_world
 	camera.target = player
 	camera.left_limit = -40.0
@@ -237,10 +240,12 @@ func interact() -> void:
 			player.play_action("inspect", 0.45)
 			await get_tree().create_timer(0.3).timeout
 			t.inspected = true
+			investigation.mark_opened(t.interact_id)
 			open_object(t.interact_id)
 		Interactable.Kind.LUGGAGE:
 			player.play_action("interact", 0.4)
 			await get_tree().create_timer(0.25).timeout
+			investigation.mark_opened(t.interact_id)
 			open_luggage(t.owner_id)
 		Interactable.Kind.MONITOR:
 			open_cameras()
@@ -620,6 +625,8 @@ func accuse(suspect: String, clue_ids: Array, monster_guess: String, motive: int
 		investigation.finish("solved", result)
 	elif not investigation.ended:
 		await arrest.play_wrong(suspect, str(result.get("reaction", "")))
+		if not investigation.ended:
+			hud.show_banner("Почему это ошибка", str(result.get("why", "")), 6.0)
 
 
 func _on_finished(result: Dictionary) -> void:
