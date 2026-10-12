@@ -46,7 +46,9 @@ var board: Dictionary = {}
 const BOARD_FROM: float = 90.0   # 01:30
 const BOARD_SLOT: float = 5.0
 const BOARD_SLOTS: int = 6       # до 02:00
-var story_dead: Dictionary = {}   # подозреваемый → минута, когда выбыл по сюжету (второе преступление)           # открытые игроком объекты и багаж
+var story_dead: Dictionary = {}   # подозреваемый → минута, когда выбыл по сюжету (второе преступление)
+## Решённые головоломки дела (id из data["puzzles"]).
+var puzzles_solved: Array = []
 var _hint_levels: Dictionary = {}   # цель подсказки → уже выданный уровень
 
 var clock: float = 0.0
@@ -686,7 +688,40 @@ func check_deadline_warnings() -> int:
 	return 0
 
 
-# --- сохранение ---------------------------------------------------------------------------
+# --- головоломки --------------------------------------------------------------------------
+## Головоломка из данных дела: {type, title, intro, ..., reward: [улики], wrong_cost}.
+## Решение выводится из найденных улик (код, порядок), ошибка стоит игровых минут.
+func puzzle(id: String) -> Dictionary:
+	return data.get("puzzles", {}).get(id, {})
+
+
+func puzzle_solved(id: String) -> bool:
+	return id in puzzles_solved
+
+
+func solve_puzzle(id: String, skipped: bool = false) -> void:
+	if id in puzzles_solved or puzzle(id).is_empty():
+		return
+	puzzles_solved.append(id)
+	if skipped:
+		hints_used += 1
+	give_all(puzzle(id).get("reward", []))
+
+
+func puzzle_wrong(id: String) -> void:
+	spend_time(float(puzzle(id).get("wrong_cost", 0.5)) * float(profile.get("time_cost_mult", 1.0)))
+
+
+## Хозяин сидит рядом с вещами («guarded» в данных багажа) — обыскать нельзя, пока он не отойдёт.
+func luggage_guarded(owner: String) -> bool:
+	if not data.get("luggage", {}).get(owner, {}).get("guarded", false):
+		return false
+	for lw: Dictionary in data.get("luggage_world", []):
+		if lw["owner"] == owner and layout.slots.has(lw["slot"]):
+			return timeline.position_at(owner, clock).distance_to(layout.slots[lw["slot"]]) < 90.0
+	return false
+
+
 # --- доска передвижений ------------------------------------------------------------------
 func board_set(npc: String, slot: int, carriage: String) -> void:
 	if not board.has(npc):
@@ -784,13 +819,14 @@ func inspect_state(id: String) -> String:
 	return "done" if rest.is_empty() else "partial"
 
 
+# --- сохранение ---------------------------------------------------------------------------
 func snapshot() -> Dictionary:
 	return {"case_id": case_id, "clock": clock, "evidence": evidence.serialize(), "suspects": suspects.serialize(),
 		"dialogue": dialogue.serialize(), "mistakes": mistakes, "verifications_left": verifications_left,
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
 		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
-		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board}
+		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate()}
 
 
 func restore(s: Dictionary) -> void:
@@ -809,6 +845,7 @@ func restore(s: Dictionary) -> void:
 	opened = s.get("opened", []).duplicate()
 	story_dead = s.get("story_dead", {}).duplicate()
 	board = s.get("board", {}).duplicate(true)
+	puzzles_solved = s.get("puzzles", []).duplicate()
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):

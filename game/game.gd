@@ -364,6 +364,11 @@ func open_object(object_id: String) -> void:
 		if obj.has("locked_clue"):
 			investigation.give(str(obj["locked_clue"]))
 		return
+	# Объект-головоломка: пока не решена, открывается она; потом — обычный осмотр.
+	var pz: String = str(obj.get("puzzle", ""))
+	if pz != "" and not investigation.puzzle_solved(pz):
+		ui.open("puzzle_screen", {"id": pz, "after": func() -> void: ui.open("document_screen", {"object": object_id})})
+		return
 	ui.open("document_screen", {"object": object_id})
 
 
@@ -374,6 +379,13 @@ func open_luggage(owner: String) -> void:
 		var f: bool = str(Db.character(owner).get("gender", "m")) == "f"
 		Events.notify("%s не %s обыскивать вещи без оснований. Нужно ещё улик против %s: %d." % [
 			Db.char_name(owner), "разрешает" , "неё" if f else "него", missing], "lock")
+		return
+	if investigation.luggage_guarded(owner):
+		Events.notify("%s не отходит от своих вещей. Дождитесь, пока уйдёт." % Db.char_name(owner), "lock")
+		return
+	var pz: String = str(case_data.get("luggage", {}).get(owner, {}).get("puzzle", ""))
+	if pz != "" and not investigation.puzzle_solved(pz):
+		ui.open("puzzle_screen", {"id": pz, "after": func() -> void: ui.open("luggage_screen", {"id": owner})})
 		return
 	ui.open("luggage_screen", {"id": owner})
 

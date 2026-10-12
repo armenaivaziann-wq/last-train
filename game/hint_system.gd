@@ -85,8 +85,9 @@ func _source(id: String) -> Dictionary:
 			continue
 		for it: Dictionary in d["luggage"][npc].get("items", []):
 			if it.get("on_open", "") == id or it.get("hotspot", {}).get("clue", "") == id:
+				var wait: String = " — дождитесь, когда хозяин отойдёт" if inv.luggage_guarded(npc) else ""
 				return {"kind": "luggage", "subject": "багаж — " + _name(npc),
-					"place": "багаж: %s, вещь «%s»%s" % [_name(npc), it["name"], " (с лупой)" if it.has("hotspot") else ""]}
+					"place": "багаж: %s, вещь «%s»%s%s" % [_name(npc), it["name"], " (с лупой)" if it.has("hotspot") else "", wait]}
 	for oid: String in d.get("objects", {}):
 		var o: Dictionary = d["objects"][oid]
 		var hit: bool = o.get("on_open", "") == id or o.get("locked_clue", "") == id

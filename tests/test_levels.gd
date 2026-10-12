@@ -57,8 +57,10 @@ func _sweep() -> bool:
 		for h: Dictionary in doc.get("hotspots", []):
 			inv.give(str(h["clue"]))
 	for npc: String in d.get("luggage", {}):
-		if inv.search_missing(npc) > 0:
-			continue  # без оснований пассажир не даёт обыскать вещи
+		if inv.search_missing(npc) > 0 or inv.luggage_guarded(npc):
+			continue  # без оснований (или пока хозяин рядом) вещи не обыскать
+		if not _puzzle_ok(str(d["luggage"][npc].get("puzzle", ""))):
+			continue
 		for it: Dictionary in d["luggage"][npc].get("items", []):
 			if it.has("requires_upgrade"):
 				continue
@@ -80,6 +82,8 @@ func _sweep() -> bool:
 		if locked:
 			if o.has("locked_clue"):
 				inv.give(str(o["locked_clue"]))
+			continue
+		if not _puzzle_ok(str(o.get("puzzle", ""))):
 			continue
 		if o.has("on_open"):
 			inv.give(str(o["on_open"]))
@@ -106,6 +110,17 @@ func _sweep() -> bool:
 				if ev.has(a) and ev.has(b) and not ev.has(x["result"]):
 					inv.deduce(a, b)
 	return ev.found.size() > before
+
+
+## Головоломка решается, только когда найдены все улики, из которых выводится ответ.
+func _puzzle_ok(id: String) -> bool:
+	var inv: InvestigationManager = _inv()
+	if id == "" or inv.puzzle_solved(id):
+		return true
+	if inv.puzzle(id).get("needs", []).all(func(n: String) -> bool: return inv.evidence.has(n)):
+		inv.solve_puzzle(id)
+		return true
+	return false
 
 
 func _solve_all() -> void:
@@ -357,6 +372,121 @@ func test_board_scoring_and_search_rules() -> void:
 	var wrong2: String = d["suspects"].filter(func(s: String) -> bool: return s != c and s != wrong)[0]
 	inv.accuse(wrong2, [], "", -1, -1)
 	check(inv.ended, "после второй ошибки монстр сбегает")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+
+
+## Сложные дела (начиная с 14-го): виновника никто не называет, до 8-й минуты против него
+## не больше двух доказанных оснований (★★★ невозможны), решающее — за головоломкой.
+func test_level14_no_early_proof() -> void:
+	for seed_value: int in [7, 1234]:
+		await _start_level("level_14", seed_value)
+		var inv: InvestigationManager = _inv()
+		var culprit: String = str(inv.data["culprit"])
+		var refuted: Array = []
+		for x: Dictionary in inv.data["deductions"]:
+			refuted.append_array(x.get("refutes", []))
+		while inv.clock < inv.start_time + 8.0:
+			while _sweep():
+				pass
+			inv.advance(0.5)
+		var tag: String = "дело 14/%d: " % seed_value
+		var proven: Array = inv.proven_against(culprit, inv.evidence.found)
+		check(proven.size() <= 2, tag + "до 8-й минуты не больше 2 доказанных оснований (есть %s)" % str(proven))
+		check(not inv.puzzle_solved("puz_l14_lock"), tag + "сундучок до 8-й минуты не открыт (хозяйка рядом)")
+		for id: String in inv.evidence.found:
+			var c: Dictionary = inv.evidence.clue(id)
+			check(c.get("type") == "contradiction" or id in refuted or c.get("points_to", []) != [culprit],
+				tag + "улика «%s» не называет виновника прямо" % c["title"])
+		_solve_all()
+		check(inv.puzzle_solved("puz_l14_lock") and inv.puzzle_solved("puz_l14_knot"), tag + "обе головоломки решаются из улик")
+		check(inv.proven_against(culprit, inv.evidence.found).size() >= 3, tag + "после сундучка доказательств хватает")
+		var suspects_hit: Dictionary = {}
+		for id: String in inv.evidence.found:
+			for s: String in inv.evidence.clue(id).get("points_to", []):
+				suspects_hit[s] = true
+		check(suspects_hit.size() >= 3, tag + "подозрения падают минимум на троих")
+		game.queue_free()
+		game = null
+		await wait_frames(2)
+
+
+## Запись «купе №4 пустое» правдива: Лидии нет у своего места во всём окне записи.
+func test_level14_empty_compartment_camera() -> void:
+	await _start_level("level_14")
+	var inv: InvestigationManager = _inv()
+	var slot: Vector2 = game.layout.slots["passenger:bay4_right"]
+	var t: float = Db.parse_time("01:46:10")
+	var ok: bool = true
+	while t <= Db.parse_time("01:48:30"):
+		if inv.timeline.position_at("lidia", t).distance_to(slot) < 140.0:
+			ok = false
+		t += 1.0 / 30.0
+	check(ok, "дело 14: в окне записи К1 Лидии нет в купе №4")
+	check(inv.luggage_guarded("lidia"), "дело 14: в начале Лидия сидит у сундучка")
+	inv.advance(Db.parse_time("02:09") - inv.clock)
+	check(not inv.luggage_guarded("lidia"), "дело 14: в 02:09 Лидия ушла ужинать")
+	inv.advance(Db.parse_time("02:16") - inv.clock)
+	check(inv.luggage_guarded("lidia"), "дело 14: к 02:16 Лидия вернулась")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+
+
+## Экран головоломки: ошибка стоит минут, повтор возможен, верный ответ даёт улику и сразу
+## открывает осмотр; решённые головоломки переживают сохранение.
+func test_puzzle_screens() -> void:
+	await _start_level("level_14")
+	var inv: InvestigationManager = _inv()
+	inv.give("s_l14_prof_knots")
+	game.open_object("obj_l14_kitel")
+	await wait_frames(1)
+	var scr: GameScreen = game.ui.top()
+	check(scr != null and scr.name == "puzzle_screen", "узел: открывается головоломка")
+	var order: Array = inv.puzzle("puz_l14_knot")["order"]
+	var cost: float = float(inv.puzzle("puz_l14_knot")["wrong_cost"]) * float(inv.profile.get("time_cost_mult", 1.0))
+	var c0: float = inv.clock
+	scr._pull(str(order[1]))
+	check(absf(inv.clock - c0 - cost) < 0.01, "узел: ошибка стоит %s мин" % str(cost))
+	check(not inv.puzzle_solved("puz_l14_knot"), "узел: после ошибки не решён")
+	scr._pull(str(order[0]))
+	scr._pull(str(order[2]))
+	check(not inv.puzzle_solved("puz_l14_knot"), "узел: неверный порядок сбрасывает распутывание")
+	for s: Variant in order:
+		if inv.puzzle_solved("puz_l14_knot"):
+			break
+		scr._pull(str(s))
+	await wait_frames(2)
+	check(inv.puzzle_solved("puz_l14_knot") and inv.evidence.has("i_l14_knot_agata"), "узел: решён, узелок найден")
+	check(game.ui.top() != null and game.ui.top().name == "document_screen", "узел: сразу открывается осмотр кителя")
+	game.ui.close_all()
+	await wait_frames(1)
+	# Замок: пока хозяйка рядом — не открыть; потом код из улик.
+	inv.give("s_l14_lidia_alibi")
+	game.open_luggage("lidia")
+	await wait_frames(1)
+	check(game.ui.top() == null, "замок: при хозяйке сундучок не открыть")
+	inv.advance(Db.parse_time("02:09") - inv.clock)
+	game.open_luggage("lidia")
+	await wait_frames(1)
+	scr = game.ui.top()
+	check(scr != null and scr.name == "puzzle_screen", "замок: открывается головоломка")
+	c0 = inv.clock
+	scr._try_code()
+	check(inv.clock > c0 and not inv.puzzle_solved("puz_l14_lock"), "замок: неверный код стоит времени")
+	var code: String = str(inv.puzzle("puz_l14_lock")["code"])
+	for i in code.length():
+		for k in int(code[i]):
+			scr._turn(i, 1)
+	scr._try_code()
+	await wait_frames(2)
+	check(inv.puzzle_solved("puz_l14_lock"), "замок: верный код открывает")
+	check(game.ui.top() != null and game.ui.top().name == "luggage_screen", "замок: сразу открывается сундучок")
+	var snap: Dictionary = inv.snapshot()
+	inv.puzzles_solved.clear()
+	inv.restore(snap)
+	check(inv.puzzle_solved("puz_l14_lock") and inv.puzzle_solved("puz_l14_knot"), "головоломки сохраняются")
 	game.queue_free()
 	game = null
 	await wait_frames(2)

@@ -297,7 +297,8 @@ func camera_view(t: float) -> void:
 				npc.sprite.modulate = Color(0.35, 0.28, 0.22)
 				npc.sprite.scale = Vector2(1.3, 1.3)
 		"witch":
-			npc.sprite.modulate = Color(0.7, 1.0, 0.75)
+			# Ведьма отводит глаза камере: вместо лица — зелёное марево.
+			npc.sprite.modulate = Color(0.35, 1.0, 0.5, 0.45 + 0.1 * sin(t * 300.0))
 
 
 func _beast(t: float) -> bool:
@@ -321,6 +322,8 @@ func camera_label(id: String, t: float, name: String) -> String:
 			return "помехи в форме человека"
 		"werewolf":
 			return "огромная тень" if _beast(t) else name
+		"witch":
+			return "фигура в зелёном мареве"
 	return name
 
 
