@@ -5,6 +5,8 @@ extends GameScreen
 ## головоломку можно повторять. На лёгкой сложности её можно пропустить (как подсказку).
 ##   code_lock — кодовый замок: колёсики с цифрами (code).
 ##   knot      — узел: развязывать петли в правильном порядке (order), ошибка — узел затянулся.
+##   pairs     — сопоставление: каждой строке (left) выбрать вариант из options (касание
+##               листает варианты); answer — индексы верных вариантов по строкам.
 
 var _id: String
 var _p: Dictionary
@@ -17,6 +19,9 @@ var _digits: Array[int] = []
 var _digit_labels: Array[Label] = []
 # knot
 var _knot_done: Array[String] = []
+# pairs
+var _picks: Array[int] = []
+var _pick_buttons: Array[Button] = []
 
 
 func build(args: Dictionary) -> void:
@@ -32,6 +37,7 @@ func build(args: Dictionary) -> void:
 	_body = Ui.vbox(10)
 	v.add_child(_body)
 	_msg = Ui.label("", "GoldLabel", 18, true)
+	_msg.visible = false
 	v.add_child(_msg)
 	v.add_child(_known())
 	var row := Ui.hbox(10)
@@ -47,6 +53,8 @@ func build(args: Dictionary) -> void:
 			_build_lock()
 		"knot":
 			_build_knot()
+		"pairs":
+			_build_pairs()
 
 
 ## Найденные улики, из которых выводится решение (без самого решения).
@@ -63,7 +71,7 @@ func _known() -> Control:
 		kv.add_child(Ui.label("Пока ничего, что помогло бы. Ищите подсказки в уликах — или пробуйте наугад (это стоит времени).", "DimLabel", 16, true))
 	# Высота ограничена: на телефоне окно не должно вылезать за экран, длинное — прокрутка.
 	var sc := Ui.scroll(kv)
-	sc.custom_minimum_size.y = 120
+	sc.custom_minimum_size.y = 96
 	box.add_child(sc)
 	return box
 
@@ -104,6 +112,7 @@ func _try_code() -> void:
 		_inv.puzzle_wrong(_id)
 		AudioManager.play_sfx("door_locked", -4.0)
 		_msg.text = "Не подходит. Время уходит."
+		_msg.visible = true
 
 
 # --- узел ---------------------------------------------------------------------------------
@@ -151,6 +160,48 @@ func _pull(strand: String) -> void:
 		AudioManager.play_sfx("wrong", -6.0)
 		_build_knot()
 		_msg.text = "Узел затянулся сильнее. Начните заново — и подумайте, в каком порядке его вязали."
+		_msg.visible = true
+
+
+# --- сопоставление -----------------------------------------------------------------------
+func _build_pairs() -> void:
+	var opts: Array = _p["options"]
+	for i in (_p["left"] as Array).size():
+		_picks.append(-1)
+		var row := Ui.hbox(12)
+		var l := Ui.label(str(_p["left"][i]), "", 20)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(l)
+		var k: int = i
+		var b := Ui.button("выбрать ▸", "", "ChipButton", func() -> void: _cycle(k), 56)
+		b.custom_minimum_size.x = 220
+		_pick_buttons.append(b)
+		row.add_child(b)
+		_body.add_child(row)
+	var cost: float = float(_p.get("wrong_cost", 0.5)) * float(_inv.profile.get("time_cost_mult", 1.0))
+	_body.add_child(Ui.button("Проверить" + ("  · ошибка %s мин" % str(snappedf(cost, 0.05)) if cost > 0.0 else ""), "check", "PrimaryButton", _try_pairs, 60))
+	if opts.is_empty():
+		push_error("pairs без вариантов: " + _id)
+
+
+func _cycle(i: int) -> void:
+	_picks[i] = (_picks[i] + 1) % (_p["options"] as Array).size()
+	_pick_buttons[i].text = str(_p["options"][_picks[i]])
+
+
+func _try_pairs() -> void:
+	var answer: Array = _p["answer"]
+	var ok: bool = true
+	for i in answer.size():
+		if _picks[i] != int(answer[i]):
+			ok = false
+	if ok:
+		_win()
+	else:
+		_inv.puzzle_wrong(_id)
+		AudioManager.play_sfx("wrong", -6.0)
+		_msg.text = "Не сходится. Время уходит."
+		_msg.visible = true
 
 
 # --- итог ---------------------------------------------------------------------------------

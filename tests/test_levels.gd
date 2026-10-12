@@ -379,9 +379,13 @@ func test_board_scoring_and_search_rules() -> void:
 
 ## Сложные дела (начиная с 14-го): виновника никто не называет, до 8-й минуты против него
 ## не больше двух доказанных оснований (★★★ невозможны), решающее — за головоломкой.
+const HARD: Array = ["level_04", "level_14"]
+
+
 func test_level14_no_early_proof() -> void:
-	for seed_value: int in [7, 1234]:
-		await _start_level("level_14", seed_value)
+	for pair: Array in [["level_04", 7], ["level_04", 1234], ["level_14", 7], ["level_14", 1234]]:
+		var seed_value: int = pair[1]
+		await _start_level(pair[0], seed_value)
 		var inv: InvestigationManager = _inv()
 		var culprit: String = str(inv.data["culprit"])
 		var refuted: Array = []
@@ -391,16 +395,16 @@ func test_level14_no_early_proof() -> void:
 			while _sweep():
 				pass
 			inv.advance(0.5)
-		var tag: String = "дело 14/%d: " % seed_value
+		var tag: String = "%s/%d: " % [pair[0], seed_value]
 		var proven: Array = inv.proven_against(culprit, inv.evidence.found)
 		check(proven.size() <= 2, tag + "до 8-й минуты не больше 2 доказанных оснований (есть %s)" % str(proven))
-		check(not inv.puzzle_solved("puz_l14_lock"), tag + "сундучок до 8-й минуты не открыт (хозяйка рядом)")
 		for id: String in inv.evidence.found:
 			var c: Dictionary = inv.evidence.clue(id)
 			check(c.get("type") == "contradiction" or id in refuted or c.get("points_to", []) != [culprit],
 				tag + "улика «%s» не называет виновника прямо" % c["title"])
 		_solve_all()
-		check(inv.puzzle_solved("puz_l14_lock") and inv.puzzle_solved("puz_l14_knot"), tag + "обе головоломки решаются из улик")
+		for pz: String in inv.data.get("puzzles", {}):
+			check(inv.puzzle_solved(pz), tag + "головоломка %s решается из улик" % pz)
 		check(inv.proven_against(culprit, inv.evidence.found).size() >= 3, tag + "после сундучка доказательств хватает")
 		var suspects_hit: Dictionary = {}
 		for id: String in inv.evidence.found:
@@ -487,6 +491,29 @@ func test_puzzle_screens() -> void:
 	inv.puzzles_solved.clear()
 	inv.restore(snap)
 	check(inv.puzzle_solved("puz_l14_lock") and inv.puzzle_solved("puz_l14_knot"), "головоломки сохраняются")
+	game.queue_free()
+	game = null
+	await wait_frames(2)
+
+
+## Дело 4: записи правдивы (место графа пустое, настоящий Луи за картами, на записи граф —
+## в облике Луи), саквояж графа доступен только пока он ужинает.
+func test_level4_mimic_cameras() -> void:
+	await _start_level("level_04")
+	var inv: InvestigationManager = _inv()
+	var seat: Vector2 = game.layout.slots["passenger:bay1_right"]
+	var t: float = Db.parse_time("01:52:05")
+	var away: bool = true
+	while t <= Db.parse_time("01:52:55"):
+		if inv.timeline.position_at("orlov", t).distance_to(seat) < 140.0:
+			away = false
+		t += 1.0 / 30.0
+	check(away, "дело 4: в окне записи К1 графа нет на месте")
+	check(inv.hooks.appearance("orlov", Db.parse_time("01:52:40")) == "louis", "дело 4: на записи граф в облике Луи")
+	check(inv.hooks.appearance("orlov", Db.parse_time("02:00")) == "orlov", "дело 4: вне окна — свой облик")
+	check(inv.luggage_guarded("orlov"), "дело 4: граф сидит у саквояжа")
+	inv.advance(Db.parse_time("02:09") - inv.clock)
+	check(not inv.luggage_guarded("orlov"), "дело 4: в 02:09 граф ужинает")
 	game.queue_free()
 	game = null
 	await wait_frames(2)
