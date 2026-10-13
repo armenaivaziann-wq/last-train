@@ -21,7 +21,7 @@ func build(args: Dictionary) -> void:
 	var title_text: String = "Дело раскрыто!"
 	if not solved:
 		title_text = ("Маньяк скрылся" if villain.get("kind", "") == "maniac" else "%s скрылся" % villain.get("name", "Злодей")) \
-			if _result.get("outcome") == "timeout" else ("Вас схватили" if _result.get("outcome") == "caught" else "Расследование провалено")
+			if _result.get("outcome") == "timeout" else ({"caught": "Вас схватили", "poisoned": "Яд подействовал"}.get(str(_result.get("outcome")), "Расследование провалено"))
 	var title := Ui.label(title_text, "TitleLabel", 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if not solved:
@@ -110,6 +110,8 @@ func build(args: Dictionary) -> void:
 		var why: String = "Вторая ошибка обвинения — монстр понял, что его ищут, и сбежал."
 		if _result.get("outcome") == "timeout":
 			why = str(villain.get("escape_text", "Злодей скрылся."))
+		elif _result.get("outcome") == "poisoned":
+			why = "Вы не успели найти противоядие. Пассажиры нашли вас без сознания. Решайте, что пить, — а если выпили, ищите противоядие сразу."
 		elif _result.get("outcome") == "caught":
 			why = "Охотник настиг вас в темноте второй раз. Пассажиры нашли вас без сознания у самой станции. Прячьтесь, когда слышите шаги: под полками, под столами, за ящиками."
 		right.add_child(Ui.label(why, "", 20, true))

@@ -231,6 +231,42 @@ func drop_clue() -> String:
 	return id
 
 
+# --- выбор и яд ---------------------------------------------------------------------------
+## Сюжетное предложение (эффект "offer"): герою подают напиток — выпить или отказаться.
+## Выбор необратим, сохраняется и меняет ход дела (разные улики, яд). Яд ("poison") —
+## таймер в игровых минутах: не нашли противоядие (улика "antidote") — дело провалено.
+var choices: Dictionary = {}   # id предложения → "accept" / "refuse"
+var poison: Dictionary = {}    # {until, antidote, title}
+
+
+func choose(offer: Dictionary, accept: bool) -> void:
+	var id: String = str(offer["id"])
+	if choices.has(id):
+		return
+	choices[id] = "accept" if accept else "refuse"
+	_fire_story({"id": id + ("_accept" if accept else "_refuse"), "effects": offer.get("accept_effects" if accept else "refuse_effects", [])})
+
+
+func poisoned() -> bool:
+	return not poison.is_empty()
+
+
+func poison_left() -> float:
+	return maxf(0.0, float(poison.get("until", clock)) - clock) if poisoned() else 0.0
+
+
+## Предложения, событие которых уже случилось, а выбор ещё не сделан (окно закрыли).
+func pending_offers() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for ev: Dictionary in data.get("story_events", []):
+		if not story.happened(str(ev["id"])):
+			continue
+		for fx: Dictionary in ev.get("effects", []):
+			if str(fx["type"]) == "offer" and not choices.has(str(fx["id"])):
+				out.append(fx)
+	return out
+
+
 func night_at(t: float) -> bool:
 	for n: Array in nights:
 		if t >= float(n[0]) and t < float(n[1]):
@@ -303,6 +339,9 @@ func advance(minutes: float) -> void:
 	if ended:
 		return
 	clock = minf(clock + minutes, arrival_time)
+	if poisoned() and clock >= float(poison["until"]):
+		finish("poisoned")
+		return
 	_check_events()
 	for pair: Array in murders.due(clock):
 		murder_stage.emit(pair[0], pair[1])
@@ -344,6 +383,8 @@ func _on_clue_added(id: String) -> void:
 	else:
 		Events.add_stat("clues")
 	Events.clue_found.emit(id)
+	if poisoned() and id == str(poison["antidote"]):
+		poison = {}
 	clue_added.emit(id)
 	for e: Dictionary in story.on_clue(id):
 		_fire_story(e)
@@ -379,6 +420,11 @@ func _fire_story(e: Dictionary) -> void:
 				var iid: String = str(fx.get("item", {}).get("id", ""))
 				if iid != "" and not iid in story.spawned:
 					story.spawned.append(iid)
+			"poison":
+				poison = {"until": clock + float(fx.get("minutes", 5.0)), "antidote": str(fx["antidote"]),
+					"title": str(fx.get("title", "Вы отравлены"))}
+				if evidence.has(str(fx["antidote"])):
+					poison = {}
 			"remove_item":
 				story.spawned.erase(fx["id"])
 				if not story.spawned.has("-" + str(fx["id"])):
@@ -925,7 +971,8 @@ func snapshot() -> Dictionary:
 		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
 		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate(),
-		"hunts_done": hunts_done.duplicate(), "hunts_caught": hunts_caught}
+		"hunts_done": hunts_done.duplicate(), "hunts_caught": hunts_caught,
+		"choices": choices.duplicate(), "poison": poison.duplicate()}
 
 
 func restore(s: Dictionary) -> void:
@@ -947,6 +994,8 @@ func restore(s: Dictionary) -> void:
 	puzzles_solved = s.get("puzzles", []).duplicate()
 	hunts_done = s.get("hunts_done", []).duplicate()
 	hunts_caught = int(s.get("hunts_caught", 0))
+	choices = s.get("choices", {}).duplicate()
+	poison = s.get("poison", {}).duplicate()
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):

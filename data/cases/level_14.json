@@ -1413,5 +1413,6 @@
    "wrong_cost": 0.5,
    "solved_text": "Щёлк. Замок открылся."
   }
- }
+ },
+ "decisive_minute": 9.0
 }

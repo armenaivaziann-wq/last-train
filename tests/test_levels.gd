@@ -383,7 +383,7 @@ const HARD: Array = ["level_04", "level_14"]
 
 
 func test_level14_no_early_proof() -> void:
-	for pair: Array in [["level_04", 7], ["level_04", 1234], ["level_14", 7], ["level_14", 1234]]:
+	for pair: Array in [["level_02", 7], ["level_04", 7], ["level_04", 1234], ["level_14", 7], ["level_14", 1234]]:
 		var seed_value: int = pair[1]
 		await _start_level(pair[0], seed_value)
 		var inv: InvestigationManager = _inv()
@@ -391,13 +391,14 @@ func test_level14_no_early_proof() -> void:
 		var refuted: Array = []
 		for x: Dictionary in inv.data["deductions"]:
 			refuted.append_array(x.get("refutes", []))
-		while inv.clock < inv.start_time + 8.0:
+		var decisive: float = float(inv.data.get("decisive_minute", 8.0))
+		while inv.clock < inv.start_time + decisive:
 			while _sweep():
 				pass
 			inv.advance(0.5)
 		var tag: String = "%s/%d: " % [pair[0], seed_value]
 		var proven: Array = inv.proven_against(culprit, inv.evidence.found)
-		check(proven.size() <= 2, tag + "до 8-й минуты не больше 2 доказанных оснований (есть %s)" % str(proven))
+		check(proven.size() <= 2, tag + "до %d-й минуты не больше 2 доказанных оснований (есть %s)" % [int(decisive), str(proven)])
 		for id: String in inv.evidence.found:
 			var c: Dictionary = inv.evidence.clue(id)
 			check(c.get("type") == "contradiction" or id in refuted or c.get("points_to", []) != [culprit],

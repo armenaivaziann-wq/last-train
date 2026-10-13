@@ -89,6 +89,9 @@ func _ready() -> void:
 	if resume:
 		_restore(SaveManager.profile["case_progress"])
 		Events.notify("Расследование продолжено", "journal")
+		# Выбор, который не успели сделать до выхода, — предлагаем снова.
+		for fx: Dictionary in investigation.pending_offers():
+			ui.open("choice_screen", {"fx": fx})
 	else:
 		investigation.hold("brief")
 		ui.open("brief_screen", {"brief": case_data["brief"]})
@@ -196,6 +199,7 @@ func _process(delta: float) -> void:
 		_apply_npcs(investigation.clock)
 		villain_world.apply(investigation.clock)
 		player.clock_minute = investigation.clock
+		_sync_poison()
 	_update_barks(delta)
 	_marker_timer -= delta
 	if _marker_timer <= 0.0:
@@ -249,6 +253,21 @@ func in_dark(target: Interactable = null) -> bool:
 	if not player.flashlight.on:
 		return true
 	return target != null and not player.flashlight.lights(target.interact_position())
+
+
+## Яд: герой медленнее, края экрана зеленеют и «плывут», цель — найти противоядие.
+var _was_poisoned: bool = false
+
+
+func _sync_poison() -> void:
+	var on: bool = investigation.poisoned()
+	player.speed_mult = 0.7 if on else 1.0
+	hud.set_poison(investigation.poison_left() if on else -1.0)
+	if on != _was_poisoned:
+		_was_poisoned = on
+		if not on:
+			hud.show_banner("Противоядие подействовало", "Голова проясняется. Можно продолжать.", 3.0)
+		update_goal()
 
 
 ## Ночь: свет во всём поезде выбило на несколько минут (по плану дела).
@@ -486,6 +505,9 @@ func update_goal() -> void:
 	for id: String in npcs:
 		if investigation.suspects.flag(id, "met"):
 			met = true
+	if investigation.poisoned():
+		hud.set_goal("Цель: найдите противоядие — осталось %d мин" % int(ceil(investigation.poison_left())))
+		return
 	var mode: String = str(investigation.profile.get("goals", "guided"))
 	if mode != "guided":
 		# Сложные дела: цель не ведёт за руку — только главный вопрос дела или дедлайн.
@@ -677,6 +699,11 @@ func _on_story_event(e: Dictionary) -> void:
 				hud.show_banner(str(fx.get("title", "Новое преступление")), str(fx.get("text", "")), 4.0)
 			"remove_item":
 				remove_item(str(fx["id"]))
+			"offer":
+				ui.open("choice_screen", {"fx": fx})
+			"poison":
+				AudioManager.play_sfx("cough", -2.0)
+				AudioManager.vibrate(120)
 	update_goal()
 
 

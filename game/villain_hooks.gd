@@ -59,7 +59,7 @@ func _add_clue(id: String, type: String, title: String, text: String, points: Ar
 		inv.data["key_clues"].append(id)
 
 
-func _camera_clue(id: String, npc: String, t: float, title: String, text: String, key: bool, before: float = 0.15, after: float = 0.4) -> void:
+func _camera_clue(id: String, npc: String, t: float, title: String, text: String, key: bool, before: float = 0.15, after: float = 0.4, points: Array = []) -> void:
 	var pos: Vector2 = inv.timeline.position_at(npc, t)
 	var cam_id: String = ""
 	var area: float = INF
@@ -74,7 +74,7 @@ func _camera_clue(id: String, npc: String, t: float, title: String, text: String
 		if iv[1] - iv[0] > 0.05:
 			inv.data["camera_clues"].append({"id": id, "camera": cam_id, "npc": npc,
 				"windows": [[Db.format_time(iv[0] + 0.01, true), Db.format_time(iv[1] - 0.01, true)]]})
-			_add_clue(id, "camera", title, text.replace("{cam}", "К" + cam_id.substr(3)), [npc], iv[0], key)
+			_add_clue(id, "camera", title, text.replace("{cam}", "К" + cam_id.substr(3)), points if not points.is_empty() else [npc], iv[0], key)
 			return
 
 
@@ -97,7 +97,7 @@ func _plan_shapeshifter(rng: RandomNumberGenerator) -> void:
 		disguises.append([sw, nxt])
 		_camera_clue("h_shift_%d" % i, culprit, sw, "Запись: смена облика",
 			"Камера {cam}: в туннеле %s пассажир в облике «%s» шагнул в темноту, а после вспышки там же стоял «%s»." % [
-				Db.format_time(sw), Db.char_name(cur), Db.char_name(nxt)], true, 0.2, 0.5)
+				Db.format_time(sw), Db.char_name(cur), Db.char_name(nxt)], true, 0.2, 0.5, [cur, nxt] if cur != nxt else [])
 		cur = nxt
 		i += 1
 

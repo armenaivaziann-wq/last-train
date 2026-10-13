@@ -45,6 +45,8 @@ var _hide_rect: TextureRect
 var _hide_label: Label
 var _danger: float = 0.0
 var _danger_t: float = 0.0
+var _poison_rect: TextureRect
+var _poison_t: float = 0.0
 
 
 func setup(game_node: Node) -> void:
@@ -57,6 +59,7 @@ func setup(game_node: Node) -> void:
 	add_child(overlay)
 	_danger_rect = _vignette(Color(0.85, 0.05, 0.12))
 	_hide_rect = _vignette(Color(0.0, 0.0, 0.02), 0.25)
+	_poison_rect = _vignette(Color(0.2, 0.7, 0.15), 0.22)
 	_hide_label = Ui.label("Вы в укрытии · двиньте джойстик или нажмите «Выйти»", "SmallLabel", 18)
 	_hide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hide_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
@@ -425,6 +428,12 @@ func show_direction(world_pos: Vector2, text: String, duration: float = 6.0) -> 
 
 
 func _process(delta: float) -> void:
+	if _poison_rect.visible:
+		# Мягкое «плавание» краёв без тряски — на телефоне не укачивает.
+		_poison_t += delta
+		_poison_rect.modulate.a = 0.75 + 0.2 * sin(_poison_t * 1.7)
+		_poison_rect.scale = Vector2.ONE * (1.0 + 0.015 * sin(_poison_t * 1.1))
+		_poison_rect.pivot_offset = _poison_rect.size / 2.0
 	if _danger_rect.visible:
 		_danger_t += delta * (2.0 + 4.0 * _danger)
 		_danger_rect.modulate.a = _danger * (0.55 + 0.25 * sin(_danger_t))
@@ -484,6 +493,13 @@ func set_danger(v: float) -> void:
 	_danger_rect.visible = _danger > 0.01
 	if not _danger_rect.visible:
 		_danger_rect.modulate.a = 0.0
+
+
+## Яд: зелёные «плывущие» края экрана; minutes_left < 0 — яда нет.
+func set_poison(minutes_left: float) -> void:
+	_poison_rect.visible = minutes_left >= 0.0
+	if not _poison_rect.visible:
+		_poison_rect.modulate.a = 0.0
 
 
 func set_hidden(on: bool) -> void:

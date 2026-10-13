@@ -33,6 +33,8 @@ var _lens: Sprite2D
 var flashlight: Flashlight
 ## Герой в укрытии: не виден охотнику, не двигается, фонарь погашен.
 var in_hiding: bool = false
+## Множитель скорости (яд замедляет героя).
+var speed_mult: float = 1.0
 var _hide_from: Vector2
 
 
@@ -124,7 +126,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var dir: Vector2 = read_input() if input_enabled and _action_time <= 0.0 else Vector2.ZERO
 	if dir.length() > 0.05:
-		velocity = velocity.move_toward(dir * SPEED, ACCEL * delta)
+		velocity = velocity.move_toward(dir * SPEED * speed_mult, ACCEL * delta)
 		facing = CaseTimeline.facing_for(dir)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, FRICTION * delta)
