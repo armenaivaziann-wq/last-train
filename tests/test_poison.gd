@@ -91,3 +91,29 @@ func test_pending_offer_survives_exit() -> void:
 	inv.restore(snap)
 	check(inv.pending_offers().size() == 1, "после загрузки предложение снова ждёт выбора")
 	await _end()
+
+
+## Дело 4: голос Агаты зовёт в тамбур. Побежать — ловушка (охота), проверить камеру —
+## минута и улика «голос без хозяйки».
+func test_mimic_voice_lure() -> void:
+	await _start("level_04", 7)
+	var inv: InvestigationManager = game.investigation
+	inv.advance(4.6)
+	await wait_frames(2)
+	var scr: GameScreen = game.ui.top()
+	check(scr != null and scr.name == "choice_screen", "дело 4: голос зовёт — выбор")
+	scr._pick(true)
+	await wait_frames(3)
+	check(game.hunt.hunter != null, "побежал на голос — ловушка, охота")
+	var snap: Dictionary = inv.snapshot()
+	check(snap["hunts_dynamic"].size() == 1, "ловушка сохраняется")
+	await _end()
+	await _start("level_04", 8)
+	inv = game.investigation
+	inv.advance(4.6)
+	await wait_frames(2)
+	var c0: float = inv.clock
+	game.ui.top()._pick(false)
+	await wait_frames(2)
+	check(inv.evidence.has("s_l4_voice_empty") and inv.clock - c0 >= 0.99 and game.hunt.hunter == null, "проверил камеру — улика и минута, без охоты")
+	await _end()

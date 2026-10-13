@@ -142,6 +142,7 @@ func _plan_nights() -> void:
 var hunts: Array = []          # [{id, from, to, def}]
 var hunts_done: Array = []     # id закончившихся охот (ушёл или поймал)
 var hunts_caught: int = 0
+var hunts_dynamic: Array = []  # охоты, начатые сюжетом (ловушка), — для сохранения
 const CATCH_COST: float = 3.0
 
 
@@ -420,6 +421,13 @@ func _fire_story(e: Dictionary) -> void:
 				var iid: String = str(fx.get("item", {}).get("id", ""))
 				if iid != "" and not iid in story.spawned:
 					story.spawned.append(iid)
+			"hunt":
+				# Сюжетная охота (ловушка): начинается сейчас и длится minutes.
+				var h: Dictionary = {"id": str(fx["id"]), "from": clock, "to": minf(clock + float(fx.get("minutes", 1.5)), arrival_time - 0.2), "def": fx}
+				hunts.append(h)
+				hunts_dynamic.append(h)
+			"time":
+				spend_time(float(fx.get("minutes", 1.0)))
 			"poison":
 				poison = {"until": clock + float(fx.get("minutes", 5.0)), "antidote": str(fx["antidote"]),
 					"title": str(fx.get("title", "Вы отравлены"))}
@@ -972,7 +980,7 @@ func snapshot() -> Dictionary:
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
 		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate(),
 		"hunts_done": hunts_done.duplicate(), "hunts_caught": hunts_caught,
-		"choices": choices.duplicate(), "poison": poison.duplicate()}
+		"choices": choices.duplicate(), "poison": poison.duplicate(), "hunts_dynamic": hunts_dynamic.duplicate(true)}
 
 
 func restore(s: Dictionary) -> void:
@@ -995,6 +1003,10 @@ func restore(s: Dictionary) -> void:
 	hunts_done = s.get("hunts_done", []).duplicate()
 	hunts_caught = int(s.get("hunts_caught", 0))
 	choices = s.get("choices", {}).duplicate()
+	for h: Dictionary in s.get("hunts_dynamic", []):
+		if not hunts.any(func(x: Dictionary) -> bool: return x["id"] == h["id"]):
+			hunts.append(h)
+			hunts_dynamic.append(h)
 	poison = s.get("poison", {}).duplicate()
 	presented = s.get("presented", []).duplicate()
 	events_done = []
