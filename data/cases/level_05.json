@@ -1101,7 +1101,7 @@
     "talk"
    ],
    [
-    "02:04",
+    "02:05",
     "vest_window",
     "photo"
    ],
@@ -1147,7 +1147,7 @@
    "text": "Свет погас — и тень вернулась. Она быстрее, чем в прошлый раз."
   }
  ],
- "decisive_minute": 6.0,
+ "decisive_minute": 7.0,
  "puzzles": {
   "puz_l5_lamps": {
    "type": "dial",

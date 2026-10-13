@@ -144,7 +144,7 @@
     "sleep"
    ],
    [
-    "02:08",
+    "02:08:30",
     "bg_coffin",
     "idle"
    ],
@@ -681,7 +681,7 @@
   {
    "id": "l12_robert_wakes",
    "trigger": {
-    "at": "+10.0"
+    "at": "+10.5"
    },
    "effects": [
     {
@@ -1472,7 +1472,7 @@
    "clue": "c_l12_damaged"
   }
  ],
- "decisive_minute": 10.0,
+ "decisive_minute": 10.5,
  "puzzles": {
   "puz_l12_wires": {
    "type": "pairs",

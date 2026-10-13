@@ -116,7 +116,7 @@
     "eat"
    ],
    [
-    "02:05",
+    "02:05:30",
     "piano",
     "piano"
    ],
@@ -1235,7 +1235,7 @@
   "john": "suspicious",
   "mark": "suspicious"
  },
- "decisive_minute": 7.0,
+ "decisive_minute": 7.5,
  "puzzles": {
   "puz_l6_tubes": {
    "type": "pairs",
