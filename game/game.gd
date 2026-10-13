@@ -413,6 +413,9 @@ func open_object(object_id: String) -> void:
 		if obj.has("locked_clue"):
 			investigation.give(str(obj["locked_clue"]))
 		return
+	if investigation.object_guarded(object_id):
+		Events.notify("%s не подпускает к этому. Дождитесь, пока отойдёт." % Db.char_name(str(obj["guard"])), "lock")
+		return
 	# Объект-головоломка: пока не решена, открывается она; потом — обычный осмотр.
 	var pz: String = str(obj.get("puzzle", ""))
 	if pz != "" and not investigation.puzzle_solved(pz):

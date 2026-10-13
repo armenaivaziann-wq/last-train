@@ -864,6 +864,19 @@ func puzzle_wrong(id: String) -> void:
 	spend_time(float(puzzle(id).get("wrong_cost", 0.5)) * float(profile.get("time_cost_mult", 1.0)))
 
 
+## Предмет мира под присмотром ("guard": "npc" в данных объекта): пока хозяин рядом
+## с предметом, его не дадут осмотреть.
+func object_guarded(oid: String) -> bool:
+	var g: String = str(data.get("objects", {}).get(oid, {}).get("guard", ""))
+	if g == "":
+		return false
+	for it: Dictionary in data.get("extra_items", []):
+		if it["id"] == oid:
+			var pos := Vector2(layout.offsets[it["carriage"]] + float(it["pos"][0]), float(it["pos"][1]))
+			return timeline.position_at(g, clock).distance_to(pos) < 90.0
+	return false
+
+
 ## Хозяин сидит рядом с вещами («guarded» в данных багажа) — обыскать нельзя, пока он не отойдёт.
 func luggage_guarded(owner: String) -> bool:
 	if not data.get("luggage", {}).get(owner, {}).get("guarded", false):
