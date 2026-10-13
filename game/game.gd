@@ -532,6 +532,9 @@ func update_goal() -> void:
 	for id: String in npcs:
 		if investigation.suspects.flag(id, "met"):
 			met = true
+	if hunt and hunt.hunter != null:
+		hud.set_goal("Спрячьтесь — охотник рядом!" if not player.in_hiding else "Тихо... ждите, пока он уйдёт")
+		return
 	if investigation.poisoned():
 		hud.set_goal("Цель: найдите противоядие — осталось %d мин" % int(ceil(investigation.poison_left())))
 		return
@@ -662,7 +665,8 @@ func _on_escalated(npc_id: String) -> void:
 
 func _update_barks(delta: float) -> void:
 	_bark_timer -= delta
-	if _bark_timer > 0.0 or ui.has_modal():
+	# Во время охоты пассажиры молчат — экран не перегружен репликами.
+	if _bark_timer > 0.0 or ui.has_modal() or (hunt and hunt.hunter != null):
 		return
 	_bark_timer = _bark_rng.randf_range(3.0, 6.0)
 	var near: Array = []

@@ -39,7 +39,7 @@ func test_hide_spots_everywhere() -> void:
 func test_hunt_catch_and_hide() -> void:
 	await _start("level_05")
 	var inv: InvestigationManager = game.investigation
-	check(inv.hunts.size() == 2, "дело 5: две охоты (по ночам)")
+	check(inv.hunts.size() == 1, "дело 5: одна охота — в первую ночь")
 	var h0: Dictionary = inv.hunts[0]
 	inv.advance(float(h0["from"]) - inv.clock + 0.05)
 	await wait_frames(3)
@@ -48,28 +48,9 @@ func test_hunt_catch_and_hide() -> void:
 	if hunter == null:
 		await _end()
 		return
-	# Видимого героя ловит.
-	for id: String in inv.data["objects"]:
-		var o: Dictionary = inv.data["objects"][id]
-		for hs: Dictionary in o.get("hotspots", []):
-			inv.give(str(hs["clue"]))
-	var can_drop: int = inv.droppable_clues().size()
-	var found_before: int = inv.evidence.found.size()
-	var c0: float = inv.clock
-	hunter.global_position = game.player.global_position + Vector2(30, 0)
-	await wait_seconds(1.2)
-	check(inv.hunts_caught == 1, "охотник поймал видимого героя")
-	check(inv.clock - c0 >= InvestigationManager.CATCH_COST - 0.01, "поимка стоит %d минут" % int(InvestigationManager.CATCH_COST))
-	check(game.hunt.hunter == null and h0["id"] in inv.hunts_done, "после поимки охота закончилась")
-	if can_drop > 0:
-		check(inv.evidence.found.size() == found_before - 1, "одна улика выпала из рук")
-	check(not inv.ended, "первая поимка — не поражение")
+	check(game.hud.quiet and not game.hud._toasts.visible, "во время охоты уведомления скрыты")
+	check(game.hud._goal_label.text.contains("Спрячьтесь"), "цель во время охоты — спрятаться")
 	# Спрятавшегося не ловит.
-	var h1: Dictionary = inv.hunts[1]
-	inv.advance(float(h1["from"]) - inv.clock + 0.05)
-	await wait_frames(3)
-	hunter = game.hunt.hunter
-	check(hunter != null, "вторая охота началась")
 	var near: Dictionary = HideSpots.nearest(game.hunt.spots, game.player.global_position)
 	game.player.global_position = near["pos"] + Vector2(0, 8)
 	var it: Interactable = null
@@ -80,17 +61,36 @@ func test_hunt_catch_and_hide() -> void:
 	check(game.player.in_hiding and not game.player.flashlight.on, "в укрытии фонарь погашен")
 	hunter.global_position = game.player.global_position + Vector2(10, 0)
 	await wait_seconds(1.5)
-	check(inv.hunts_caught == 1, "спрятавшегося героя охотник не ловит")
+	check(inv.hunts_caught == 0, "спрятавшегося героя охотник не ловит")
 	check(not hunter.sees_player(), "из укрытия героя не видно")
-	# Сохранение.
+	# Видимого ловит: −3 минуты, улика выпадает.
+	game.leave_hide()
+	for id: String in inv.data["objects"]:
+		for hs: Dictionary in inv.data["objects"][id].get("hotspots", []):
+			inv.give(str(hs["clue"]))
+	var can_drop: int = inv.droppable_clues().size()
+	var found_before: int = inv.evidence.found.size()
+	var c0: float = inv.clock
+	hunter.mode = "chase"
+	hunter.global_position = game.player.global_position + Vector2(20, 0)
+	await wait_seconds(1.2)
+	check(inv.hunts_caught == 1, "охотник поймал видимого героя")
+	check(inv.clock - c0 >= InvestigationManager.CATCH_COST - 0.01, "поимка стоит %d минут" % int(InvestigationManager.CATCH_COST))
+	check(game.hunt.hunter == null and h0["id"] in inv.hunts_done, "после поимки охота закончилась")
+	check(not game.hud.quiet, "после охоты уведомления вернулись")
+	if can_drop > 0:
+		check(inv.evidence.found.size() == found_before - 1, "одна улика выпала из рук")
+	check(not inv.ended, "первая поимка — не поражение")
 	var snap: Dictionary = inv.snapshot()
 	inv.hunts_caught = 0
 	inv.hunts_done.clear()
 	inv.restore(snap)
 	check(inv.hunts_caught == 1 and h0["id"] in inv.hunts_done, "охота сохраняется")
-	# Вторая поимка — поражение.
-	game.leave_hide()
-	check(not game.player.in_hiding, "герой вышел из укрытия")
+	# Вторая поимка (сюжетная ловушка) — поражение.
+	inv._fire_story({"id": "t_trap", "effects": [{"type": "hunt", "id": "h_test", "minutes": 1.5, "hunter": "shadow"}]})
+	await wait_frames(3)
+	hunter = game.hunt.hunter
+	check(hunter != null, "ловушка запускает охоту")
 	hunter.mode = "chase"
 	hunter.global_position = game.player.global_position + Vector2(20, 0)
 	await wait_seconds(1.2)
@@ -122,9 +122,9 @@ func test_hunter_avoids_furniture() -> void:
 	await _end()
 
 
-## Обучение (дело 1): охотник безвреден, из укрытия можно подслушать улику.
+## Первая охота (дело 3): отражение безвредно, из укрытия можно подслушать улику.
 func test_tutorial_hunt_overhear() -> void:
-	SaveManager.prepare_level("level_01")
+	SaveManager.prepare_level("level_03")
 	SaveManager.pending_seed = 7
 	game = load("res://game/game.tscn").instantiate()
 	add_child(game)
@@ -135,7 +135,7 @@ func test_tutorial_hunt_overhear() -> void:
 	inv.advance(float(inv.hunts[0]["from"]) - inv.clock + 0.05)
 	await wait_frames(3)
 	var hunter: Hunter = game.hunt.hunter
-	check(hunter != null, "обучение: в первую ночь идёт человек в чёрном")
+	check(hunter != null, "дело 3: в первую ночь из зеркала выходит фигура")
 	var near: Dictionary = HideSpots.nearest(game.hunt.spots, game.player.global_position)
 	game.player.global_position = near["pos"] + Vector2(0, 8)
 	for n in get_tree().get_nodes_in_group(&"interactables"):
@@ -143,13 +143,13 @@ func test_tutorial_hunt_overhear() -> void:
 			game.enter_hide(n)
 	hunter.global_position = game.player.global_position + Vector2(80, 0)
 	await wait_frames(3)
-	check(inv.evidence.has("s_c1_overheard"), "из укрытия подслушана улика")
+	check(inv.evidence.has("s_l3_overheard"), "из укрытия подслушана улика")
 	game.leave_hide()
 	var c0: float = inv.clock
 	hunter.mode = "chase"
 	hunter.global_position = game.player.global_position + Vector2(12, 0)
 	await wait_seconds(0.6)
-	check(inv.hunts_caught == 0 and inv.clock - c0 < 1.0 and not inv.ended, "обучение: охотник безвреден")
+	check(inv.hunts_caught == 0 and inv.clock - c0 < 1.0 and not inv.ended, "первая охота безвредна")
 	await _end()
 
 

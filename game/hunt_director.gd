@@ -56,7 +56,7 @@ func _overhear() -> void:
 		return
 	if hunter.global_position.distance_to(game.player.global_position) <= 130.0:
 		game.investigation.give(str(oh["clue"]))
-		game.hud.show_banner("Подслушано", str(oh["text"]), 4.5)
+		game.hud.show_banner("Подслушано", str(oh["text"]), 3.5, true)
 
 
 func _start(h: Dictionary) -> void:
@@ -74,11 +74,14 @@ func _start(h: Dictionary) -> void:
 	hunter.caught.connect(_on_caught)
 	game.entities.add_child(hunter)
 	AudioManager.play_sfx("villain_sting", -6.0)
-	game.hud.show_banner(str(def.get("title", "Кто-то идёт")), str(def.get("text", "В темноте по вагонам кто-то бродит и ищет вас. Спрячьтесь — под полкой, под столом, за ящиками.")), 3.5)
+	# Тихий экран: коротко и выше, уведомления ждут конца охоты, пассажиры молчат.
+	game.hud.quiet = true
+	game.hud.show_banner(str(def.get("title", "Кто-то идёт")), str(def.get("text", "В темноте по вагонам кто-то бродит и ищет вас. Спрячьтесь — под полкой, под столом, за ящиками.")), 2.0, true)
+	game.update_goal()
 	if not _hinted and not spots.is_empty():
 		_hinted = true
 		# Подсказка, где спрятаться, — после баннера, чтобы не накладывались.
-		get_tree().create_timer(3.6).timeout.connect(func() -> void:
+		get_tree().create_timer(2.6).timeout.connect(func() -> void:
 			if hunter and is_instance_valid(game):
 				var near: Dictionary = HideSpots.nearest(spots, game.player.global_position)
 				game.hud.show_direction(near["pos"], "Укрытие: " + str(near["label"]).to_lower(), 5.0))
@@ -92,6 +95,8 @@ func _finish_hunt() -> void:
 	hunter = null
 	current = {}
 	game.hud.set_danger(0.0)
+	game.hud.quiet = false
+	game.update_goal()
 	Events.notify("Шаги стихли. Охотник ушёл.", "footprint")
 
 
@@ -105,12 +110,14 @@ func _on_caught() -> void:
 		hunter = null
 		current = {}
 		game.hud.set_danger(0.0)
+		game.hud.quiet = false
 		game.hud.show_banner("Он прошёл мимо", "Человек в чёрном задел вас плечом и скрылся. В следующий раз прячьтесь — в других делах охотник не пощадит.", 4.5)
 		return
 	hunter.queue_free()
 	hunter = null
 	current = {}
 	game.hud.set_danger(0.0)
+	game.hud.quiet = false
 	AudioManager.play_sfx("villain_escape", -2.0)
 	AudioManager.vibrate(220)
 	if game.player.in_hiding:

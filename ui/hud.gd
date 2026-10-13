@@ -369,32 +369,55 @@ func clear_new_clues() -> void:
 	_journal_badge.visible = false
 
 
-## Компактное уведомление в одну строку (не больше двух одновременно).
+## Компактное уведомление в одну строку. Показывается по одному: остальные ждут в очереди,
+## чтобы надписи не наслаивались. Во время охоты (quiet) очередь копится и не мешает.
+var quiet: bool = false:
+	set(v):
+		quiet = v
+		_toasts.visible = not quiet
+		if not quiet:
+			_next_toast()
+var _toast_queue: Array = []
+var _toast_busy: bool = false
+
+
 func show_toast(text: String, icon_name: String = "") -> void:
+	if text == "":
+		return
+	_toast_queue.append([text, icon_name])
+	while _toast_queue.size() > 3:
+		_toast_queue.pop_front()
+	_next_toast()
+
+
+func _next_toast() -> void:
+	if _toast_busy or quiet or _toast_queue.is_empty():
+		return
+	var e: Array = _toast_queue.pop_front()
+	_toast_busy = true
 	var p := Ui.panel("PillPanel")
 	var h := Ui.hbox(8)
-	if icon_name != "":
-		h.add_child(Ui.icon(icon_name, 26))
-	var l := Ui.label(text, "", 18)
+	if str(e[1]) != "":
+		h.add_child(Ui.icon(str(e[1]), 26))
+	var l := Ui.label(str(e[0]), "", 18)
 	h.add_child(l)
 	p.add_child(h)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_toasts.add_child(p)
-	while _toasts.get_child_count() > 2:
-		var old: Node = _toasts.get_child(0)
-		_toasts.remove_child(old)
-		old.queue_free()
 	p.modulate.a = 0.0
 	var tw := p.create_tween()
 	tw.tween_property(p, "modulate:a", 1.0, 0.15)
-	tw.tween_interval(2.4)
-	tw.tween_property(p, "modulate:a", 0.0, 0.35)
-	tw.tween_callback(p.queue_free)
+	tw.tween_interval(2.2 if _toast_queue.is_empty() else 1.6)
+	tw.tween_property(p, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(func() -> void:
+		p.queue_free()
+		_toast_busy = false
+		_next_toast())
 
 
 ## Крупный баннер на несколько секунд (например, «ПРОИЗОШЛО УБИЙСТВО»).
-func show_banner(title: String, subtitle: String, duration: float = 4.0) -> void:
+func show_banner(title: String, subtitle: String, duration: float = 4.0, high: bool = false) -> void:
 	Ui.clear(_banner)
 	var v := Ui.vbox(2)
 	var t := Ui.label(title, "TitleLabel", 38)
@@ -412,7 +435,7 @@ func show_banner(title: String, subtitle: String, duration: float = 4.0) -> void
 	_banner.visible = true
 	_banner.reset_size()
 	var vs: Vector2 = get_viewport_rect().size
-	_banner.position = Vector2(round((vs.x - _banner.get_combined_minimum_size().x) / 2.0), vs.y * 0.22)
+	_banner.position = Vector2(round((vs.x - _banner.get_combined_minimum_size().x) / 2.0), vs.y * (0.11 if high else 0.22))
 	_banner.modulate.a = 0.0
 	var tw := _banner.create_tween()
 	tw.tween_property(_banner, "modulate:a", 1.0, 0.2)

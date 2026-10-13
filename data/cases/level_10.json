@@ -1304,5 +1304,6 @@
    "slot": "vestibule:vest_floor",
    "sprite": "toolbox"
   }
- ]
+ ],
+ "arrival": "02:20"
 }
