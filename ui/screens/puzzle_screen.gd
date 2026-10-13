@@ -7,6 +7,8 @@ extends GameScreen
 ##   knot      — узел: развязывать петли в правильном порядке (order), ошибка — узел затянулся.
 ##   sequence  — последовательность (мелодия, порядок чашек): то же, что узел, свои тексты.
 ##   code_lock с "alphabet" — колёса с буквами (шифр-колесо).
+##   dial      — поворотный круг (зеркало, стрелки, лампы): ◄ ► листают положения (positions:
+##               [{label, view}]), «Это оно» проверяет answer (индекс положения).
 ##   pairs     — сопоставление: каждой строке (left) выбрать вариант из options (касание
 ##               листает варианты); answer — индексы верных вариантов по строкам.
 
@@ -57,6 +59,8 @@ func build(args: Dictionary) -> void:
 			_build_knot()
 		"pairs":
 			_build_pairs()
+		"dial":
+			_build_dial()
 
 
 ## Найденные улики, из которых выводится решение (без самого решения).
@@ -171,6 +175,51 @@ func _pull(strand: String) -> void:
 		AudioManager.play_sfx("wrong", -6.0)
 		_build_knot()
 		_msg.text = str(_p.get("fail_text", "Узел затянулся сильнее. Начните заново — и подумайте, в каком порядке его вязали." if _p["type"] == "knot" else "Не тот порядок. Начните заново."))
+		_msg.visible = true
+
+
+# --- поворотный круг ---------------------------------------------------------------------
+var _dial: int = 0
+var _dial_label: Label
+var _dial_view: Label
+
+
+func _build_dial() -> void:
+	var row := Ui.hbox(14)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(Ui.button("◄", "", "ChipButton", func() -> void: _rotate(-1), 64))
+	_dial_label = Ui.label("", "NumberLabel", 30)
+	_dial_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dial_label.custom_minimum_size = Vector2(300, 0)
+	row.add_child(_dial_label)
+	row.add_child(Ui.button("►", "", "ChipButton", func() -> void: _rotate(1), 64))
+	_body.add_child(row)
+	var view := Ui.panel("CardPanel")
+	_dial_view = Ui.label("", "", 19, true)
+	_dial_view.custom_minimum_size = Vector2(0, 76)
+	view.add_child(_dial_view)
+	_body.add_child(view)
+	var cost: float = float(_p.get("wrong_cost", 0.5)) * float(_inv.profile.get("time_cost_mult", 1.0))
+	_body.add_child(Ui.button(str(_p.get("confirm", "Это оно")) + ("  · ошибка %s мин" % str(snappedf(cost, 0.05)) if cost > 0.0 else ""), "check", "PrimaryButton", _try_dial, 60))
+	_rotate(0)
+
+
+func _rotate(d: int) -> void:
+	var pos: Array = _p["positions"]
+	_dial = (_dial + d + pos.size()) % pos.size()
+	_dial_label.text = str(pos[_dial]["label"])
+	_dial_view.text = str(pos[_dial]["view"])
+	if d != 0:
+		AudioManager.play_sfx("click", -10.0)
+
+
+func _try_dial() -> void:
+	if _dial == int(_p["answer"]):
+		_win()
+	else:
+		_inv.puzzle_wrong(_id)
+		AudioManager.play_sfx("wrong", -6.0)
+		_msg.text = str(_p.get("fail_text", "Не то. Время уходит."))
 		_msg.visible = true
 
 

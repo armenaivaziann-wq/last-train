@@ -317,7 +317,7 @@ func camera_label(id: String, t: float, name: String) -> String:
 		"shadow":
 			return "" if npc and _in_zone(game.layout.carriage_at(npc.global_position.x), t) else name
 		"mirror":
-			return name + " (отражение)"
+			return "смазанное отражение"
 		"passenger_zero":
 			return "помехи в форме человека"
 		"werewolf":

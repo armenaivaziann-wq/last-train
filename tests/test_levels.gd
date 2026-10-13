@@ -385,7 +385,13 @@ const HARD: Array = ["level_04", "level_14"]
 
 
 func test_level14_no_early_proof() -> void:
-	for pair: Array in [["level_02", 7], ["level_04", 7], ["level_04", 1234], ["level_14", 7], ["level_14", 1234]]:
+	# Все дела с заданной «решающей минутой» (переработанные), на двух seed.
+	var pairs: Array = []
+	for lvl: String in AUTHORED:
+		if Db.resolve_case(lvl, 7).has("decisive_minute"):
+			pairs.append([lvl, 7])
+			pairs.append([lvl, 1234])
+	for pair: Array in pairs:
 		var seed_value: int = pair[1]
 		await _start_level(pair[0], seed_value)
 		var inv: InvestigationManager = _inv()
