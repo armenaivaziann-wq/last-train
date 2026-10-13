@@ -877,6 +877,19 @@ func object_guarded(oid: String) -> bool:
 	return false
 
 
+## Предмет показывает улику, только когда рядом нужный человек ("needs_near": "npc"),
+## например зеркало — отражение того, кто перед ним стоит.
+func object_waiting(oid: String) -> bool:
+	var n: String = str(data.get("objects", {}).get(oid, {}).get("needs_near", ""))
+	if n == "":
+		return false
+	for it: Dictionary in data.get("extra_items", []):
+		if it["id"] == oid:
+			var pos := Vector2(layout.offsets[it["carriage"]] + float(it["pos"][0]), float(it["pos"][1]))
+			return timeline.position_at(n, clock).distance_to(pos) > 110.0
+	return false
+
+
 ## Хозяин сидит рядом с вещами («guarded» в данных багажа) — обыскать нельзя, пока он не отойдёт.
 func luggage_guarded(owner: String) -> bool:
 	if not data.get("luggage", {}).get(owner, {}).get("guarded", false):

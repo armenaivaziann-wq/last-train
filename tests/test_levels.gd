@@ -83,7 +83,7 @@ func _sweep() -> bool:
 			if o.has("locked_clue"):
 				inv.give(str(o["locked_clue"]))
 			continue
-		if inv.object_guarded(oid):
+		if inv.object_guarded(oid) or inv.object_waiting(oid):
 			continue
 		if not _puzzle_ok(str(o.get("puzzle", ""))):
 			continue
