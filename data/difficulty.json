@@ -75,23 +75,39 @@
     "need_verdict": true
    },
    "wrong_link_cost": 1.0
+  },
+  "6": {
+   "name": "Легенда+",
+   "goals": "none",
+   "markers": "none",
+   "topic_reasons": false,
+   "hints": 1,
+   "search_needs": 1,
+   "explain": "short",
+   "proof": {
+    "min_grounds": 4,
+    "need_deduction": true,
+    "need_verdict": true
+   },
+   "wrong_link_cost": 1.25,
+   "hunt_speed": 1.1
   }
  },
  "levels": {
   "level_01": 1,
-  "level_02": 1,
+  "level_02": 2,
   "level_03": 2,
-  "level_04": 2,
+  "level_04": 3,
   "level_05": 3,
   "level_06": 3,
   "level_07": 4,
   "level_08": 4,
-  "level_09": 5,
+  "level_09": 4,
   "level_10": 5,
-  "level_11": 3,
-  "level_12": 4,
-  "level_13": 5,
-  "level_14": 5,
+  "level_11": 5,
+  "level_12": 5,
+  "level_13": 6,
+  "level_14": 6,
   "daily": 3
  },
  "modes": {

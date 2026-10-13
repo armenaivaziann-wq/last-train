@@ -318,7 +318,8 @@ func test_levels_resume_after_exit() -> void:
 func test_difficulty_grows() -> void:
 	var order: Array = ["guided", "vague", "none"]
 	var markers: Array = ["all", "near", "none"]
-	for chapter in [range(1, 11), range(11, 15)]:
+	# Сложность растёт ровно через всю кампанию: каждое дело не легче предыдущего.
+	for chapter in [range(1, 15)]:
 		var prev: Dictionary = {}
 		for n in chapter:
 			var p: Dictionary = Db.difficulty("level_%02d" % n)
@@ -330,7 +331,8 @@ func test_difficulty_grows() -> void:
 				check(int(p["level"]) >= int(prev["level"]), "уровень %d: сложность не ниже" % n)
 			prev = p
 	check_eq(str(Db.difficulty("level_01")["goals"]), "guided", "первое дело — обучение с целями")
-	check_eq(str(Db.difficulty("level_10")["goals"]), "none", "финал — без целей")
+	check_eq(str(Db.difficulty("level_10")["goals"]), "none", "финал главы — без целей")
+	check(int(Db.difficulty("level_14")["level"]) > int(Db.difficulty("level_10")["level"]), "глава 2 сложнее главы 1")
 
 
 func test_board_scoring_and_search_rules() -> void:
