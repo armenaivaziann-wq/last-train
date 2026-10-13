@@ -151,3 +151,17 @@ func test_tutorial_hunt_overhear() -> void:
 	await wait_seconds(0.6)
 	check(inv.hunts_caught == 0 and inv.clock - c0 < 1.0 and not inv.ended, "обучение: охотник безвреден")
 	await _end()
+
+
+## Мороз (дело 11): на открытой площадке дольше 45 секунд — −2 минуты на отогрев.
+func test_cold_platform() -> void:
+	await _start("level_11")
+	var inv: InvestigationManager = game.investigation
+	var x0: float = game.layout.offsets["v_platform"] + game.layout.widths["v_platform"] / 2.0
+	game.player.global_position = Vector2(x0, game.layout.corridor_y)
+	var c0: float = inv.clock
+	game._sync_cold(20.0)
+	check(inv.clock - c0 < 0.01, "мороз: 20 секунд — ещё терпимо")
+	game._sync_cold(30.0)
+	check(inv.clock - c0 >= 1.99, "мороз: 50 секунд — отогрев стоит 2 минуты")
+	await _end()

@@ -200,6 +200,7 @@ func _process(delta: float) -> void:
 		villain_world.apply(investigation.clock)
 		player.clock_minute = investigation.clock
 		_sync_poison()
+		_sync_cold(delta)
 	_update_barks(delta)
 	_marker_timer -= delta
 	if _marker_timer <= 0.0:
@@ -268,6 +269,26 @@ func _sync_poison() -> void:
 		if not on:
 			hud.show_banner("Противоядие подействовало", "Голова проясняется. Можно продолжать.", 3.0)
 		update_goal()
+
+
+## Мороз ("cold_zone": {carriage, seconds, penalty}): на открытой площадке герой мёрзнет.
+## Пробыл дольше seconds — отогревается: −penalty игровых минут.
+var _cold: float = 0.0
+
+
+func _sync_cold(delta: float) -> void:
+	var cz: Dictionary = case_data.get("cold_zone", {})
+	if cz.is_empty() or ui.has_modal() or investigation.ended:
+		return
+	var inside: bool = layout.carriage_at(player.global_position.x) == str(cz["carriage"]) and not player.in_hiding
+	var limit: float = float(cz.get("seconds", 60.0))
+	_cold = minf(_cold + delta, limit) if inside else maxf(0.0, _cold - delta * 2.0)
+	hud.set_cold(_cold / limit)
+	if inside and _cold >= limit:
+		_cold = 0.0
+		investigation.spend_time(float(cz.get("penalty", 2.0)))
+		AudioManager.play_sfx("cough", -4.0)
+		hud.show_banner("Вы продрогли", "Пришлось отогреваться в вагоне: −%d мин. На морозе долго не простоишь." % int(cz.get("penalty", 2.0)), 3.5)
 
 
 ## Ночь: свет во всём поезде выбило на несколько минут (по плану дела).

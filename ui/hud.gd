@@ -46,6 +46,7 @@ var _hide_label: Label
 var _danger: float = 0.0
 var _danger_t: float = 0.0
 var _poison_rect: TextureRect
+var _cold_rect: TextureRect
 var _poison_t: float = 0.0
 
 
@@ -60,6 +61,7 @@ func setup(game_node: Node) -> void:
 	_danger_rect = _vignette(Color(0.85, 0.05, 0.12))
 	_hide_rect = _vignette(Color(0.0, 0.0, 0.02), 0.25)
 	_poison_rect = _vignette(Color(0.2, 0.7, 0.15), 0.22)
+	_cold_rect = _vignette(Color(0.75, 0.9, 1.0), 0.3)
 	_hide_label = Ui.label("Вы в укрытии · двиньте джойстик или нажмите «Выйти»", "SmallLabel", 18)
 	_hide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hide_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
@@ -500,6 +502,12 @@ func set_poison(minutes_left: float) -> void:
 	_poison_rect.visible = minutes_left >= 0.0
 	if not _poison_rect.visible:
 		_poison_rect.modulate.a = 0.0
+
+
+## Мороз 0..1: края экрана покрываются инеем.
+func set_cold(v: float) -> void:
+	_cold_rect.visible = v > 0.01
+	_cold_rect.modulate.a = clampf(v, 0.0, 1.0) * 0.9
 
 
 func set_hidden(on: bool) -> void:
