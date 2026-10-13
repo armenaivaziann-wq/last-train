@@ -39,6 +39,12 @@ var _dir_label: Label
 var _dir_icon: TextureRect
 var _dir_target: Vector2
 var _dir_left: float = 0.0
+## Красная виньетка опасности (охотник рядом) и тёмная — «вы в укрытии».
+var _danger_rect: TextureRect
+var _hide_rect: TextureRect
+var _hide_label: Label
+var _danger: float = 0.0
+var _danger_t: float = 0.0
 
 
 func setup(game_node: Node) -> void:
@@ -49,6 +55,15 @@ func setup(game_node: Node) -> void:
 
 	overlay = WorldOverlay.new()
 	add_child(overlay)
+	_danger_rect = _vignette(Color(0.85, 0.05, 0.12))
+	_hide_rect = _vignette(Color(0.0, 0.0, 0.02), 0.25)
+	_hide_label = Ui.label("Вы в укрытии · двиньте джойстик или нажмите «Выйти»", "SmallLabel", 18)
+	_hide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hide_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_hide_label.position.y -= 150
+	_hide_label.visible = false
+	_hide_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hide_label)
 
 	# --- сверху слева: время, станция, дело
 	var tl := Ui.panel("PillPanel")
@@ -315,6 +330,9 @@ func set_target(target: Interactable, label_text: String = "") -> void:
 			Interactable.Kind.DOOR:
 				icon_name = "lock"
 				text = "Дверь"
+			Interactable.Kind.HIDE:
+				icon_name = "eye"
+				text = "Выйти" if game.player.in_hiding else "Спрятаться"
 			_:
 				icon_name = "magnifier"
 				text = "Осмотреть"
@@ -407,6 +425,9 @@ func show_direction(world_pos: Vector2, text: String, duration: float = 6.0) -> 
 
 
 func _process(delta: float) -> void:
+	if _danger_rect.visible:
+		_danger_t += delta * (2.0 + 4.0 * _danger)
+		_danger_rect.modulate.a = _danger * (0.55 + 0.25 * sin(_danger_t))
 	if _dir_left <= 0.0:
 		return
 	_dir_left -= delta
@@ -430,6 +451,45 @@ func _process(delta: float) -> void:
 		_dir_icon.rotation = 0.0
 	_dir_panel.position = Vector2(round(x), round(vs.y * 0.36))
 	_dir_panel.modulate.a = 0.6 + 0.4 * sin(_dir_left * 8.0)
+
+
+## Виньетка по краям экрана: прозрачный центр, цвет к краям.
+func _vignette(col: Color, inner: float = 0.45) -> TextureRect:
+	var g := Gradient.new()
+	g.set_offset(0, inner)
+	g.set_color(0, Color(col, 0.0))
+	g.set_offset(1, 1.0)
+	g.set_color(1, Color(col, 0.95))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.05, 1.05)
+	tex.width = 256
+	tex.height = 256
+	var r := TextureRect.new()
+	r.texture = tex
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	Ui.full_rect(r)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.modulate.a = 0.0
+	r.visible = false
+	add_child(r)
+	return r
+
+
+## Опасность 0..1: охотник рядом — края экрана краснеют и пульсируют.
+func set_danger(v: float) -> void:
+	_danger = clampf(v, 0.0, 1.0)
+	_danger_rect.visible = _danger > 0.01
+	if not _danger_rect.visible:
+		_danger_rect.modulate.a = 0.0
+
+
+func set_hidden(on: bool) -> void:
+	_hide_rect.visible = on
+	_hide_rect.modulate.a = 1.0 if on else 0.0
+	_hide_label.visible = on
 
 
 func set_controls_visible(on: bool) -> void:

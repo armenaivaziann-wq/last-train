@@ -31,6 +31,7 @@ var crime_scenes: Dictionary = {}
 ## Предметы мира из данных дела и сюжетных событий: id → узел.
 var world_items: Dictionary = {}
 var villain_world: VillainWorld
+var hunt: HuntDirector
 const DISCOVER_DISTANCE: float = 72.0
 var _autosave_timer: float = AUTOSAVE_INTERVAL
 var _bark_timer: float = 2.0
@@ -71,6 +72,9 @@ func _ready() -> void:
 	glow_layer.add_child(markers)
 	markers.setup(self)
 	camera_system.villain_world = villain_world
+	hunt = HuntDirector.new()
+	add_child(hunt)
+	hunt.setup(self)
 	camera.target = player
 	camera.left_limit = -40.0
 	camera.right_limit = layout.width + 40.0
@@ -111,6 +115,7 @@ func _connect_signals() -> void:
 		if npcs.has(npc):
 			npcs[npc].set_condition(st))
 	player.target_changed.connect(_on_target_changed)
+	player.leave_hide_requested.connect(leave_hide)
 	hud.joystick.vector_changed.connect(func(v: Vector2) -> void: player.touch_vector = v)
 	ui.stack_changed.connect(_on_ui_stack)
 
@@ -261,7 +266,7 @@ func _sync_night() -> void:
 		else:
 			Events.notify("Свет вернулся.", "flashlight")
 	# Фонарь включается сам, как только темнеет, и гаснет при свете — без лишней кнопки на экране.
-	var want: bool = is_dark() and ProgressionManager.equipment_level("flashlight") >= 1
+	var want: bool = is_dark() and ProgressionManager.equipment_level("flashlight") >= 1 and not player.in_hiding
 	if player.flashlight.on != want:
 		player.flashlight.set_on(want)
 
@@ -271,6 +276,9 @@ func interact() -> void:
 		return
 	var t: Interactable = player.target
 	if t == null:
+		return
+	if t.kind != Interactable.Kind.HIDE and player.in_hiding:
+		leave_hide()
 		return
 	if t.needs_light and in_dark(t):
 		Events.notify("Слишком темно — повернитесь, чтобы луч фонаря упал на это." if player.flashlight.on else "Слишком темно — нужен фонарик.", "flashlight")
@@ -295,6 +303,28 @@ func interact() -> void:
 		Interactable.Kind.DOOR:
 			AudioManager.play_sfx("door_locked")
 			Events.notify(str(t.get_meta("message", "Заперто.")), "lock")
+		Interactable.Kind.HIDE:
+			if player.in_hiding:
+				leave_hide()
+			else:
+				enter_hide(t)
+
+
+## Спрятаться: герой исчезает в укрытии, фонарь гаснет, охотник его не видит.
+func enter_hide(t: Interactable) -> void:
+	player.hide_at(t.global_position)
+	AudioManager.play_sfx("creak", -8.0)
+	hud.set_hidden(true)
+	hud.set_target(t, t.label)
+
+
+func leave_hide() -> void:
+	if not player.in_hiding:
+		return
+	player.leave_hide()
+	AudioManager.play_sfx("creak", -12.0)
+	hud.set_hidden(false)
+	hud.set_target(player.target, player.target.label if player.target else "")
 
 
 func use_magnifier() -> void:

@@ -34,6 +34,14 @@ func add(id: String, minute: float) -> bool:
 	return true
 
 
+## Улика потеряна (выпала из рук при поимке) — её можно найти снова там же.
+func remove(id: String) -> void:
+	found.erase(id)
+	found_at.erase(id)
+	statuses.erase(id)
+	links.erase(id)
+
+
 func is_key(id: String) -> bool:
 	return id in case_data.get("key_clues", [])
 

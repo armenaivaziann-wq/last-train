@@ -1,9 +1,9 @@
 class_name Interactable
 extends Node2D
-## Точка взаимодействия: объект, багаж, пассажир, пульт камер или дверь.
+## Точка взаимодействия: объект, багаж, пассажир, пульт камер, дверь или укрытие.
 ## Игрок выбирает ближайшую точку перед собой; подпись показывается на контекстной кнопке.
 
-enum Kind { OBJECT, LUGGAGE, NPC, MONITOR, DOOR }
+enum Kind { OBJECT, LUGGAGE, NPC, MONITOR, DOOR, HIDE }
 
 @export var interact_id: String = ""
 @export var label: String = "Осмотреть"
@@ -37,4 +37,6 @@ func icon_name() -> String:
 			return "cctv"
 		Kind.DOOR:
 			return "lock"
+		Kind.HIDE:
+			return "eye"
 	return "magnifier"

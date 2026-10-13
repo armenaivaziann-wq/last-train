@@ -5,6 +5,8 @@ extends CharacterBody2D
 ## особые анимации (осмотр, запись, находка, задержание) и запись следа для камер.
 
 signal target_changed(target: Interactable)
+## Герой в укрытии сдвинул джойстик — хочет выйти.
+signal leave_hide_requested
 
 const SPEED: float = 84.0
 const ACCEL: float = 900.0
@@ -29,6 +31,9 @@ var _step_flip: int = 0
 var _track_timer: float = 0.0
 var _lens: Sprite2D
 var flashlight: Flashlight
+## Герой в укрытии: не виден охотнику, не двигается, фонарь погашен.
+var in_hiding: bool = false
+var _hide_from: Vector2
 
 
 func _ready() -> void:
@@ -53,6 +58,26 @@ func _ready() -> void:
 	sprite.animation_finished.connect(_on_action_finished)
 	flashlight = Flashlight.new()
 	add_child(flashlight)
+
+
+## Спрятаться в укрытии (точка укрытия) / выйти обратно туда, откуда залезли.
+func hide_at(spot: Vector2) -> void:
+	in_hiding = true
+	_hide_from = global_position
+	velocity = Vector2.ZERO
+	global_position = spot
+	sprite.visible = false
+	_shadow.visible = false
+	flashlight.set_on(false)
+
+
+func leave_hide() -> void:
+	if not in_hiding:
+		return
+	in_hiding = false
+	global_position = _hide_from
+	sprite.visible = true
+	_shadow.visible = true
 
 
 func set_outfit(sheet: String) -> void:
@@ -88,6 +113,15 @@ func _physics_process(delta: float) -> void:
 		_action_time -= delta
 		if _action_time <= 0.0:
 			sprite.play_state("idle", facing)
+	if in_hiding:
+		velocity = Vector2.ZERO
+		if input_enabled and read_input().length() > 0.6:
+			leave_hide_requested.emit()
+		_track_timer -= delta
+		if _track_timer <= 0.0:
+			_track_timer = TRACK_INTERVAL
+			track.append([clock_minute, global_position, facing])
+		return
 	var dir: Vector2 = read_input() if input_enabled and _action_time <= 0.0 else Vector2.ZERO
 	if dir.length() > 0.05:
 		velocity = velocity.move_toward(dir * SPEED, ACCEL * delta)

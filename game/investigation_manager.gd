@@ -107,6 +107,7 @@ func setup(id: String, train_layout: TrainLayout, seed_value: int = -1, case_dat
 	story = StoryDirector.new()
 	story.plan(self)
 	_plan_nights()
+	_plan_hunts()
 	hint_system = HintSystem.new(self)
 	for npc: String in data.get("initial_states", {}):
 		npc_state[npc] = str(data["initial_states"][npc])
@@ -131,6 +132,103 @@ func _plan_nights() -> void:
 				data["dark_zones"] = []
 			for cid in layout.carriage_ids:
 				data["dark_zones"].append({"carriage": cid, "from": CaseBuilder.fmt(t0), "to": CaseBuilder.fmt(t1), "night": true})
+
+
+# --- охота (злодей ищет героя в тёмном поезде) ------------------------------------------
+## "hunts": [{"id", "night": 0 | "at": "+5", "minutes", "hunter", "speed", "sight", "title", "text"}].
+## Охота привязана к ночи (по умолчанию) или к своему времени. Поимка — не смерть: −3 минуты
+## и одна неподтверждённая улика выпадает из рук; поймали столько раз, сколько допускает
+## профиль ("hunt_catches", по умолчанию 2) — поражение.
+var hunts: Array = []          # [{id, from, to, def}]
+var hunts_done: Array = []     # id закончившихся охот (ушёл или поймал)
+var hunts_caught: int = 0
+const CATCH_COST: float = 3.0
+
+
+func _plan_hunts() -> void:
+	hunts.clear()
+	var i: int = 0
+	for h: Dictionary in data.get("hunts", []):
+		var t0: float
+		var t1: float
+		if h.has("night"):
+			var n: int = int(h["night"])
+			if n >= nights.size():
+				continue
+			t0 = float(nights[n][0]) + float(h.get("delay", 0.3))
+			t1 = float(nights[n][1])
+		else:
+			t0 = start_time + float(str(h["at"]).trim_prefix("+"))
+			t1 = minf(t0 + float(h.get("minutes", 2.0)), arrival_time - 0.5)
+		if t1 > t0:
+			hunts.append({"id": str(h.get("id", "hunt_%d" % i)), "from": t0, "to": t1, "def": h})
+		i += 1
+
+
+## Охота, идущая в момент t (и ещё не закончившаяся), или {}.
+func hunt_at(t: float) -> Dictionary:
+	for h: Dictionary in hunts:
+		if t >= float(h["from"]) and t < float(h["to"]) and not h["id"] in hunts_done:
+			return h
+	return {}
+
+
+func end_hunt(id: String) -> void:
+	if not id in hunts_done:
+		hunts_done.append(id)
+
+
+func max_catches() -> int:
+	return int(profile.get("hunt_catches", 2))
+
+
+## Охотник схватил героя. Возвращает id выпавшей улики ("" — выпасть было нечему).
+func hunter_caught(id: String) -> String:
+	hunts_caught += 1
+	end_hunt(id)
+	spend_time(CATCH_COST)
+	var dropped: String = drop_clue()
+	if hunts_caught >= max_catches() and not ended:
+		finish("caught")
+	return dropped
+
+
+## Улики, которые можно «выронить»: вещественные и документы из предметов и багажа (их
+## можно найти снова там же), не участвующие в сделанных выводах и не запускающие событий.
+func droppable_clues() -> Array[String]:
+	var out: Array[String] = []
+	var sources: Dictionary = {}
+	for oid: String in data.get("objects", {}):
+		var o: Dictionary = data["objects"][oid]
+		if o.has("on_open"):
+			sources[str(o["on_open"])] = true
+		for h: Dictionary in o.get("hotspots", []):
+			sources[str(h["clue"])] = true
+	for npc: String in data.get("luggage", {}):
+		for it: Dictionary in data["luggage"][npc].get("items", []):
+			if it.has("hotspot"):
+				sources[str(it["hotspot"]["clue"])] = true
+	var triggers: Dictionary = {}
+	for ev: Dictionary in data.get("story_events", []):
+		triggers[str(ev.get("trigger", {}).get("clue", ""))] = true
+	for id: String in evidence.found:
+		if not sources.has(id) or triggers.has(id) or is_proven(id):
+			continue
+		if evidence.clue(id).get("type") == "contradiction":
+			continue
+		out.append(id)
+	return out
+
+
+func drop_clue() -> String:
+	var cand: Array[String] = droppable_clues()
+	if cand.is_empty():
+		return ""
+	var rng := RandomNumberGenerator.new()
+	rng.seed = case_seed + hunts_caught * 7919
+	var id: String = cand[rng.randi_range(0, cand.size() - 1)]
+	evidence.remove(id)
+	return id
 
 
 func night_at(t: float) -> bool:
@@ -826,7 +924,8 @@ func snapshot() -> Dictionary:
 		"escalated_at": escalated_at, "events_done": events_done, "camera_marks": camera_marks,
 		"murders": murders.serialize(), "level": level_id, "seed": case_seed, "warned": _warned,
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
-		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate()}
+		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate(),
+		"hunts_done": hunts_done.duplicate(), "hunts_caught": hunts_caught}
 
 
 func restore(s: Dictionary) -> void:
@@ -846,6 +945,8 @@ func restore(s: Dictionary) -> void:
 	story_dead = s.get("story_dead", {}).duplicate()
 	board = s.get("board", {}).duplicate(true)
 	puzzles_solved = s.get("puzzles", []).duplicate()
+	hunts_done = s.get("hunts_done", []).duplicate()
+	hunts_caught = int(s.get("hunts_caught", 0))
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):
