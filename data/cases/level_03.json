@@ -254,7 +254,6 @@
      }
     }
    ],
-   "puzzle": "puz_l3_toolbox",
    "guarded": true
   },
   "klara": {
@@ -1066,18 +1065,6 @@
    "wrong_cost": 0.5,
    "confirm": "Часы пропали здесь",
    "solved_text": "Вот она — минута кражи."
-  },
-  "puz_l3_toolbox": {
-   "type": "code_lock",
-   "title": "Ящик механика",
-   "intro": "Ящик с инструментами заперт на четыре колёсика. На крышке нацарапано: «щиток и минута смены».",
-   "code": "1238",
-   "needs": [
-    "d_l3_repairs"
-   ],
-   "reward": [],
-   "wrong_cost": 0.5,
-   "solved_text": "Замок поддался."
   }
  },
  "schedules": {

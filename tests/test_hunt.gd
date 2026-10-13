@@ -37,9 +37,9 @@ func test_hide_spots_everywhere() -> void:
 
 
 func test_hunt_catch_and_hide() -> void:
-	await _start("level_05")
+	await _start("level_12")
 	var inv: InvestigationManager = game.investigation
-	check(inv.hunts.size() == 1, "дело 5: одна охота — в первую ночь")
+	check(inv.hunts.size() == 1, "дело 12: одна охота — вампир во вторую ночь")
 	var h0: Dictionary = inv.hunts[0]
 	inv.advance(float(h0["from"]) - inv.clock + 0.05)
 	await wait_frames(3)
@@ -63,8 +63,9 @@ func test_hunt_catch_and_hide() -> void:
 	await wait_seconds(1.5)
 	check(inv.hunts_caught == 0, "спрятавшегося героя охотник не ловит")
 	check(not hunter.sees_player(), "из укрытия героя не видно")
-	# Видимого ловит: −3 минуты, улика выпадает.
+	# Видимого ловит: −3 минуты, улика выпадает. Герой выходит в коридор.
 	game.leave_hide()
+	game.player.global_position = Vector2(game.player.global_position.x, game.layout.corridor_y)
 	for id: String in inv.data["objects"]:
 		for hs: Dictionary in inv.data["objects"][id].get("hotspots", []):
 			inv.give(str(hs["clue"]))
@@ -91,6 +92,7 @@ func test_hunt_catch_and_hide() -> void:
 	await wait_frames(3)
 	hunter = game.hunt.hunter
 	check(hunter != null, "ловушка запускает охоту")
+	game.player.global_position = Vector2(game.player.global_position.x, game.layout.corridor_y)
 	hunter.mode = "chase"
 	hunter.global_position = game.player.global_position + Vector2(20, 0)
 	await wait_seconds(1.2)
@@ -99,7 +101,7 @@ func test_hunt_catch_and_hide() -> void:
 
 
 func test_hunter_avoids_furniture() -> void:
-	await _start("level_05")
+	await _start("level_12")
 	var nav: HuntNav = game.hunt.nav
 	var start: Vector2 = Vector2(40, game.layout.corridor_y)
 	# Цель — свободная клетка у дальнего укрытия (сам герой в укрытии «внутри» мебели).
