@@ -29,7 +29,7 @@ func _ready() -> void:
 	await _shot("knot" + tag)
 	game.ui.close_all()
 	inv.give_all(["s_l14_lidia_alibi", "d_l14_log", "s_l14_agata_remembers"])
-	inv.advance(Db.parse_time("02:09") - inv.clock)
+	inv.advance(Db.parse_time("02:11") - inv.clock)
 	game.open_luggage("lidia")
 	await get_tree().create_timer(0.5).timeout
 	scr = game.ui.top()

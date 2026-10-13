@@ -117,3 +117,32 @@ func test_mimic_voice_lure() -> void:
 	await wait_frames(2)
 	check(inv.evidence.has("s_l4_voice_empty") and inv.clock - c0 >= 0.99 and game.hunt.hunter == null, "проверил камеру — улика и минута, без охоты")
 	await _end()
+
+
+## Дело 14: отвар «от сестры» — порча: три последние улики «стираются» из памяти, пока
+## не развязан узел в собственном пальто; потом возвращаются.
+func test_witch_hex() -> void:
+	await _start("level_14", 7)
+	var inv: InvestigationManager = game.investigation
+	inv.give_all(["s_l14_brief", "p_l14_herbs", "p_l14_jar_gap", "d_l14_log"])
+	inv.advance(3.1)
+	await wait_frames(2)
+	var scr: GameScreen = game.ui.top()
+	check(scr != null and scr.name == "choice_screen", "дело 14: подан отвар — выбор")
+	scr._pick(true)
+	await wait_frames(1)
+	check(not inv.evidence.has("d_l14_log") and inv.hex["clues"].size() == 3, "выпил — три улики «завязаны»")
+	var snap: Dictionary = inv.snapshot()
+	inv.hex = {}
+	inv.restore(snap)
+	check(inv.hex["clues"].size() == 3, "порча сохраняется")
+	game.ui.close_all()
+	inv.give("s_l14_prof_knots")
+	game.open_object("obj_l14_coat")
+	await wait_frames(1)
+	var pz: GameScreen = game.ui.top()
+	for s: Variant in inv.puzzle("puz_l14_own")["order"]:
+		pz._pull(str(s))
+	await wait_frames(2)
+	check(inv.hex.is_empty() and inv.evidence.has("d_l14_log") and inv.evidence.has("p_l14_herbs"), "узел развязан — улики вернулись")
+	await _end()

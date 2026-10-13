@@ -440,10 +440,10 @@ func test_level14_empty_compartment_camera() -> void:
 		t += 1.0 / 30.0
 	check(ok, "дело 14: в окне записи К1 Лидии нет в купе №4")
 	check(inv.luggage_guarded("lidia"), "дело 14: в начале Лидия сидит у сундучка")
-	inv.advance(Db.parse_time("02:09") - inv.clock)
-	check(not inv.luggage_guarded("lidia"), "дело 14: в 02:09 Лидия ушла ужинать")
-	inv.advance(Db.parse_time("02:16") - inv.clock)
-	check(inv.luggage_guarded("lidia"), "дело 14: к 02:16 Лидия вернулась")
+	inv.advance(Db.parse_time("02:11") - inv.clock)
+	check(not inv.luggage_guarded("lidia"), "дело 14: в 02:11 Лидия ушла ужинать")
+	inv.advance(Db.parse_time("02:17:30") - inv.clock)
+	check(inv.luggage_guarded("lidia"), "дело 14: к 02:17 Лидия вернулась")
 	game.queue_free()
 	game = null
 	await wait_frames(2)
@@ -482,7 +482,14 @@ func test_puzzle_screens() -> void:
 	game.open_luggage("lidia")
 	await wait_frames(1)
 	check(game.ui.top() == null, "замок: при хозяйке сундучок не открыть")
-	inv.advance(Db.parse_time("02:09") - inv.clock)
+	inv.advance(Db.parse_time("02:11") - inv.clock)
+	await wait_frames(2)
+	# По пути подали чашку отвара — отказываемся.
+	if game.ui.top() != null and game.ui.top().name == "choice_screen":
+		game.ui.top()._pick(false)
+		await wait_frames(1)
+		game.ui.close_all()
+		await wait_frames(1)
 	game.open_luggage("lidia")
 	await wait_frames(1)
 	scr = game.ui.top()

@@ -237,6 +237,9 @@ func drop_clue() -> String:
 ## Выбор необратим, сохраняется и меняет ход дела (разные улики, яд). Яд ("poison") —
 ## таймер в игровых минутах: не нашли противоядие (улика "antidote") — дело провалено.
 var choices: Dictionary = {}   # id предложения → "accept" / "refuse"
+## Порча памяти ("hex"): часть найденных улик «завязана» и не видна, пока не найдено
+## противоядие (улика antidote). {antidote, clues: [[id, минута]]}
+var hex: Dictionary = {}
 var poison: Dictionary = {}    # {until, antidote, title}
 
 
@@ -246,6 +249,15 @@ func choose(offer: Dictionary, accept: bool) -> void:
 		return
 	choices[id] = "accept" if accept else "refuse"
 	_fire_story({"id": id + ("_accept" if accept else "_refuse"), "effects": offer.get("accept_effects" if accept else "refuse_effects", [])})
+
+
+## Порча снята: «завязанные» улики возвращаются в журнал.
+func _lift_hex() -> void:
+	var back: Array = hex.get("clues", [])
+	hex = {}
+	for e: Array in back:
+		if evidence.add(str(e[0]), float(e[1])):
+			pass
 
 
 func poisoned() -> bool:
@@ -386,6 +398,8 @@ func _on_clue_added(id: String) -> void:
 	Events.clue_found.emit(id)
 	if poisoned() and id == str(poison["antidote"]):
 		poison = {}
+	if not hex.is_empty() and id == str(hex["antidote"]):
+		_lift_hex()
 	clue_added.emit(id)
 	for e: Dictionary in story.on_clue(id):
 		_fire_story(e)
@@ -428,6 +442,16 @@ func _fire_story(e: Dictionary) -> void:
 				hunts_dynamic.append(h)
 			"time":
 				spend_time(float(fx.get("minutes", 1.0)))
+			"hex":
+				var hidden: Array = []
+				var cand: Array = evidence.found.filter(func(id: String) -> bool: return evidence.clue(id).get("type") != "contradiction" and id != "p_l14_taste")
+				cand.reverse()
+				for id: String in cand.slice(0, int(fx.get("hide", 3))):
+					hidden.append([id, float(evidence.found_at.get(id, clock))])
+					evidence.remove(id)
+				hex = {"antidote": str(fx["antidote"]), "clues": hidden}
+				if evidence.has(str(fx["antidote"])):
+					_lift_hex()
 			"poison":
 				poison = {"until": clock + float(fx.get("minutes", 5.0)), "antidote": str(fx["antidote"]),
 					"title": str(fx.get("title", "Вы отравлены"))}
@@ -1006,7 +1030,7 @@ func snapshot() -> Dictionary:
 		"story": story.serialize(), "npc_state": npc_state, "hints_used": hints_used, "presented": presented,
 		"hint_levels": _hint_levels, "opened": opened, "story_dead": story_dead, "board": board, "puzzles": puzzles_solved.duplicate(),
 		"hunts_done": hunts_done.duplicate(), "hunts_caught": hunts_caught,
-		"choices": choices.duplicate(), "poison": poison.duplicate(), "hunts_dynamic": hunts_dynamic.duplicate(true)}
+		"choices": choices.duplicate(), "poison": poison.duplicate(), "hex": hex.duplicate(true), "hunts_dynamic": hunts_dynamic.duplicate(true)}
 
 
 func restore(s: Dictionary) -> void:
@@ -1034,6 +1058,7 @@ func restore(s: Dictionary) -> void:
 			hunts.append(h)
 			hunts_dynamic.append(h)
 	poison = s.get("poison", {}).duplicate()
+	hex = s.get("hex", {}).duplicate(true)
 	presented = s.get("presented", []).duplicate()
 	events_done = []
 	for e in s.get("events_done", []):
