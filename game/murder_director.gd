@@ -20,7 +20,7 @@ const TUNNEL_LEN: float = 0.75
 const WITNESS_DELAY: float = 0.12
 const WITNESS_STAY: float = 3.0
 const MURDERER_STAY: float = 0.08
-const STAGES: PackedStringArray = ["tunnel_in", "flicker", "kill", "tunnel_out"]
+const STAGES: PackedStringArray = ["warn", "tunnel_in", "flicker", "kill", "tunnel_out"]
 
 ## Волокна, которые злодей оставляет на жертве (по умолчанию — след одежды виновника).
 const FIBERS: Dictionary = {
@@ -35,9 +35,12 @@ var excursions: Array = []    # [[npc, depart, spot, act, back]]
 var seed_value: int = 0
 var stages_done: Array = []   # "индекс:стадия"
 var discovered: Array = []    # индексы найденных мест преступления
+## Сорванные убийства: герой был рядом с жертвой, и убийца отступил (индексы).
+var foiled: Array = []
 var murderer: String = ""
 var _layout: TrainLayout
 var _timeline: CaseTimeline
+var _cfg: Dictionary = {}
 
 
 func plan(data: Dictionary, layout: TrainLayout, timeline: CaseTimeline, start: float, arrival: float, rng_seed: int = -1) -> void:
@@ -46,6 +49,7 @@ func plan(data: Dictionary, layout: TrainLayout, timeline: CaseTimeline, start: 
 		return
 	_layout = layout
 	_timeline = timeline
+	_cfg = cfg
 	seed_value = rng_seed if rng_seed >= 0 else randi() % 1000000
 	murderer = str(cfg.get("murderer", data["culprit"]))
 	var rng := RandomNumberGenerator.new()
@@ -60,6 +64,9 @@ func plan(data: Dictionary, layout: TrainLayout, timeline: CaseTimeline, start: 
 		var m: Dictionary = {"index": i, "id": "mk%d" % i, "prefix": "mk%d" % i, "victim": "",
 			"t": {"tunnel_in": t, "flicker": t + TO_FLICKER, "kill": t + TO_KILL, "tunnel_out": t + TUNNEL_LEN}}
 		var alive: Array = pool.filter(func(v: String) -> bool: return not v in dead)
+		# Предупреждение «туннель близко, кто-то в опасности» — за warn_before минут до убийства.
+		if float(cfg.get("warn_before", 0.0)) > 0.0:
+			m["t"]["warn"] = maxf(start + 0.2, t + TO_KILL - float(cfg["warn_before"]))
 		if not alive.is_empty():
 			# Сначала те, кто в момент убийства не идёт по вагону (сидит или стоит).
 			var still: Array = alive.filter(func(v: String) -> bool: return not timeline.state_at(v, t + TO_KILL)["moving"])
@@ -133,9 +140,12 @@ func _route_people(m: Dictionary, dead: Array) -> void:
 	var kill: float = m["t"]["kill"]
 	var spot: String = _stand_spot_near(m["scene_pos"], [m["victim_spot"]])
 	m["murderer_spot"] = spot
-	var depart: float = kill - _timeline.travel_minutes(murderer, kill - 0.5, spot) - 0.02
-	depart = kill - _timeline.travel_minutes(murderer, depart, spot) - 0.02
-	_excursion([murderer, depart, spot, "hide_evidence", kill + MURDERER_STAY])
+	# "murderer_stays": убивает не сам человек, а его тварь (тень, отражение, голос, копия),
+	# а он остаётся на месте — и у своих вещей.
+	if not bool(_cfg.get("murderer_stays", false)):
+		var depart: float = kill - _timeline.travel_minutes(murderer, kill - 0.5, spot) - 0.02
+		depart = kill - _timeline.travel_minutes(murderer, depart, spot) - 0.02
+		_excursion([murderer, depart, spot, "hide_evidence", kill + MURDERER_STAY])
 	# Куда ушёл убийца — туда и ведут следы.
 	m["escape_spot"] = str(_timeline.state_at(murderer, kill + MURDERER_STAY + 0.3)["spot"])
 	# Свидетели — до двух ближайших живых пассажиров (не убийца, не жертва).
@@ -185,6 +195,8 @@ func _inject(m: Dictionary, data: Dictionary) -> void:
 	var where: String = m["where"]
 	var villain: String = str(data.get("monster", ""))
 	var look: String = str(cfg.get("murderer_look", Db.character(murderer).get("look", "")))
+	# Кого описывают свидетели: в авторских делах — примета, подходящая двоим (не имя).
+	var wpoints: Array = cfg.get("witness_points", [murderer])
 	var fibers: String = str(FIBERS.get(villain, Db.character(murderer).get("trace", "чужие волокна")))
 	var escape_place: String = CaseGenerator.spot_direction(m["escape_spot"])
 	var car: String = m["carriage"]
@@ -237,14 +249,18 @@ func _inject(m: Dictionary, data: Dictionary) -> void:
 			clues["c_" + pre] = {"type": "camera", "title": "К%s: перед туннелем рядом с %s" % [cam_id.substr(3), vname],
 				"text": "Камера %s, %s: перед самым туннелем в кадре были %s и %s. Дальше — помехи: в туннеле камера ослепла." % [
 					cam_id.substr(3), Db.format_time(float(m["t"]["tunnel_in"])), vname, ", ".join(names)],
-				"time": Db.format_time(float(m["t"]["tunnel_in"])), "points_to": present.filter(func(id: String) -> bool: return id in data.get("suspects", []))}
+				"time": Db.format_time(float(m["t"]["tunnel_in"])), "points_to": _camera_points(present, data)}
 			keys.append("c_" + pre)
+	# Если герой окажется рядом с жертвой, убийца отступит — герой заметит только примету.
+	clues["s_%s_foiled" % pre] = {"type": "testimony", "title": "Убийца отступил: " + vname,
+		"text": "Когда погас свет, к %s кто-то подкрался — %s — и отступил, увидев вас." % [vname, look],
+		"time": tt, "points_to": wpoints}
 	# Свидетели: личные реплики, открываются после обнаружения места.
 	for w: String in m["witnesses"]:
 		var wid: String = "%s_w_%s" % [pre, w]
 		var line: String = "Я слышал%s крик, когда погас свет! Мимо пробежал кто-то %s — %s." % [_g(w, "", "а"), look, escape_place]
 		clues[wid] = {"type": "testimony", "title": "Свидетель: " + Db.char_name(w),
-			"text": "%s: «%s»" % [Db.char_name(w), line], "time": tt, "points_to": [murderer]}
+			"text": "%s: «%s»" % [Db.char_name(w), line], "time": tt, "points_to": wpoints}
 		keys.append(wid)
 		data["dialogues"][w]["topics"].append({"id": "m_" + pre, "q": "Что вы видели, когда погас свет (%s)?" % vname,
 			"a": [line], "gives": [wid], "requires": [pre + "_scene"]})
@@ -267,6 +283,13 @@ func _inject(m: Dictionary, data: Dictionary) -> void:
 		data["deductions"].append({"result": "x_%s_fibers" % pre, "a": [pre + "_fibers"], "b": fib_b})
 
 
+## Кого «показывает» запись перед туннелем: подозреваемые в кадре. Если в кадре один
+## виновник — запись никого не называет (подозреваемых должно быть хотя бы двое).
+func _camera_points(present: Array, data: Dictionary) -> Array:
+	var sus: Array = present.filter(func(id: String) -> bool: return id in data.get("suspects", []))
+	return sus if sus.size() >= 2 or not murderer in sus else []
+
+
 func _expand(ids: Array, pre: String) -> Array:
 	var out: Array = []
 	for id in ids:
@@ -284,7 +307,9 @@ func due(clock: float) -> Array:
 	var out: Array = []
 	for m: Dictionary in murders:
 		for st in STAGES:
-			if st == "kill" and m["victim"] == "":
+			if not m["t"].has(st):
+				continue
+			if (st == "kill" or st == "warn") and m["victim"] == "":
 				continue
 			var key: String = "%d:%s" % [m["index"], st]
 			if not key in stages_done and clock >= float(m["t"][st]):
@@ -299,13 +324,30 @@ func stage_done(m: Dictionary, stage: String) -> bool:
 
 
 func killed() -> Array:
-	return murders.filter(func(m: Dictionary) -> bool: return m["victim"] != "" and stage_done(m, "kill"))
+	return murders.filter(func(m: Dictionary) -> bool: return m["victim"] != "" and stage_done(m, "kill") and not int(m["index"]) in foiled)
+
+
+func is_foiled(m: Dictionary) -> bool:
+	return int(m["index"]) in foiled
+
+
+func foil(m: Dictionary) -> void:
+	if not int(m["index"]) in foiled:
+		foiled.append(int(m["index"]))
+
+
+## Ближайшее ещё не случившееся убийство с жертвой (для предупреждения на экране) или {}.
+func upcoming(clock: float) -> Dictionary:
+	for m: Dictionary in murders:
+		if m["victim"] != "" and not is_foiled(m) and float(m["t"]["kill"]) > clock and m["t"].has("warn") and clock >= float(m["t"]["warn"]):
+			return m
+	return {}
 
 
 ## Мёртв ли персонаж в момент t (для живого мира и для записей камер).
 func dead_at(npc: String, t: float) -> bool:
 	for m: Dictionary in murders:
-		if m["victim"] == npc and stage_done(m, "kill") and t >= float(m["t"]["kill"]):
+		if m["victim"] == npc and stage_done(m, "kill") and t >= float(m["t"]["kill"]) and not is_foiled(m):
 			return true
 	return false
 
@@ -331,7 +373,7 @@ func murder_of_clue(id: String) -> Dictionary:
 
 
 func serialize() -> Dictionary:
-	return {"seed": seed_value, "stages_done": stages_done, "discovered": discovered,
+	return {"seed": seed_value, "stages_done": stages_done, "discovered": discovered.duplicate(), "foiled": foiled.duplicate(),
 		"victims": murders.map(func(m: Dictionary) -> String: return m["victim"])}
 
 
@@ -340,3 +382,6 @@ func restore(s: Dictionary) -> void:
 	discovered = []
 	for i in s.get("discovered", []):
 		discovered.append(int(i))
+	foiled = []
+	for i in s.get("foiled", []):
+		foiled.append(int(i))

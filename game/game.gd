@@ -538,6 +538,11 @@ func update_goal() -> void:
 	if investigation.poisoned():
 		hud.set_goal("Цель: найдите противоядие — осталось %d мин" % int(ceil(investigation.poison_left())))
 		return
+	var up: Dictionary = investigation.murders.upcoming(investigation.clock)
+	if not up.is_empty():
+		var left: float = (float(up["t"]["kill"]) - investigation.clock) * investigation.seconds_per_minute
+		hud.set_goal("Туннель через %d сек — будьте рядом: %s" % [maxi(0, int(left)), Db.char_name(str(up["victim"]))])
+		return
 	var mode: String = str(investigation.profile.get("goals", "guided"))
 	if mode != "guided":
 		# Сложные дела: цель не ведёт за руку — только главный вопрос дела или дедлайн.
@@ -751,9 +756,24 @@ func _on_murder_stage(m: Dictionary, stage: String) -> void:
 		"flicker":
 			train.flicker(1.6)
 			AudioManager.play_sfx("lights_flicker")
+		"warn":
+			# За минуту до убийства: кто в опасности — бегите к нему, рядом с вами не нападут.
+			var vn: String = Db.char_name(str(m["victim"]))
+			AudioManager.play_sfx("villain_sting", -10.0)
+			hud.show_banner("Туннель через минуту", "Маньяк выбрал жертву: %s. Будьте рядом — при вас он не нападёт." % vn, 3.0, true)
+			if npcs.has(m["victim"]):
+				hud.show_direction(npcs[m["victim"]].global_position, "В опасности: " + vn, 8.0)
+			update_goal()
 		"kill":
 			train.blackout(0.7)
-			_kill(m, false)
+			if guarding(m):
+				investigation.foil_murder(m)
+				AudioManager.play_sfx("villain_escape", -4.0)
+				hud.show_banner("Убийца отступил", "Вы были рядом — %s жив%s. В темноте вы успели заметить примету." % [
+					Db.char_name(str(m["victim"])), "а" if str(Db.character(str(m["victim"])).get("gender", "m")) == "f" else ""], 3.5, true)
+				update_goal()
+			else:
+				_kill(m, false)
 		"tunnel_out":
 			train.set_tunnel(false)
 			AudioManager.set_tunnel_ambience(false)
@@ -765,6 +785,19 @@ func _on_murder_stage(m: Dictionary, stage: String) -> void:
 
 
 ## Жертва погибает, на её месте остаётся тело. silent — восстановление из сохранения.
+## Герой рядом с намеченной жертвой в момент убийства (и не прячется) — убийца отступает.
+const GUARD_DISTANCE: float = 110.0
+
+
+func guarding(m: Dictionary) -> bool:
+	# Защита работает в делах с предупреждением перед туннелем ("warn_before").
+	if float(case_data.get("murders", {}).get("warn_before", 0.0)) <= 0.0:
+		return false
+	if player.in_hiding or not npcs.has(m["victim"]):
+		return false
+	return player.global_position.distance_to(npcs[m["victim"]].global_position) <= GUARD_DISTANCE
+
+
 func _kill(m: Dictionary, silent: bool) -> void:
 	var victim: NPCController = npcs.get(m["victim"])
 	if victim:

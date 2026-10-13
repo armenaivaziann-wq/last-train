@@ -104,6 +104,9 @@ func _sweep() -> bool:
 	for cc: Dictionary in d.get("camera_clues", []):
 		if Db.parse_time(cc["windows"][0][0]) <= inv.clock:
 			inv.give(str(cc["id"]))
+	# Места убийств: дошёл до тела — осмотрел тело и следы.
+	for m: Dictionary in inv.murders.undiscovered():
+		inv.discover_murder(m)
 	for x: Dictionary in d.get("deductions", []):
 		if ev.has(x["result"]):
 			continue
@@ -112,6 +115,16 @@ func _sweep() -> bool:
 				if ev.has(a) and ev.has(b) and not ev.has(x["result"]):
 					inv.deduce(a, b)
 	return ev.found.size() > before
+
+
+## Осторожный игрок: первое убийство в туннеле не успел предотвратить, а дальше каждый раз
+## стоит рядом с жертвой — убийца отступает (иначе на третьей смерти дело проиграно).
+func _guard_after_first() -> void:
+	var inv: InvestigationManager = _inv()
+	for m: Dictionary in inv.murders.murders:
+		if int(m["index"]) >= 1 and m["victim"] != "" and not inv.murders.is_foiled(m) \
+				and inv.clock + 0.6 >= float(m["t"]["kill"]) and not inv.murders.stage_done(m, "kill"):
+			inv.foil_murder(m)
 
 
 ## Головоломка решается, только когда найдены все улики, из которых выводится ответ.
@@ -130,6 +143,7 @@ func _solve_all() -> void:
 	while inv.clock < inv.arrival_time - 0.6:
 		while _sweep():
 			pass
+		_guard_after_first()
 		inv.advance(0.5)
 	while _sweep():
 		pass
@@ -162,7 +176,8 @@ func _play(level_id: String, seed_value: int) -> void:
 	await _start_level(level_id, seed_value)
 	var inv: InvestigationManager = _inv()
 	_check_data(level_id)
-	check(inv.data.get("murders", {}).get("victim_pool", []).is_empty(), level_id + ": в туннелях не убивают (если не задумано)")
+	var mcfg: Dictionary = inv.data.get("murders", {})
+	check(mcfg.get("victim_pool", []).is_empty() or int(mcfg.get("max_dead", 0)) > 0, level_id + ": убийства в туннелях только там, где задуманы (с пределом жертв)")
 	_solve_all()
 	var d: Dictionary = inv.data
 	var missing: Array = d["key_clues"].filter(func(id: String) -> bool: return not inv.evidence.has(id))
@@ -220,8 +235,8 @@ func test_levels_timeout() -> void:
 			check(_inv().take_hint().is_empty(), level_id + ": лимит подсказок соблюдается")
 		check(_inv().compute_stars(true) <= 2, level_id + ": подсказки снижают рейтинг")
 		_inv().finished.connect(func(x: Dictionary) -> void: res.append(x))
-		_inv().advance(21.0)
-		check(res.size() == 1 and res[0]["outcome"] == "timeout" and int(res[0]["stars"]) == 0, level_id + ": время вышло — поражение")
+		_inv().advance(23.0)
+		check(res.size() == 1 and str(res[0]["outcome"]) in ["timeout", "massacre"] and int(res[0]["stars"]) == 0, level_id + ": время вышло (или маньяк убил троих) — поражение")
 		game.queue_free()
 		game = null
 		await wait_frames(2)

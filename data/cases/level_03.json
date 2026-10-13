@@ -16,13 +16,27 @@
   "p_firstclass": 1.0
  },
  "murders": {
-  "first_after": 3.5,
+  "first_after": 3.0,
   "interval": [
-   7,
-   9
+   5.5,
+   6.5
   ],
   "min_left": 2.5,
-  "victim_pool": []
+  "victim_pool": [
+   "orlov",
+   "robert",
+   "mark",
+   "vera",
+   "agata"
+  ],
+  "max_dead": 3,
+  "warn_before": 1.0,
+  "murderer_look": "в тёмной рабочей одежде",
+  "witness_points": [
+   "john",
+   "tikhon"
+  ],
+  "murderer_stays": true
  },
  "verdict": {
   "motives": [

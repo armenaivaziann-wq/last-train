@@ -314,6 +314,9 @@ func compute_stars(solved: bool, score: int = -1) -> int:
 	var base: int = score if score > 0 else _base_stars()
 	if score <= 0 and not verdict_ok:
 		base = mini(base, 2)
+	# Погибли двое и больше в туннелях — лучшая оценка недоступна.
+	if murders.killed().size() >= 2:
+		base -= 1
 	if profile.get("hints_free", false):
 		return maxi(1, base)
 	# Подсказки снижают рейтинг: 1–2 подсказки −1 звезда, 3 и больше −2 (но не ниже 1).
@@ -358,6 +361,11 @@ func advance(minutes: float) -> void:
 	_check_events()
 	for pair: Array in murders.due(clock):
 		murder_stage.emit(pair[0], pair[1])
+		# Маньяк победил: погибло столько, сколько допускает дело ("max_dead").
+		if pair[1] == "kill" and not ended and int(data.get("murders", {}).get("max_dead", 0)) > 0 \
+				and murders.killed().size() >= int(data["murders"]["max_dead"]):
+			finish("massacre")
+			return
 	for e: Dictionary in story.due(clock):
 		_fire_story(e)
 	clock_changed.emit(clock)
@@ -771,7 +779,8 @@ func finish(outcome: String, accusation: Dictionary = {}) -> Dictionary:
 		"mistakes": mistakes, "clues": evidence.found.size(), "monster": data["monster"],
 		"culprit": data["culprit"], "minutes_left": minutes_left(), "replay": replay,
 		"elapsed": elapsed(), "key_found": evidence.key_found_count(), "level": level_id,
-		"key_total": _key_total(), "hints_used": hints_used, "verdict_ok": verdict_ok}
+		"key_total": _key_total(), "hints_used": hints_used, "verdict_ok": verdict_ok,
+		"dead": murders.killed().size(), "saved": murders.foiled.size()}
 	result["stars"] = compute_stars(outcome == "solved", int(accusation.get("score", -1)))
 	# Монстр ушёл (дедлайн или вторая ошибка) — тратится билет (кроме дела дня и обучения).
 	if outcome != "solved":
@@ -849,6 +858,17 @@ func _key_total() -> int:
 func murder_scenario_of_clue(id: String) -> String:
 	var m: Dictionary = murders.murder_of_clue(id)
 	return "" if m.is_empty() else str(m["id"])
+
+
+## Герой был рядом с намеченной жертвой — убийца отступил. Жертва жива, улики этого
+## убийства (тело, свидетели, запись) не появятся; герой замечает только примету убийцы.
+func foil_murder(m: Dictionary) -> void:
+	if murders.is_foiled(m):
+		return
+	murders.foil(m)
+	var pre: String = str(m["prefix"])
+	data["key_clues"] = data["key_clues"].filter(func(id: String) -> bool: return not (id.begins_with(pre + "_") or id == "c_" + pre or id.begins_with("x_" + pre)))
+	give("s_%s_foiled" % pre)
 
 
 func check_deadline_warnings() -> int:

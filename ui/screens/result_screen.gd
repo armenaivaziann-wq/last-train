@@ -21,7 +21,7 @@ func build(args: Dictionary) -> void:
 	var title_text: String = "Дело раскрыто!"
 	if not solved:
 		title_text = ("Маньяк скрылся" if villain.get("kind", "") == "maniac" else "%s скрылся" % villain.get("name", "Злодей")) \
-			if _result.get("outcome") == "timeout" else ({"caught": "Вас схватили", "poisoned": "Яд подействовал"}.get(str(_result.get("outcome")), "Расследование провалено"))
+			if _result.get("outcome") == "timeout" else ({"caught": "Вас схватили", "poisoned": "Яд подействовал", "massacre": "Маньяк победил"}.get(str(_result.get("outcome")), "Расследование провалено"))
 	var title := Ui.label(title_text, "TitleLabel", 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if not solved:
@@ -32,6 +32,8 @@ func build(args: Dictionary) -> void:
 		sub = "Дело %d · %s" % [int(lvl["number"]), sub]
 	elif _result.get("level") == "daily":
 		sub = "Дело дня · " + sub
+	if int(_result.get("dead", 0)) + int(_result.get("saved", 0)) > 0:
+		sub += "  ·  погибли в туннелях: %d, спасены: %d" % [int(_result.get("dead", 0)), int(_result.get("saved", 0))]
 	var sl := Ui.label(sub, "DimLabel", 20)
 	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(sl)
@@ -110,6 +112,8 @@ func build(args: Dictionary) -> void:
 		var why: String = "Вторая ошибка обвинения — монстр понял, что его ищут, и сбежал."
 		if _result.get("outcome") == "timeout":
 			why = str(villain.get("escape_text", "Злодей скрылся."))
+		elif _result.get("outcome") == "massacre":
+			why = "В туннелях погибли трое. Маньяк сошёл на станции, пока поезд оплакивал жертв. Перед туннелем идите к тому, кто в опасности, — рядом с вами он не нападёт."
 		elif _result.get("outcome") == "poisoned":
 			why = "Вы не успели найти противоядие. Пассажиры нашли вас без сознания. Решайте, что пить, — а если выпили, ищите противоядие сразу."
 		elif _result.get("outcome") == "caught":
