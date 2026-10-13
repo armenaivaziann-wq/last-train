@@ -75,3 +75,13 @@ func test_viewport_resize_applies() -> void:
 	get_tree().root.size = Vector2i(1280, 720)
 	await wait_frames(2)
 	check(w > 1300.0, "логическая ширина меняется (%.0f)" % w)
+
+
+## Джойстик: почти горизонтальное движение пальца не уводит героя вниз/вверх.
+func test_joystick_axis_snap() -> void:
+	var v: Vector2 = TouchJoystick.snap_axes(Vector2(0.9, 0.25))
+	check(is_zero_approx(v.y) and v.x > 0.9, "почти вправо — ровно вправо")
+	v = TouchJoystick.snap_axes(Vector2(-0.1, 0.8))
+	check(is_zero_approx(v.x) and v.y > 0.79, "почти вниз — ровно вниз")
+	v = TouchJoystick.snap_axes(Vector2(0.6, 0.6))
+	check(v.x > 0.5 and v.y > 0.5, "диагональ остаётся диагональю")

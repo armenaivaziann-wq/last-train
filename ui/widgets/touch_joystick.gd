@@ -7,6 +7,10 @@ signal vector_changed(v: Vector2)
 
 const RADIUS: float = 70.0
 const DEAD_ZONE: float = 0.12
+## Прилипание к осям: если палец ведёт почти горизонтально (или почти вертикально),
+## малая поперечная составляющая отбрасывается — герой идёт ровно по коридору, а не
+## «сползает» вниз или вверх от неточного движения пальца.
+const AXIS_SNAP: float = 0.4
 
 var vector: Vector2 = Vector2.ZERO
 var _touch_index: int = -1
@@ -68,9 +72,18 @@ func _update(pos: Vector2) -> void:
 	var v: Vector2 = (pos - _center) / RADIUS
 	if v.length() > 1.0:
 		v = v.normalized()
-	vector = v if v.length() > DEAD_ZONE else Vector2.ZERO
+	vector = snap_axes(v) if v.length() > DEAD_ZONE else Vector2.ZERO
 	_place()
 	vector_changed.emit(vector)
+
+
+static func snap_axes(v: Vector2) -> Vector2:
+	var len: float = v.length()
+	if absf(v.y) < absf(v.x) * AXIS_SNAP:
+		v.y = 0.0
+	elif absf(v.x) < absf(v.y) * AXIS_SNAP:
+		v.x = 0.0
+	return v.normalized() * len if v != Vector2.ZERO else v
 
 
 ## Сбросить касание (окно открылось поверх джойстика).
