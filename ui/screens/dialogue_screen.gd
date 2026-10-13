@@ -74,7 +74,7 @@ func build(args: Dictionary) -> void:
 	right.add_child(Ui.scroll(_topics))
 	var actions := Ui.hbox(8)
 	var pc: float = Db.action_cost(game.investigation.profile, "present")
-	_present_btn = Ui.button("Предъявить улику" + ("  · %s мин" % str(pc) if pc > 0.0 else ""), "journal", "CyanButton", _toggle_present, 52)
+	_present_btn = Ui.button("Предъявить улику", "journal", "CyanButton", _toggle_present, 52)
 	_present_btn.toggle_mode = true
 	_present_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(_present_btn)
@@ -95,11 +95,12 @@ func _rebuild_topics() -> void:
 	if _present_mode:
 		_build_present_list()
 		return
-	_ask_label.text = "Спросить:"
 	var qc: float = Db.action_cost(inv.profile, "question")
+	# Цена вопроса — одной строкой, а не на каждой кнопке.
+	_ask_label.text = "Спросить:" + ("  (новый вопрос — %d сек игрового времени)" % int(qc * 60.0) if qc > 0.0 else "")
 	for t: Dictionary in inv.dialogue.topics(_id, inv.evidence, inv.dialogue_ctx(_id)):
-		# Новый вопрос стоит минут до станции — цена на кнопке; повторный — бесплатно.
-		var cap: String = str(t["q"]) + ("" if t["asked"] or qc <= 0.0 else "  · %s мин" % str(qc))
+		# Новый вопрос стоит времени (цена — в подписи «Спросить»); повторный — бесплатно.
+		var cap: String = str(t["q"])
 		var b := Ui.button(cap, "check" if t["asked"] else "question", "ListButton" if t["asked"] else "ChipButton", func() -> void: _ask(t["id"]), 52)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

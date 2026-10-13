@@ -621,7 +621,9 @@ func _on_clue(clue_id: String) -> void:
 	hud.add_new_clue()
 	AudioManager.play_sfx("contradiction" if is_deduction else "clue")
 	AudioManager.vibrate(30)
-	Events.notify(("Новый вывод: " if is_deduction else "Новая улика: ") + str(c.get("title", "")), Ui.clue_icon(str(c.get("type", ""))))
+	# Уведомление — только о выводе; новая улика отмечается значком на «Журнале» и звуком.
+	if is_deduction:
+		Events.notify("Новый вывод: " + str(c.get("title", "")), Ui.clue_icon("contradiction"))
 	if not ui.has_modal() and not player.is_busy():
 		player.play_action("discovery", 0.6)
 	autosave()

@@ -63,23 +63,25 @@ func build(args: Dictionary) -> void:
 			_build_dial()
 
 
-## Найденные улики, из которых выводится решение (без самого решения).
+## Найденные улики, из которых выводится решение (без самого решения). Свёрнуто в кнопку,
+## чтобы окно головоломки было чистым; раскрывается касанием.
 func _known() -> Control:
+	var wrap := Ui.vbox(6)
+	var found: Array = _p.get("needs", []).filter(func(id: String) -> bool: return _inv.evidence.has(id))
 	var box := Ui.panel("CardPanel")
 	var kv := Ui.vbox(4)
-	kv.add_child(Ui.label("Что вы знаете:", "SubHeaderLabel", 18))
-	var any: bool = false
-	for id: String in _p.get("needs", []):
-		if _inv.evidence.has(id):
-			any = true
-			kv.add_child(Ui.label("•  " + str(_inv.evidence.clue(id)["title"]) + " — " + str(_inv.evidence.clue(id)["text"]), "", 16, true))
-	if not any:
+	for id: String in found:
+		kv.add_child(Ui.label("•  " + str(_inv.evidence.clue(id)["title"]) + " — " + str(_inv.evidence.clue(id)["text"]), "", 16, true))
+	if found.is_empty():
 		kv.add_child(Ui.label("Пока ничего, что помогло бы. Ищите подсказки в уликах — или пробуйте наугад (это стоит времени).", "DimLabel", 16, true))
-	# Высота ограничена: на телефоне окно не должно вылезать за экран, длинное — прокрутка.
 	var sc := Ui.scroll(kv)
 	sc.custom_minimum_size.y = 96
 	box.add_child(sc)
-	return box
+	box.visible = false
+	var btn := Ui.button("Подсказки из улик (%d)" % found.size(), "journal", "GhostButton", func() -> void: box.visible = not box.visible, 48)
+	wrap.add_child(btn)
+	wrap.add_child(box)
+	return wrap
 
 
 # --- кодовый замок ------------------------------------------------------------------------

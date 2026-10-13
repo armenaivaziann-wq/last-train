@@ -103,9 +103,9 @@ func setup(game_node: Node) -> void:
 	# --- сверху справа: валюты и пауза
 	var tr := Ui.hbox(8)
 	# Только число найденных ключевых улик (какие именно — не подсказываем).
+	# Счётчик улик не показываем: новая улика — просто значок на «Журнале» (меньше цифр на экране).
 	var kc: Array = Ui.pill("magnifier", "0", 26)
 	_coins = kc[1]
-	tr.add_child(kc[0])
 	pause_btn = Ui.icon_button("pause", 56, "GhostButton", func() -> void: game.ui.open("pause_menu"), "Пауза")
 	tr.add_child(pause_btn)
 	_top_right = tr
@@ -115,7 +115,7 @@ func setup(game_node: Node) -> void:
 	joystick = TouchJoystick.new()
 	add_child(joystick)
 
-	# --- снизу справа: контекстная кнопка + журнал и камеры
+	# --- снизу справа: контекстная кнопка + журнал (камеры — у монитора в вагоне или в журнале)
 	var br := Ui.hbox(14)
 	br.alignment = BoxContainer.ALIGNMENT_END
 	var ib := Ui.vbox(4)
@@ -135,7 +135,6 @@ func setup(game_node: Node) -> void:
 	side.alignment = BoxContainer.ALIGNMENT_END
 	cameras_btn = _compact_button("cctv", "Камеры", func() -> void: game.open_cameras())
 	journal_btn = _compact_button("journal", "Журнал", func() -> void: game.open_journal())
-	side.add_child(cameras_btn)
 	side.add_child(journal_btn)
 	_journal_badge = Ui.label("", "", 17)
 	_journal_badge.add_theme_stylebox_override("normal", UiTheme.sb(UiTheme.DANGER, Color.WHITE, 2, 14, Color(0, 0, 0, 0.4), 3, Vector4(8, 0, 8, 1)))

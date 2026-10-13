@@ -149,8 +149,9 @@ func test_action_costs_and_modes() -> void:
 	game.open_dialogue("agata")
 	await wait_frames(2)
 	var scr: Node = game.ui.top()
-	var btn: Button = scr.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text.contains("· 0.5 мин"))[0]
-	check(btn != null, "цена вопроса на кнопке")
+	# Цена вопроса — одной строкой над вопросами, а не на каждой кнопке.
+	check(scr._ask_label.text.contains("30 сек"), "цена вопроса указана над списком")
+	check(not scr.find_children("*", "Button", true, false).any(func(b: Button) -> bool: return b.text.contains("мин")), "на кнопках вопросов цен нет")
 	scr._ask(inv.dialogue.topics("agata", inv.evidence, inv.dialogue_ctx("agata"))[0]["id"])
 	check(absf(inv.clock - t0 - 0.5) < 0.01, "новый вопрос стоит 0.5 мин")
 	await _end()

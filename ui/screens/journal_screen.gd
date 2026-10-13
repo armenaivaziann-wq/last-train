@@ -53,6 +53,13 @@ func build(args: Dictionary) -> void:
 	hint_btn.tooltip_text = "Подсказки помогают думать, но снижают итоговый рейтинг"
 	head.add_child(hint_btn)
 	head.move_child(hint_btn, 3)
+	# Камеры — отсюда (кнопки на главном экране нет, чтобы не перегружать его).
+	if game and game.has_method("open_cameras"):
+		var cam_btn := Ui.button("Камеры", "cctv", "CyanButton", func() -> void:
+			close()
+			game.open_cameras(), 52)
+		head.add_child(cam_btn)
+		head.move_child(cam_btn, 4)
 	col.add_child(head)
 	_hint_label = Ui.label("", "", 18, true)
 	_hint_label.add_theme_color_override("font_color", Color("#e8d8ff"))
@@ -357,7 +364,11 @@ func _build_timeline() -> void:
 		_board_mode = true
 		_switch("timeline"), 48)
 	mode.add_child(b1)
-	mode.add_child(b2)
+	# Доска передвижений — с дел посложнее (Инспектор и выше), в первых делах только хронология.
+	if int(inv.profile.get("level", 1)) >= 3:
+		mode.add_child(b2)
+	else:
+		_board_mode = false
 	var wrap := Ui.vbox(8)
 	wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	wrap.add_child(mode)
