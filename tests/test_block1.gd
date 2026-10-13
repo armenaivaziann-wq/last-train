@@ -119,10 +119,11 @@ func test_damaged_record_and_unfilmed_carriages() -> void:
 	var got: Array[String] = inv.mark_camera("cam4", Db.parse_time("01:46:30"))
 	check(got.has("c_l14_damaged"), "отметка повреждённого отрезка даёт улику «Запись»")
 	await _end()
-	await _start("level_13")
+	# Дело 2: ресторан без камер (снимаются только общий вагон и служебный тамбур).
+	await _start("level_02")
 	var ids: Array = game.camera_system.cameras().map(func(c: Dictionary) -> String: return str(c["id"]))
-	check(not ids.has("cam1") and not ids.has("cam2"), "дело 13: пассажирский вагон без камер — ни миниатюры, ни записи")
-	check(ids.has("cam6"), "багажный вагон снимается")
+	check(not ids.has("cam4"), "дело 2: ресторан без камер — ни миниатюры, ни записи")
+	check(ids.has("cam1"), "общий вагон снимается")
 	await _end()
 
 
