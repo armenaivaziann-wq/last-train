@@ -5,6 +5,8 @@ extends GameScreen
 ## головоломку можно повторять. На лёгкой сложности её можно пропустить (как подсказку).
 ##   code_lock — кодовый замок: колёсики с цифрами (code).
 ##   knot      — узел: развязывать петли в правильном порядке (order), ошибка — узел затянулся.
+##   sequence  — последовательность (мелодия, порядок чашек): то же, что узел, свои тексты.
+##   code_lock с "alphabet" — колёса с буквами (шифр-колесо).
 ##   pairs     — сопоставление: каждой строке (left) выбрать вариант из options (касание
 ##               листает варианты); answer — индексы верных вариантов по строкам.
 
@@ -32,7 +34,7 @@ func build(args: Dictionary) -> void:
 	var panel := Ui.panel()
 	panel.custom_minimum_size = Vector2(760, 0)
 	var v := Ui.vbox(12)
-	v.add_child(Ui.header(str(_p.get("title", "Головоломка")), "lock" if _p["type"] == "code_lock" else "magnifier", close))
+	v.add_child(Ui.header(str(_p.get("title", "Головоломка")), str(_p.get("icon", "lock" if _p["type"] == "code_lock" else "magnifier")), close))
 	v.add_child(Ui.label(str(_p.get("intro", "")), "", 20, true))
 	_body = Ui.vbox(10)
 	v.add_child(_body)
@@ -51,7 +53,7 @@ func build(args: Dictionary) -> void:
 	match str(_p["type"]):
 		"code_lock":
 			_build_lock()
-		"knot":
+		"knot", "sequence":
 			_build_knot()
 		"pairs":
 			_build_pairs()
@@ -86,7 +88,7 @@ func _build_lock() -> void:
 		var col := Ui.vbox(6)
 		var k: int = i
 		col.add_child(Ui.button("▲", "", "ChipButton", func() -> void: _turn(k, 1), 64))
-		var l := Ui.label("0", "NumberLabel", 46)
+		var l := Ui.label(_alphabet()[0], "NumberLabel", 46)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.custom_minimum_size = Vector2(76, 64)
 		_digit_labels.append(l)
@@ -98,20 +100,25 @@ func _build_lock() -> void:
 	_body.add_child(Ui.button("Открыть" + ("  · ошибка %s мин" % str(snappedf(cost, 0.05)) if cost > 0.0 else ""), "lock", "PrimaryButton", _try_code, 60))
 
 
+func _alphabet() -> String:
+	return str(_p.get("alphabet", "0123456789"))
+
+
 func _turn(i: int, d: int) -> void:
-	_digits[i] = (_digits[i] + d + 10) % 10
-	_digit_labels[i].text = str(_digits[i])
+	var n: int = _alphabet().length()
+	_digits[i] = (_digits[i] + d + n) % n
+	_digit_labels[i].text = _alphabet()[_digits[i]]
 	AudioManager.play_sfx("click", -10.0)
 
 
 func _try_code() -> void:
-	var entered: String = "".join(PackedStringArray(_digits.map(func(x: int) -> String: return str(x))))
+	var entered: String = "".join(PackedStringArray(_digits.map(func(x: int) -> String: return _alphabet()[x])))
 	if entered == str(_p["code"]):
 		_win()
 	else:
 		_inv.puzzle_wrong(_id)
 		AudioManager.play_sfx("door_locked", -4.0)
-		_msg.text = "Не подходит. Время уходит."
+		_msg.text = str(_p.get("fail_text", "Не подходит. Время уходит."))
 		_msg.visible = true
 
 
@@ -135,13 +142,17 @@ func _build_knot() -> void:
 	grid.add_theme_constant_override("v_separation", 12)
 	for strand in shown:
 		var s: String = str(strand)
-		var b := Ui.button(s, "magnifier", "CyanButton", func() -> void: _pull(s), 70)
+		var b := Ui.button(s, str(_p.get("item_icon", "magnifier")), "CyanButton", func() -> void: _pull(s), 70)
 		b.custom_minimum_size.x = 330
 		grid.add_child(b)
 	_body.add_child(grid)
-	var prog := Ui.label("Распутано: 0 / %d" % order.size(), "SmallLabel", 18)
+	var prog := Ui.label("%s: 0 / %d" % [_progress_word(), order.size()], "SmallLabel", 18)
 	prog.name = "Progress"
 	_body.add_child(prog)
+
+
+func _progress_word() -> String:
+	return str(_p.get("progress", "Распутано" if _p["type"] == "knot" else "Готово"))
 
 
 func _pull(strand: String) -> void:
@@ -152,14 +163,14 @@ func _pull(strand: String) -> void:
 		for b: Button in _body.find_children("*", "Button", true, false):
 			if b.text == strand:
 				b.disabled = true
-		(_body.find_child("Progress", true, false) as Label).text = "Распутано: %d / %d" % [_knot_done.size(), order.size()]
+		(_body.find_child("Progress", true, false) as Label).text = "%s: %d / %d" % [_progress_word(), _knot_done.size(), order.size()]
 		if _knot_done.size() == order.size():
 			_win()
 	else:
 		_inv.puzzle_wrong(_id)
 		AudioManager.play_sfx("wrong", -6.0)
 		_build_knot()
-		_msg.text = "Узел затянулся сильнее. Начните заново — и подумайте, в каком порядке его вязали."
+		_msg.text = str(_p.get("fail_text", "Узел затянулся сильнее. Начните заново — и подумайте, в каком порядке его вязали." if _p["type"] == "knot" else "Не тот порядок. Начните заново."))
 		_msg.visible = true
 
 
@@ -200,7 +211,7 @@ func _try_pairs() -> void:
 	else:
 		_inv.puzzle_wrong(_id)
 		AudioManager.play_sfx("wrong", -6.0)
-		_msg.text = "Не сходится. Время уходит."
+		_msg.text = str(_p.get("fail_text", "Не сходится. Время уходит."))
 		_msg.visible = true
 
 

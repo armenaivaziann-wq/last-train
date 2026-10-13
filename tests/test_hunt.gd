@@ -120,3 +120,34 @@ func test_hunter_avoids_furniture() -> void:
 	check(ok, "путь охотника не проходит сквозь мебель")
 	check(p.distance_to(target) <= 12.0, "охотник доходит через весь поезд до укрытия")
 	await _end()
+
+
+## Обучение (дело 1): охотник безвреден, из укрытия можно подслушать улику.
+func test_tutorial_hunt_overhear() -> void:
+	SaveManager.prepare_level("level_01")
+	SaveManager.pending_seed = 7
+	game = load("res://game/game.tscn").instantiate()
+	add_child(game)
+	await wait_frames(2)
+	game.ui.close_all()
+	await wait_frames(1)
+	var inv: InvestigationManager = game.investigation
+	inv.advance(float(inv.hunts[0]["from"]) - inv.clock + 0.05)
+	await wait_frames(3)
+	var hunter: Hunter = game.hunt.hunter
+	check(hunter != null, "обучение: в первую ночь идёт человек в чёрном")
+	var near: Dictionary = HideSpots.nearest(game.hunt.spots, game.player.global_position)
+	game.player.global_position = near["pos"] + Vector2(0, 8)
+	for n in get_tree().get_nodes_in_group(&"interactables"):
+		if n is Interactable and (n as Interactable).interact_id == near["id"]:
+			game.enter_hide(n)
+	hunter.global_position = game.player.global_position + Vector2(80, 0)
+	await wait_frames(3)
+	check(inv.evidence.has("s_c1_overheard"), "из укрытия подслушана улика")
+	game.leave_hide()
+	var c0: float = inv.clock
+	hunter.mode = "chase"
+	hunter.global_position = game.player.global_position + Vector2(12, 0)
+	await wait_seconds(0.6)
+	check(inv.hunts_caught == 0 and inv.clock - c0 < 1.0 and not inv.ended, "обучение: охотник безвреден")
+	await _end()

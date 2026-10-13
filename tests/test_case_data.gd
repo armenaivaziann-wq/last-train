@@ -115,6 +115,17 @@ func test_every_clue_is_obtainable() -> void:
 			sources.append(cc["id"])
 		for d: Dictionary in c["deductions"]:
 			sources.append(d["result"])
+		# Головоломки, подслушанное из укрытия, сюжетные события и выбор.
+		for pz: String in c.get("puzzles", {}):
+			sources.append_array(c["puzzles"][pz].get("reward", []))
+		for h: Dictionary in c.get("hunts", []):
+			if h.has("overhear"):
+				sources.append(h["overhear"]["clue"])
+		for ev: Dictionary in c.get("story_events", []):
+			for fx: Dictionary in ev.get("effects", []):
+				sources.append_array(fx.get("clues", []))
+				for fx2: Dictionary in fx.get("accept_effects", []) + fx.get("refuse_effects", []):
+					sources.append_array(fx2.get("clues", []))
 		for cid: String in c["clues"]:
 			check(cid in sources, "%s: у улики %s есть источник" % [id, cid])
 

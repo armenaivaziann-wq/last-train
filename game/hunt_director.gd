@@ -43,6 +43,20 @@ func _process(delta: float) -> void:
 	if hunter == null and not h.is_empty():
 		_start(h)
 	_update_danger(delta)
+	_overhear()
+
+
+## Подслушать из укрытия: охотник прошёл рядом со спрятавшимся героем — тот слышит,
+## что он бормочет (улика "overhear").
+func _overhear() -> void:
+	if hunter == null or not game.player.in_hiding:
+		return
+	var oh: Dictionary = current["def"].get("overhear", {})
+	if oh.is_empty() or game.investigation.evidence.has(str(oh["clue"])):
+		return
+	if hunter.global_position.distance_to(game.player.global_position) <= 130.0:
+		game.investigation.give(str(oh["clue"]))
+		game.hud.show_banner("Подслушано", str(oh["text"]), 4.5)
 
 
 func _start(h: Dictionary) -> void:
@@ -84,6 +98,15 @@ func _finish_hunt() -> void:
 func _on_caught() -> void:
 	var inv: InvestigationManager = game.investigation
 	var id: String = str(current.get("id", ""))
+	if current["def"].get("harmless", false):
+		# Обучение: охотник лишь задел героя плечом — без наказания.
+		inv.end_hunt(id)
+		hunter.queue_free()
+		hunter = null
+		current = {}
+		game.hud.set_danger(0.0)
+		game.hud.show_banner("Он прошёл мимо", "Человек в чёрном задел вас плечом и скрылся. В следующий раз прячьтесь — в других делах охотник не пощадит.", 4.5)
+		return
 	hunter.queue_free()
 	hunter = null
 	current = {}

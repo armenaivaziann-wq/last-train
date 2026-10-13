@@ -135,6 +135,12 @@ func test_object_and_luggage() -> void:
 	await start_case()
 	game.open_object("obj_trash")
 	await wait_frames(2)
+	# В корзине — головоломка «Обрывки»: сложить клочки сверху вниз.
+	var pz: Node = game.ui.top()
+	check(pz != null and pz.name == "puzzle_screen", "корзина — головоломка «Обрывки»")
+	for s: Variant in _inv().puzzle("puz_c1_scraps")["order"]:
+		pz._pull(str(s))
+	await wait_frames(2)
 	check(_inv().evidence.has("p_torn_page"), "обрывок страницы в корзине")
 	game.ui.close_all()
 	game.open_luggage("klara")
